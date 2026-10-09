@@ -1,0 +1,16 @@
+# Build output
+build/
+
+# Release output (Scripts/release.sh)
+dist/
+
+# macOS
+.DS_Store
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+
+# Local agent settings (paths and hooks of this machine)
+.claude/
+.codex/

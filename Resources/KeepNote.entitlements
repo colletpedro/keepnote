@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Sandboxed by choice. Outside the Mac App Store this is optional; the
+         app adopts it anyway, because the privacy claims are only worth as
+         much as the boundary enforcing them. -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- Folders the user hands over through NSOpenPanel / NSSavePanel: the
+         sync folder and export destinations. Nothing else is reachable. -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- Security-scoped bookmarks, so the sync folder survives a quit. -->
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+
+    <!-- Deliberately absent:
+         com.apple.security.network.client / .server: the app makes no
+         network connection. Sync is plain files in a folder the user picks;
+         whatever provider owns that folder (iCloud Drive, Dropbox, …) moves
+         them, in its own process. Links in a note open in the browser.
+         com.apple.security.device.camera / .microphone
+         com.apple.security.personal-information.*
+         com.apple.security.automation.apple-events
+         Accessibility, Input Monitoring and Screen Recording are not
+         entitlements at all — they are TCC prompts the app never triggers,
+         because it uses tracking areas and Carbon hotkeys instead of
+         watching the system's input. -->
+</dict>
+</plist>

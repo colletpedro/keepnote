@@ -1,0 +1,117 @@
+{
+  "exportedAt": "2026-09-22T06:16:12Z",
+  "format": "com.keepnote.archive",
+  "notes": [
+    {
+      "body": "- sketch the new onboarding flow\n- tidy up the shared drive\n- ship the edge panel spike\n- review the sync tombstones",
+      "color": 5,
+      "createdAt": "2026-09-22T05:13:12Z",
+      "id": "CCDDA607-EA73-4D7C-89DD-EE8D853E5934",
+      "state": "active",
+      "tags": [
+        "work"
+      ],
+      "title": "Office",
+      "updatedAt": "2026-09-22T06:13:12Z"
+    },
+    {
+      "body": "- apple\n- 4x banana\n- dry fruits\n- peanuts\n- oat milk",
+      "color": 6,
+      "createdAt": "2026-09-22T05:04:12Z",
+      "id": "C7791262-4B4A-4D48-BC8F-A1412EF6AD09",
+      "state": "active",
+      "tags": [
+        "home",
+        "errands"
+      ],
+      "title": "Groceries",
+      "updatedAt": "2026-09-22T06:04:12Z"
+    },
+    {
+      "body": "Waiting on:\n- design feedback on the deck\n- notarisation ticket\n- a second Mac to test sync",
+      "color": 4,
+      "createdAt": "2026-09-22T04:36:12Z",
+      "id": "E94B35E6-DF15-45BF-8309-22DF63B3F87B",
+      "state": "active",
+      "tags": [
+        "waiting"
+      ],
+      "title": "Hold",
+      "updatedAt": "2026-09-22T05:36:12Z"
+    },
+    {
+      "body": "Keep the scope honest:\nno accounts, no server, no telemetry.\n\nOne folder, one file per note.",
+      "color": 1,
+      "createdAt": "2026-09-22T03:46:12Z",
+      "id": "65568C3C-90B1-40D1-9502-27884AFC740B",
+      "state": "active",
+      "tags": [
+        "side"
+      ],
+      "title": "Side-project",
+      "updatedAt": "2026-09-22T04:46:12Z"
+    },
+    {
+      "body": "- The Design of Everyday Things (re-read ch. 4)\n- Notes on interaction cost\n- That paper on CRDTs for text",
+      "color": 2,
+      "createdAt": "2026-09-22T02:36:12Z",
+      "id": "E307F456-460F-4260-AD35-85D54D7A7C52",
+      "state": "active",
+      "tags": [
+        "later"
+      ],
+      "title": "Reading",
+      "updatedAt": "2026-09-22T03:36:12Z"
+    },
+    {
+      "body": "Thu 10:00 \u2014 weekly check-in\nFri 15:30 \u2014 plumber about the sink\n\nPrep: bring the export formats question.",
+      "color": 3,
+      "createdAt": "2026-09-22T01:16:12Z",
+      "id": "D7D758A7-53E2-4786-8DFC-9BE7762DA256",
+      "state": "active",
+      "tags": [
+        "work"
+      ],
+      "title": "Calls",
+      "updatedAt": "2026-09-22T02:16:12Z"
+    },
+    {
+      "body": "- a deck per Space?\n- drag a tab to reorder\n- hold \u2325 to peek all bodies at once",
+      "color": 7,
+      "createdAt": "2026-09-21T22:36:12Z",
+      "id": "E523EA13-8E6D-4334-9D85-93C2235D2186",
+      "state": "active",
+      "tags": [
+        "someday"
+      ],
+      "title": "Ideas",
+      "updatedAt": "2026-09-21T23:36:12Z"
+    },
+    {
+      "body": "Bookings done. Still to do:\n- travel insurance\n- offline maps\n- ask about the parking",
+      "color": 0,
+      "createdAt": "2026-09-21T14:16:12Z",
+      "id": "B11428B7-75EB-45B9-AA70-12E0B8CC6555",
+      "state": "active",
+      "tags": [
+        "home"
+      ],
+      "title": "Trip",
+      "updatedAt": "2026-09-21T15:16:12Z"
+    },
+    {
+      "body": "- edge panel per screen\n- AES-GCM on the body\n- undo window for delete",
+      "color": 6,
+      "createdAt": "2026-09-21T05:56:12Z",
+      "id": "1FDD70ED-4482-4363-B336-5682DC7483A2",
+      "state": "active",
+      "tags": [
+        "work",
+        "review"
+      ],
+      "title": "Done this week",
+      "updatedAt": "2026-09-21T06:56:12Z"
+    }
+  ],
+  "version": 1
+}
