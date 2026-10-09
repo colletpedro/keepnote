@@ -195,3 +195,52 @@ func runDailyTemplateArchiveTests() {
     expect("import: a folder's template comes too", fresh.dailyTemplate.body, template.body)
     expect("import: and is no note", String(fresh.notes.count), "0")
 }
+
+// MARK: - The template's window
+
+@MainActor
+func runDailyTemplateWindowTests() {
+    let key = SymmetricKey(size: .bits256)
+    let store = reopened(scratchDirectory().appendingPathComponent("w.sqlite"), key: key)
+    store.setDailyTemplate("# Start\n")
+    let before = store.notes.count
+
+    let controller = DailyTemplateWindowController(store: store)
+    controller.window.contentView?.layoutSubtreeIfNeeded()
+    expect("window: the title is fixed", controller.window.title, "Daily Template")
+    expect("window: it opens on the saved text",
+           controller.window.contentView.flatMap(textView(in:))?.string, "# Start\n")
+
+    expectTrue("window: typing goes into the editor", type("- [ ] one", into: controller.window))
+    controller.flush()
+    expect("window: and is saved as the template", store.dailyTemplate.body, "# Start\n- [ ] one")
+    expect("window: editing it makes no note", String(store.notes.count), String(before))
+
+    // The note editor's formatting works on it.
+    if let body = controller.window.contentView.flatMap(textView(in:)) as? MarkdownTextView {
+        body.setSelectedRange(NSRange(location: (body.string as NSString).length, length: 0))
+        body.insertNewline(nil)
+        expect("window: Return continues a checklist", body.string, "# Start\n- [ ] one\n- [ ] ")
+    } else {
+        expectTrue("window: the editor is the note editor", false)
+    }
+
+    // A newer template from another Mac shows, once nothing is waiting to be
+    // saved: what was just typed is not undone by it.
+    _ = store.applyIncomingTemplate(DailyTemplate(body: "too soon", updatedAt: Date().addingTimeInterval(30)))
+    spin(0.1)
+    expect("window: text still being saved is kept",
+           controller.window.contentView.flatMap(textView(in:))?.string, "# Start\n- [ ] one\n- [ ] ")
+    controller.flush()
+    _ = store.applyIncomingTemplate(DailyTemplate(body: "from elsewhere", updatedAt: Date().addingTimeInterval(60)))
+    spin(0.1)
+    expect("window: a template that arrives replaces the text",
+           controller.window.contentView.flatMap(textView(in:))?.string, "from elsewhere")
+
+    var closed = false
+    controller.onClose = { closed = true }
+    _ = type("!", into: controller.window)
+    controller.close()
+    expectTrue("window: closing reports it", closed)
+    expect("window: and saves what was typed", store.dailyTemplate.body, "from elsewhere!")
+}

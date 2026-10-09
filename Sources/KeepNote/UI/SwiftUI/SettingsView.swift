@@ -6,13 +6,14 @@ import SwiftUI
 /// no modes.
 
 enum SettingsTab: Int, CaseIterable {
-    case general, notes, deck, sync, shortcuts, about
+    case general, notes, deck, daily, sync, shortcuts, about
 
     var title: String {
         switch self {
         case .general: return "General"
         case .notes: return "Notes"
         case .deck: return "Deck"
+        case .daily: return "Daily"
         case .sync: return "Sync"
         case .shortcuts: return "Shortcuts"
         case .about: return "About"
@@ -24,6 +25,7 @@ enum SettingsTab: Int, CaseIterable {
         case .general: return "gearshape"
         case .notes: return "note.text"
         case .deck: return "rectangle.stack"
+        case .daily: return "calendar"
         case .sync: return "arrow.triangle.2.circlepath"
         case .shortcuts: return "command"
         case .about: return "info.circle"
@@ -36,6 +38,7 @@ enum SettingsTab: Int, CaseIterable {
         case .general: return 350
         case .notes: return 270
         case .deck: return 270
+        case .daily: return 230
         case .sync: return 440
         case .shortcuts: return 740
         case .about: return 340
@@ -51,6 +54,7 @@ struct SettingsActions {
     var importNotes: () -> Void
     var exportAll: () -> Void
     var showWelcome: () -> Void
+    var editDailyTemplate: () -> Void = {}
 }
 
 /// An option with its explanation underneath, the way System Settings does it.
@@ -108,7 +112,7 @@ struct GeneralSettingsPane: View {
                 Option(help: "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.") {
                     Toggle("Show over full-screen apps", isOn: $settings.showOverFullScreen)
                 }
-                HelpNote(text: "KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.")
+                HelpNote(text: "KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About, Welcome or Daily Template. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.")
             }
         }
         .formStyle(.grouped)
@@ -188,6 +192,25 @@ private func stepper(_ label: String, value: Binding<Int>, in range: ClosedRange
     HStack(spacing: 6) {
         Text(label).monospacedDigit().foregroundStyle(.secondary)
         Stepper("", value: value, in: range, step: step).labelsHidden()
+    }
+}
+
+// MARK: - Daily
+
+struct DailySettingsPane: View {
+    var actions: SettingsActions
+
+    var body: some View {
+        Form {
+            Section {
+                Option(help: "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.") {
+                    Button("Edit Daily Template\u{2026}", action: actions.editDailyTemplate)
+                }
+                HelpNote(text: DailyTemplateEditorView.help)
+                HelpNote(text: "The template is used only when a new daily note is created: from the calendar button on the deck, \u{2325}\u{2318}Y or the menu. Adding the daily tag to a note you already have never changes its text.")
+            }
+        }
+        .formStyle(.grouped)
     }
 }
 

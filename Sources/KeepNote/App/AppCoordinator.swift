@@ -22,6 +22,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     private var archiveWindow: HostingWindowController<ArchiveView>?
     private var settingsWindow: SettingsWindowController?
     private var welcomeWindow: HostingWindowController<WelcomeView>?
+    private var dailyTemplateWindow: DailyTemplateWindowController?
     /// The system About panel, while it is open.
     private var aboutPanel: NSWindow?
     private var isAboutOpen = false
@@ -186,6 +187,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         if archiveWindow != nil { kinds.insert(.archive) }
         if settingsWindow != nil { kinds.insert(.settings) }
         if welcomeWindow != nil { kinds.insert(.welcome) }
+        if dailyTemplateWindow != nil { kinds.insert(.dailyTemplate) }
         if isAboutOpen { kinds.insert(.about) }
         return kinds
     }
@@ -243,6 +245,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     func flushEverything() {
         noteWindows.values.forEach { $0.flush() }
+        dailyTemplateWindow?.flush()
     }
 
     /// Before the process goes: pending autosaves are written, and the
@@ -698,6 +701,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             delete: { [weak self] ids in self?.delete(ids: ids) },
             export: { [weak self] ids in self?.export(ids: ids) },
             openSettings: { [weak self] in self?.showSettings() },
+            editDailyTemplate: { [weak self] in self?.showDailyTemplate() },
             setKeepOnDeck: { [weak self] ids, on in self?.setKeepOnDeck(on, ids: ids) },
             setPinned: { [weak self] ids, on in self?.setPinned(on, ids: ids) },
             renameTag: { [weak self] name in self?.promptRenameTag(name) },
@@ -767,7 +771,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                     forgetSyncFolder: { [weak self] in self?.sync.forgetFolder() },
                     importNotes: { [weak self] in self?.runImport() },
                     exportAll: { [weak self] in self?.menuExportAll() },
-                    showWelcome: { [weak self] in self?.showWelcome() }
+                    showWelcome: { [weak self] in self?.showWelcome() },
+                    editDailyTemplate: { [weak self] in self?.showDailyTemplate() }
                 )
             )
             controller.onClose = { [weak self] in
@@ -779,6 +784,23 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         if let tab { settingsWindow?.select(tab) }
         settingsWindow?.show()
+    }
+
+    /// Edit Daily Template…: the text new daily notes start from, in a window
+    /// of its own.
+    func showDailyTemplate() {
+        if let dailyTemplateWindow {
+            dailyTemplateWindow.show()
+            return
+        }
+        let controller = DailyTemplateWindowController(store: store)
+        controller.onClose = { [weak self] in
+            self?.dailyTemplateWindow = nil
+            self?.standardWindowDidClose()
+        }
+        dailyTemplateWindow = controller
+        applyDockPolicy()
+        controller.show()
     }
 
     /// First launch only (or `--show-welcome`). "Get Started" records that the
@@ -924,6 +946,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
         add("New Note", #selector(menuNewNote))
         add("Today\u{2019}s Daily", #selector(menuTodaysDaily))
+        add("Edit Daily Template\u{2026}", #selector(menuEditDailyTemplate))
         add("All Notes\u{2026}", #selector(menuAllNotes))
         add("Archive\u{2026}", #selector(menuArchive))
         menu.addItem(.separator())
@@ -937,6 +960,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     @objc func menuNewNote() { newNote() }
     @objc func menuTodaysDaily() { openTodaysDaily() }
+    @objc func menuEditDailyTemplate() { showDailyTemplate() }
     @objc func menuAllNotes() { showAllNotes() }
     @objc func menuArchive() { showArchive() }
     @objc func menuImport() { runImport() }

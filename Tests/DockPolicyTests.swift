@@ -6,14 +6,14 @@ func runDockPolicyTests() {
     expect("nothing open: out of the Dock", policy([]), "accessory")
     expect("deck alone", policy([.deck]), "accessory")
     expect("deck, peek and notes do not count", policy([.deck, .peek, .anchoredNote, .detachedNote]), "accessory")
-    for kind in [AppWindowKind.allNotes, .archive, .settings, .about, .welcome] {
+    for kind in [AppWindowKind.allNotes, .archive, .settings, .about, .welcome, .dailyTemplate] {
         expect("\(kind) alone puts it in the Dock", policy([kind]), "regular")
         expect("\(kind) beside the deck and a note", policy([kind, .deck, .detachedNote]), "regular")
     }
     expect("several standard windows", policy([.allNotes, .settings]), "regular")
-    expect("standard kinds are exactly five",
+    expect("standard kinds are exactly six",
            AppWindowKind.allCases.filter(\.isStandard).map { "\($0)" }.joined(separator: ","),
-           "allNotes,archive,settings,about,welcome")
+           "allNotes,archive,settings,about,welcome,dailyTemplate")
 
     func change(_ current: DockPolicy, _ kinds: Set<AppWindowKind>) -> String {
         DockPolicy.change(from: current, open: kinds).map { "\($0)" } ?? "nil"

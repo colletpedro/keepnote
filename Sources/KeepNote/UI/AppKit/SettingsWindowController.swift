@@ -24,6 +24,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             case .general: root = AnyView(GeneralSettingsPane(settings: settings))
             case .notes: root = AnyView(NotesSettingsPane(settings: settings))
             case .deck: root = AnyView(DeckSettingsPane(settings: settings))
+            case .daily: root = AnyView(DailySettingsPane(actions: actions))
             case .sync: root = AnyView(SyncSettingsPane(settings: settings, sync: sync, actions: actions))
             case .shortcuts: root = AnyView(ShortcutsSettingsPane())
             case .about: root = AnyView(AboutSettingsPane(actions: actions))

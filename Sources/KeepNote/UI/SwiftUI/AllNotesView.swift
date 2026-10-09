@@ -10,6 +10,8 @@ struct NoteListActions {
     var delete: ([UUID]) -> Void
     var export: ([UUID]) -> Void
     var openSettings: () -> Void = {}
+    /// Edit Daily Template…, from the Daily list.
+    var editDailyTemplate: () -> Void = {}
     /// Keep on Deck on or off for these notes.
     var setKeepOnDeck: ([UUID], Bool) -> Void = { _, _ in }
     /// Pin to Center on or off for these notes.
@@ -81,7 +83,8 @@ struct AllNotesView: View {
                 onRename: renameTag,
                 onDelete: actions.deleteTag,
                 onNewNote: actions.newNoteWithTag,
-                onDropNotes: actions.tagNotes
+                onDropNotes: actions.tagNotes,
+                onEditDailyTemplate: actions.editDailyTemplate
             )
                 .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 280)
         } content: {
@@ -190,6 +193,11 @@ struct AllNotesView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .lineLimit(1)
             Spacer(minLength: 8)
+            if isDailyList {
+                Button("Edit Template\u{2026}", action: actions.editDailyTemplate)
+                    .controlSize(.small)
+                    .help("Edit the text new daily notes start from")
+            }
             Text(countLabel)
                 .font(.system(size: 11.5).monospacedDigit())
                 .foregroundStyle(.secondary)
@@ -299,6 +307,7 @@ struct AllNotesSidebar: View {
     var onDelete: (String) -> Void = { _ in }
     var onNewNote: (String) -> Void = { _ in }
     var onDropNotes: (String, [UUID]) -> Void = { _, _ in }
+    var onEditDailyTemplate: () -> Void = {}
 
     /// The tag row notes are being dragged over.
     @State private var dropTarget: String?
@@ -314,6 +323,11 @@ struct AllNotesSidebar: View {
                         Label(library.title, systemImage: library.symbolName)
                     }
                     .tag(NoteSelection.library(library))
+                    .contextMenu {
+                        if library == .daily {
+                            Button("Edit Daily Template\u{2026}", action: onEditDailyTemplate)
+                        }
+                    }
                 }
             }
             Section("Tags") {

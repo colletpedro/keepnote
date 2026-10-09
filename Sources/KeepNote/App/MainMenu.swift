@@ -72,6 +72,7 @@ enum MainMenu {
         let menu = NSMenu(title: "File")
         add(to: menu, "New Note", #selector(AppCoordinator.menuNewNote), "n", target: target)
         add(to: menu, "Today\u{2019}s Daily", #selector(AppCoordinator.menuTodaysDaily), target: target)
+        add(to: menu, "Edit Daily Template\u{2026}", #selector(AppCoordinator.menuEditDailyTemplate), target: target)
         add(to: menu, "All Notes", #selector(AppCoordinator.menuAllNotes), target: target)
         add(to: menu, "Archive", #selector(AppCoordinator.menuArchive), target: target)
         menu.addItem(.separator())
