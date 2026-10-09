@@ -615,7 +615,7 @@ func runDailyArchiveSearchTests() {
 @MainActor
 func runDailyIntroTests() {
     expect("intro: the words", DailyIntro.text,
-           "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here.")
+           "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes.")
     let defaults = UserDefaults(suiteName: "keepnote-intro-\(UUID().uuidString)")!
     let settings = AppSettings(defaults: defaults)
     expect("intro: not seen at first", String(settings.dailyIntroSeen), "false")

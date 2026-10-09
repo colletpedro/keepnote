@@ -405,7 +405,7 @@ private struct DayHeader: View {
 
 /// Shown above the Daily list until "Got it" is pressed, once.
 struct DailyIntro: View {
-    static let text = "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here."
+    static let text = "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes."
 
     var onDismiss: () -> Void
 
