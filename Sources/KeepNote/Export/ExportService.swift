@@ -42,7 +42,10 @@ enum ExportService {
     /// format: their body is a placeholder, not the user's text. Returns how
     /// many were skipped, or `nil` if the user cancelled the panel.
     @discardableResult
-    static func run(notes allNotes: [Note], format: ExportFormat, suggestedName: String = "KeepNote") throws -> Int? {
+    static func run(
+        notes allNotes: [Note], format: ExportFormat, suggestedName: String = "KeepNote",
+        dailyTemplate: DailyTemplate? = nil
+    ) throws -> Int? {
         let notes = allNotes.filter { !$0.isLocked }
         let skipped = allNotes.count - notes.count
         guard !notes.isEmpty else { return skipped }
@@ -51,7 +54,7 @@ enum ExportService {
             try writePerNote(notes: notes, format: format, into: directory)
         } else {
             guard let url = promptForFile(format: format, suggestedName: suggestedName) else { return nil }
-            try writeSingleFile(notes: notes, format: format, to: url)
+            try writeSingleFile(notes: notes, format: format, to: url, dailyTemplate: dailyTemplate)
         }
         return skipped
     }
@@ -96,10 +99,10 @@ enum ExportService {
         }
     }
 
-    private static func writeSingleFile(notes: [Note], format: ExportFormat, to url: URL) throws {
+    private static func writeSingleFile(notes: [Note], format: ExportFormat, to url: URL, dailyTemplate: DailyTemplate?) throws {
         switch format {
         case .archivePackage:
-            let data = try NoteArchive.encode(notes: notes)
+            let data = try NoteArchive.encode(notes: notes, dailyTemplate: dailyTemplate)
             try data.write(to: url, options: .atomic)
         case .singleDocument:
             let document = notes
@@ -179,6 +182,14 @@ enum NoteArchive {
         var version: Int
         var exportedAt: Date
         var notes: [Entry]
+        /// The daily template, once it has been set; archives from before it
+        /// existed have none.
+        var dailyTemplate: TemplateEntry?
+    }
+
+    struct TemplateEntry: Codable {
+        var body: String
+        var updatedAt: Date
     }
 
     struct Entry: Codable {
@@ -205,7 +216,7 @@ enum NoteArchive {
     static let formatIdentifier = "com.keepnote.archive"
     static let version = 1
 
-    static func encode(notes: [Note]) throws -> Data {
+    static func encode(notes: [Note], dailyTemplate: DailyTemplate? = nil) throws -> Data {
         let payload = Payload(
             format: formatIdentifier,
             version: version,
@@ -228,7 +239,8 @@ enum NoteArchive {
                     lastOpenedDay: note.lastOpenedDay?.string,
                     autoArchivedDay: note.autoArchivedDay?.string
                 )
-            }
+            },
+            dailyTemplate: dailyTemplate.flatMap { $0.isSet ? TemplateEntry(body: $0.body, updatedAt: $0.updatedAt) : nil }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -237,13 +249,23 @@ enum NoteArchive {
     }
 
     static func decode(_ data: Data) throws -> [Note] {
+        try decodeContents(data).notes
+    }
+
+    /// The daily template an archive carries, if it has one.
+    static func decodeTemplate(_ data: Data) throws -> DailyTemplate? {
+        try decodeContents(data).template
+    }
+
+    private static func decodeContents(_ data: Data) throws -> (notes: [Note], template: DailyTemplate?) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let payload = try decoder.decode(Payload.self, from: data)
         guard payload.format == formatIdentifier else {
             throw ImportError.unrecognizedFormat
         }
-        return payload.notes.map { entry in
+        let template = payload.dailyTemplate.map { DailyTemplate(body: $0.body, updatedAt: $0.updatedAt) }
+        return (payload.notes.map { entry in
             Note(
                 id: entry.id,
                 title: entry.title,
@@ -262,7 +284,7 @@ enum NoteArchive {
                 lastOpenedDay: entry.lastOpenedDay.flatMap { DailyDay(string: $0) },
                 autoArchivedDay: entry.autoArchivedDay.flatMap { DailyDay(string: $0) }
             )
-        }
+        }, template)
     }
 }
 
@@ -300,6 +322,7 @@ enum NoteImporter {
     /// `ids` lists every note the file held, applied or not.
     static func importContents(of url: URL, into store: NoteStore) throws -> (applied: Int, ids: [UUID]) {
         var imported: [Note] = []
+        var template: DailyTemplate?
 
         var isDirectory: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
@@ -314,6 +337,10 @@ enum NoteImporter {
                 else { continue }
                 imported.append(parsed.note)
             }
+            template = contents
+                .filter { $0.pathExtension == AppPaths.templateFileExtension }
+                .compactMap { (try? String(contentsOf: $0, encoding: .utf8)).flatMap(DailyTemplateFile.parse) }
+                .max { $0.updatedAt < $1.updatedAt }
         } else if url.pathExtension == AppPaths.noteFileExtension {
             // One note, in the sync folder's plain-text format, not an archive.
             let text = try String(contentsOf: url, encoding: .utf8)
@@ -323,11 +350,14 @@ enum NoteImporter {
         } else {
             let data = try Data(contentsOf: url)
             imported = try NoteArchive.decode(data)
+            template = try NoteArchive.decodeTemplate(data)
         }
 
         // One transaction and one change for the lot. `.importer`, not
         // `.sync`: imported notes are new to the sync folder too.
         let applied = try store.applyIncoming(imported, origin: .importer)
+        // Newer than the template here, or not at all, like a note.
+        if let template { store.applyIncomingTemplate(template, origin: .importer) }
         return (applied.count, imported.map(\.id))
     }
 }

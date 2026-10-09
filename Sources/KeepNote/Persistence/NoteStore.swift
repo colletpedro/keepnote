@@ -65,6 +65,13 @@ final class NoteStore: ObservableObject {
     /// with it, or arrived with it. The archive rule runs on it.
     let dailyArrived = PassthroughSubject<Void, Never>()
 
+    /// The text new daily notes start from. Not a note: it is kept apart from
+    /// `notes`, so no list, search or tag ever includes it.
+    @Published private(set) var dailyTemplate = DailyTemplate.empty
+
+    /// Fires after the template changes, for sync to carry it to the folder.
+    let templateChanges = PassthroughSubject<ChangeOrigin, Never>()
+
     /// The clock daily notes read to know what day it is. Tests replace it.
     var now: () -> Date = { Date() }
 
@@ -135,6 +142,7 @@ final class NoteStore: ObservableObject {
         notes = live
         pendingDeletions = deleted
         tombstones = loaded.tombstones
+        dailyTemplate = loaded.template
         changes.send((.reloaded, .local))
     }
 
@@ -290,6 +298,33 @@ final class NoteStore: ObservableObject {
         notes.sorted { lhs, rhs in
             lhs.sortIndex == rhs.sortIndex ? lhs.editedAt > rhs.editedAt : lhs.sortIndex < rhs.sortIndex
         }
+    }
+
+    // MARK: - The daily template
+
+    /// Sets the template to `body`. A text that is already the template's
+    /// changes nothing — and so is not news to the other Macs.
+    func setDailyTemplate(_ body: String, origin: ChangeOrigin = .local) {
+        guard body != dailyTemplate.body else { return }
+        // Strictly later than the copy here, whatever the clock says, so the
+        // edit always wins over the text it replaced.
+        let stamp = max(Date(), dailyTemplate.updatedAt.addingTimeInterval(0.001))
+        commitTemplate(DailyTemplate(body: body, updatedAt: stamp), origin: origin)
+    }
+
+    /// Takes a template that arrived from the sync folder or an archive, if it
+    /// is newer than the one here. Returns whether it was taken.
+    @discardableResult
+    func applyIncomingTemplate(_ incoming: DailyTemplate, origin: ChangeOrigin = .sync) -> Bool {
+        guard dailyTemplate.accepts(incoming) else { return false }
+        commitTemplate(incoming, origin: origin)
+        return true
+    }
+
+    private func commitTemplate(_ template: DailyTemplate, origin: ChangeOrigin) {
+        dailyTemplate = template
+        writer.save([.template(template)])
+        templateChanges.send(origin)
     }
 
     // MARK: - Convenience mutations
@@ -651,6 +686,7 @@ final class StoreWriter: @unchecked Sendable {
         case sortIndex(UUID, Int)
         case purge(UUID, deletedAt: Date)
         case tombstone(UUID, deletedAt: Date)
+        case template(DailyTemplate)
     }
 
     /// Called on the writer's queue when a batch could not be written.
@@ -687,7 +723,7 @@ final class StoreWriter: @unchecked Sendable {
     }
 
     /// Every row, bodies opened, once the queue has caught up.
-    func load() throws -> (notes: [Note], tombstones: [UUID: Date]) {
+    func load() throws -> (notes: [Note], tombstones: [UUID: Date], template: DailyTemplate) {
         try queue.sync { [self] in
             let notes = try db.query(
                 """
@@ -743,8 +779,18 @@ final class StoreWriter: @unchecked Sendable {
             .reduce(into: [UUID: Date]()) { result, row in
                 if let id = row.0 { result[id] = row.1 }
             }
-            return (notes, tombstones)
+            return (notes, tombstones, try loadTemplate())
         }
+    }
+
+    /// The template, or an empty one when there is none — or when its text
+    /// cannot be opened with this Mac's key, which leaves it as if never set.
+    private func loadTemplate() throws -> DailyTemplate {
+        let rows = try db.query("SELECT body_ciphertext, nonce, updated_at FROM daily_template WHERE id = 1;") { statement in
+            (statement.data(at: 0), statement.data(at: 1), statement.date(at: 2))
+        }
+        guard let row = rows.first, let body = try? cipher.open(ciphertext: row.0, nonce: row.1) else { return .empty }
+        return DailyTemplate(body: body, updatedAt: row.2)
     }
 
     private static func dailyDay(_ note: Note) -> SQLiteValue {
@@ -835,6 +881,12 @@ final class StoreWriter: @unchecked Sendable {
             try db.run(
                 "INSERT OR REPLACE INTO tombstones (id, deleted_at) VALUES (?, ?);",
                 [.uuid(id), .date(deletedAt)]
+            )
+        case .template(let template):
+            let sealed = try cipher.seal(template.body)
+            try db.run(
+                "INSERT OR REPLACE INTO daily_template (id, body_ciphertext, nonce, updated_at) VALUES (1, ?, ?, ?);",
+                [.blob(sealed.ciphertext), .blob(sealed.nonce), .date(template.updatedAt)]
             )
         }
     }

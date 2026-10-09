@@ -56,6 +56,8 @@ final class FolderSyncService: NSObject, ObservableObject {
     /// again, and a file that only says what is already known — our own write
     /// coming back around — is not applied.
     private var folderHolds: [UUID: Held] = [:]
+    /// The same for the daily template's file.
+    private var templateHeld: Held?
 
     /// A date written here is exact. One read from a file is only kept there
     /// to the millisecond, so it stands for any moment within that.
@@ -97,6 +99,13 @@ final class FolderSyncService: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
+        store.templateChanges
+            .sink { [weak self] origin in
+                guard origin != .sync else { return }
+                self?.pushTemplate()
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .keepNoteSyncSettingsChanged)
             .sink { [weak self] _ in self?.reconfigure() }
             .store(in: &cancellables)
@@ -130,6 +139,7 @@ final class FolderSyncService: NSObject, ObservableObject {
         startWatching(url)
         status = .active
         folderHolds = [:]
+        templateHeld = nil
         let stamps = stamps
         io.async { stamps.dates = [:] }
         // Read the folder, then write what is newer here: a note created while
@@ -245,11 +255,9 @@ final class FolderSyncService: NSObject, ObservableObject {
     private func startMetadataQuery(for url: URL) {
         let query = NSMetadataQuery()
         query.searchScopes = [NSMetadataQueryUbiquitousDataScope, NSMetadataQueryUbiquitousDocumentsScope]
-        query.predicate = NSPredicate(
-            format: "%K LIKE %@",
-            NSMetadataItemFSNameKey,
-            "*.\(AppPaths.noteFileExtension)"
-        )
+        query.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            AppPaths.noteFileExtension, AppPaths.templateFileExtension,
+        ].map { NSPredicate(format: "%K LIKE %@", NSMetadataItemFSNameKey, "*.\($0)") })
 
         NotificationCenter.default.addObserver(
             forName: .NSMetadataQueryDidUpdate,
@@ -301,7 +309,11 @@ final class FolderSyncService: NSObject, ObservableObject {
 
             if let hasConflicts = item.value(forAttribute: NSMetadataUbiquitousItemHasUnresolvedConflictsKey) as? Bool,
                hasConflicts {
-                resolveConflicts(at: url)
+                if url.pathExtension == AppPaths.templateFileExtension {
+                    resolveTemplateConflicts(at: url)
+                } else {
+                    resolveConflicts(at: url)
+                }
                 continue
             }
 
@@ -347,6 +359,30 @@ final class FolderSyncService: NSObject, ObservableObject {
         }
     }
 
+    /// The template's version of the same: the newest wins, the others are
+    /// kept beside it as `.conflict` files.
+    private func resolveTemplateConflicts(at url: URL) {
+        let presenter = presenter
+        io.async { [weak self] in
+            var candidates: [DailyTemplate] = []
+            if let current = Self.readTemplate(at: url, presenter: presenter) { candidates.append(current) }
+            for version in NSFileVersion.unresolvedConflictVersionsOfItem(at: url) ?? [] {
+                if let text = try? String(contentsOf: version.url, encoding: .utf8),
+                   let parsed = DailyTemplateFile.parse(text) {
+                    candidates.append(parsed)
+                    let keep = url
+                        .deletingPathExtension()
+                        .appendingPathExtension("conflict-\(Int(version.modificationDate?.timeIntervalSince1970 ?? 0)).\(AppPaths.templateFileExtension)")
+                    try? FileManager.default.copyItem(at: version.url, to: keep)
+                }
+                version.isResolved = true
+            }
+            try? NSFileVersion.removeOtherVersionsOfItem(at: url)
+            guard let winner = candidates.max(by: { $0.updatedAt < $1.updatedAt }) else { return }
+            Task { @MainActor in self?.applyTemplate(winner) }
+        }
+    }
+
     // MARK: - Pull
 
     /// Files are read on `io`, in order with the writes, and applied back here
@@ -364,8 +400,13 @@ final class FolderSyncService: NSObject, ObservableObject {
             let files = contents
                 .filter { $0.pathExtension == AppPaths.noteFileExtension }
                 .compactMap { Self.readFileIfChanged(at: $0, presenter: presenter, stamps: stamps) }
+            let template = contents
+                .filter { $0.pathExtension == AppPaths.templateFileExtension }
+                .compactMap { Self.readTemplateIfChanged(at: $0, presenter: presenter, stamps: stamps) }
+                .max { $0.updatedAt < $1.updatedAt }
             Task { @MainActor in
                 self?.apply(files)
+                if let template { self?.applyTemplate(template) }
                 completion?()
             }
         }
@@ -383,12 +424,19 @@ final class FolderSyncService: NSObject, ObservableObject {
             return
         }
         let wanted = urls.filter { $0.pathExtension == AppPaths.noteFileExtension }
-        guard !wanted.isEmpty else { return }
+        let wantedTemplates = urls.filter { $0.pathExtension == AppPaths.templateFileExtension }
+        guard !wanted.isEmpty || !wantedTemplates.isEmpty else { return }
         let presenter = presenter
         let stamps = stamps
         io.async { [weak self] in
             let files = wanted.compactMap { Self.readFileIfChanged(at: $0, presenter: presenter, stamps: stamps) }
-            Task { @MainActor in self?.apply(files) }
+            let template = wantedTemplates
+                .compactMap { Self.readTemplateIfChanged(at: $0, presenter: presenter, stamps: stamps) }
+                .max { $0.updatedAt < $1.updatedAt }
+            Task { @MainActor in
+                if !files.isEmpty { self?.apply(files) }
+                if let template { self?.applyTemplate(template) }
+            }
         }
     }
 
@@ -410,6 +458,32 @@ final class FolderSyncService: NSObject, ObservableObject {
         } catch {
             status = .failed("Could not apply a change from the folder: \(error.localizedDescription)")
         }
+    }
+
+    private func applyTemplate(_ template: DailyTemplate) {
+        // Our own write coming back around, or a file already applied.
+        if let held = templateHeld, held.matches(template.updatedAt) { return }
+        templateHeld = Held(date: template.updatedAt, isExact: false)
+        store.applyIncomingTemplate(template)
+    }
+
+    nonisolated private static func readTemplateIfChanged(at url: URL, presenter: NSFilePresenter?, stamps: FileStamps) -> DailyTemplate? {
+        let modified = FileStamps.modificationDate(of: url)
+        if let modified, stamps.dates[url.lastPathComponent] == modified { return nil }
+        let template = readTemplate(at: url, presenter: presenter)
+        if let modified { stamps.dates[url.lastPathComponent] = modified }
+        return template
+    }
+
+    nonisolated private static func readTemplate(at url: URL, presenter: NSFilePresenter?) -> DailyTemplate? {
+        var result: DailyTemplate?
+        var coordinationError: NSError?
+        let coordinator = NSFileCoordinator(filePresenter: presenter)
+        coordinator.coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordinationError) { readURL in
+            guard let text = try? String(contentsOf: readURL, encoding: .utf8) else { return }
+            result = DailyTemplateFile.parse(text)
+        }
+        return result
     }
 
     /// Reads a file unless it still has the modification date it had when it
@@ -464,6 +538,18 @@ final class FolderSyncService: NSObject, ObservableObject {
         for note in store.allNotesForSync() {
             push(note)
         }
+        pushTemplate()
+    }
+
+    /// The template, once it has ever been set; an emptied one is still
+    /// written, so that emptying it reaches the other Macs.
+    private func pushTemplate() {
+        guard status == .active, let folderURL else { return }
+        let template = store.dailyTemplate
+        guard template.isSet else { return }
+        if let held = templateHeld, held.matches(template.updatedAt) { return }
+        write(contents: DailyTemplateFile.serialized(template), to: folderURL.appendingPathComponent(DailyTemplateFile.fileName))
+        templateHeld = Held(date: template.updatedAt, isExact: true)
     }
 
     private func push(_ note: Note) {
@@ -472,7 +558,7 @@ final class FolderSyncService: NSObject, ObservableObject {
         // Already there as it is.
         if let held = folderHolds[note.id], held.matches(note.updatedAt) { return }
         let file = HMNoteFile(note: note)
-        write(file, to: folderURL.appendingPathComponent(file.fileName))
+        write(contents: file.serialized(), to: folderURL.appendingPathComponent(file.fileName))
         folderHolds[note.id] = Held(date: note.updatedAt, isExact: true)
     }
 
@@ -480,7 +566,7 @@ final class FolderSyncService: NSObject, ObservableObject {
         guard let folderURL else { return }
         let deletedAt = Date()
         let file = HMNoteFile.tombstone(id: id, deletedAt: deletedAt)
-        write(file, to: folderURL.appendingPathComponent(file.fileName))
+        write(contents: file.serialized(), to: folderURL.appendingPathComponent(file.fileName))
         folderHolds[id] = Held(date: deletedAt, isExact: true)
     }
 
@@ -488,10 +574,9 @@ final class FolderSyncService: NSObject, ObservableObject {
     /// so a crash mid-write cannot leave one either. Queued on `io`, so the
     /// main thread never waits on the provider, and in order, so the newest
     /// version of a file is the one left in the folder.
-    private func write(_ file: HMNoteFile, to url: URL) {
+    private func write(contents: String, to url: URL) {
         let presenter = presenter
         let stamps = stamps
-        let contents = file.serialized()
         io.async { [weak self] in
             var failure: Error?
             var coordinationError: NSError?

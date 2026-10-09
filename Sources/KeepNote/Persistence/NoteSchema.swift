@@ -6,7 +6,7 @@ import Foundation
 /// that is deliberate: it is what lets the stack order, the state filter and
 /// the title/tag index work without ever touching the key.
 enum NoteSchema {
-    static let currentVersion: Int32 = 9
+    static let currentVersion: Int32 = 10
 
     static func migrate(_ db: SQLiteDatabase) throws {
         if db.userVersion < 1 {
@@ -45,6 +45,23 @@ enum NoteSchema {
             try migrateToV9(db)
             db.userVersion = 9
         }
+        if db.userVersion < 10 {
+            try migrateToV10(db)
+            db.userVersion = 10
+        }
+    }
+
+    /// The daily template: one row at most, the text sealed like a note body.
+    /// It is not a note, so it has no row in `notes`.
+    private static func migrateToV10(_ db: SQLiteDatabase) throws {
+        try db.execute("""
+        CREATE TABLE IF NOT EXISTS daily_template (
+            id              INTEGER PRIMARY KEY CHECK (id = 1),
+            body_ciphertext BLOB NOT NULL,
+            nonce           BLOB NOT NULL,
+            updated_at      REAL NOT NULL
+        );
+        """)
     }
 
     /// The date the text last changed, apart from `updated_at`, which sync

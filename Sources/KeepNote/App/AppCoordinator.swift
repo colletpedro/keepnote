@@ -488,7 +488,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             let skipped = try ExportService.run(
                 notes: notes,
                 format: format,
-                suggestedName: notes.count == 1 ? notes[0].displayTitle : "KeepNote Export"
+                suggestedName: notes.count == 1 ? notes[0].displayTitle : "KeepNote Export",
+                dailyTemplate: store.dailyTemplate
             )
             if let skipped, skipped > 0 {
                 let alert = NSAlert()
