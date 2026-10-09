@@ -61,6 +61,7 @@ MainActor.assumeIsolated {
     runDailyTemplateSyncTests()
     runDailyTemplateArchiveTests()
     runDailyTemplateWindowTests()
+    runDailyTemplateApplyTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }

@@ -244,3 +244,89 @@ func runDailyTemplateWindowTests() {
     expectTrue("window: closing reports it", closed)
     expect("window: and saves what was typed", store.dailyTemplate.body, "from elsewhere!")
 }
+
+// MARK: - Applied only when a new daily is born
+
+@MainActor
+func runDailyTemplateApplyTests() {
+    var utc = Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(identifier: "UTC")!
+    let english = Locale(identifier: "en_US")
+    let portuguese = Locale(identifier: "pt_BR")
+    var clock = utc.date(from: DateComponents(year: 2026, month: 10, day: 9, hour: 12))!   // a Friday
+    let store = reopened(scratchDirectory().appendingPathComponent("a.sqlite"), key: SymmetricKey(size: .bits256))
+    store.now = { clock }
+
+    // MARK: No template: a blank daily, as before
+
+    let blank = try! store.createDaily(locale: english, calendar: utc)
+    expect("apply: no template, no body", blank.note.body, "")
+    expect("apply: the title is Daily and the date", blank.note.title, "Daily 10/9")
+    expect("apply: tagged daily", blank.note.tags.joined(separator: ","), "daily")
+    expect("apply: with today's day", blank.note.dailyDay?.string, "2026-10-09")
+    expect("apply: the caret at the start", String(blank.caret), "0")
+
+    // MARK: With one
+
+    store.setDailyTemplate("# {weekday}, {date}\n\n- [ ] \n- [ ] \n")
+    clock = clock.addingTimeInterval(86_400)
+    let made = try! store.createDaily(locale: portuguese, calendar: utc)
+    expect("apply: the variables are filled in", made.note.body, "# sábado, 10/10/2026\n\n- [ ] \n- [ ] \n")
+    expect("apply: the title is unchanged", made.note.title, "Daily 10/10")
+    expect("apply: the caret is in the first empty item", String(made.caret), "28")
+    expect("apply: it is stored that way", store.note(id: made.note.id)?.body, made.note.body)
+    expect("apply: the template itself is untouched", store.dailyTemplate.body, "# {weekday}, {date}\n\n- [ ] \n- [ ] \n")
+
+    let english2 = try! store.createDaily(locale: english, calendar: utc)
+    expect("apply: in en-US", english2.note.body, "# Saturday, 10/10/26\n\n- [ ] \n- [ ] \n")
+
+    // MARK: Never on an existing note
+
+    let existing = try! store.create(title: "Journal", body: "my own text", tags: ["work"])
+    try! store.setTags(["work", "daily"], id: existing.id)
+    expect("apply: the daily tag on an existing note leaves its text", store.note(id: existing.id)?.body, "my own text")
+    expectTrue("apply: and it is a daily now", store.note(id: existing.id)?.isDaily == true)
+    let emptyNote = try! store.create(title: "Empty", body: "", tags: ["daily"])
+    expect("apply: nor does creating a note with the tag", emptyNote.body, "")
+    let viaDrafts = try! store.create([NoteDraft(title: "Draft", body: "", tags: ["daily"])])
+    expect("apply: nor a draft", viaDrafts[0].body, "")
+    var imported = Note(title: "Imported", body: "", tags: ["daily"])
+    imported.updatedAt = Date()
+    _ = try! store.applyIncoming(imported)
+    expect("apply: nor an arriving note", store.note(id: imported.id)?.body, "")
+
+    // MARK: Today's Daily that already exists is opened as it is
+
+    try! store.setBody("edited by hand", id: made.note.id)
+    store.setDailyTemplate("something else")
+    expect("apply: an existing daily of today is found, with its own text",
+           DailyNotes.todays(store.notes, today: store.today).map { store.note(id: $0.id)?.body ?? "" }, "edited by hand")
+
+    // MARK: The caret in the note's window
+
+    let fresh = try! store.createDaily(locale: english, calendar: utc)
+    let controller = NoteWindowController(note: store.note(id: fresh.note.id)!, store: store, originFrame: nil, cascadeIndex: 0)
+    controller.initialCaret = fresh.caret
+    controller.show()
+    spin(0.3)
+    let body = controller.window.contentView.flatMap(textView(in:))
+    expect("apply: the window's text is the daily's", body?.string, "something else")
+    expect("apply: and the caret is where the template put it", String(body?.selectedRange().location ?? -1), String(fresh.caret))
+    controller.close()
+
+    store.setDailyTemplate("- [ ] \n- [ ] second")
+    let listed = try! store.createDaily(locale: english, calendar: utc)
+    let second = NoteWindowController(note: store.note(id: listed.note.id)!, store: store, originFrame: nil, cascadeIndex: 0)
+    second.initialCaret = listed.caret
+    second.show()
+    spin(0.3)
+    expect("apply: the caret in the first empty item",
+           String(second.window.contentView.flatMap(textView(in:))?.selectedRange().location ?? -1), "6")
+    second.close()
+
+    let plain = NoteWindowController(note: store.note(id: blank.note.id)!, store: store, originFrame: nil, cascadeIndex: 0)
+    plain.show()
+    spin(0.3)
+    expect("apply: without a caret it is the end", String(plain.window.contentView.flatMap(textView(in:))?.selectedRange().location ?? -1), "0")
+    plain.close()
+}

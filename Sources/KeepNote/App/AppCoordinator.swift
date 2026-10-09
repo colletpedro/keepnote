@@ -123,7 +123,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     /// Today's Daily: the most recently edited daily of today if there is one
     /// (even if it has been archived), otherwise a new one — tagged `daily`,
-    /// titled "Daily" and the day and month — with the cursor in its body.
+    /// titled "Daily" and the day and month, starting from the daily template
+    /// — with the cursor in its body.
     func openTodaysDaily() {
         let today = store.today
         if let existing = DailyNotes.todays(store.notes, today: today) {
@@ -131,12 +132,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             return
         }
         do {
-            let note = try store.create(
-                color: settings.defaultNoteColor,
-                title: DailyNotes.title(for: store.now()),
-                tags: [DailyNotes.tag]
-            )
-            open(noteID: note.id, from: nil)
+            let made = try store.createDaily(color: settings.defaultNoteColor)
+            open(noteID: made.note.id, from: nil, caret: made.caret)
         } catch {
             present(error)
         }
@@ -326,7 +323,9 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
     }
 
-    func open(noteID: UUID, from tabFrame: NSRect?, deck: EdgePanelController? = nil) {
+    /// `caret` is where the caret starts in the body, for a note born with
+    /// text in it (a daily from the template); otherwise it starts at the end.
+    func open(noteID: UUID, from tabFrame: NSRect?, deck: EdgePanelController? = nil, caret: Int? = nil) {
         if let existing = noteWindows[noteID] {
             existing.show()
             return
@@ -338,6 +337,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             deck.noteDidOpen()
         }
         lastNoteOpenedAt = Date()
+        controller.initialCaret = caret
         controller.show()
     }
 

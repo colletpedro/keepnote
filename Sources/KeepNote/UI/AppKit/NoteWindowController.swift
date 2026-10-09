@@ -58,6 +58,10 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     /// The tab this note came out of, so it can fold back into it.
     private let originFrame: NSRect?
 
+    /// Where the caret goes in the body when the note opens (UTF-16 offset),
+    /// for a note that is born with text in it. `nil`: the end.
+    var initialCaret: Int?
+
     var onClose: ((UUID) -> Void)?
     var onDelete: ((UUID) -> Void)?
     /// Pin to Center on or off, from the header's pin or the Tools menu.
@@ -579,7 +583,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     private func focusBody() {
         DispatchQueue.main.async { [weak self] in
             guard let self, let textView = Self.findTextView(in: self.container) else { return }
-            self.placeCaretAtEnd(of: textView)
+            self.placeCaret(in: textView)
 
             // SwiftUI can assign its own initial focus to the title field after
             // this, so the claim is checked once more and taken back if lost.
@@ -587,16 +591,18 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             // by an NSTextView field editor, so `is NSTextView` would pass.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
                 guard let self, self.window.firstResponder !== textView else { return }
-                self.placeCaretAtEnd(of: textView)
+                self.placeCaret(in: textView)
             }
         }
     }
 
-    private func placeCaretAtEnd(of textView: NSTextView) {
+    /// At `initialCaret` when the note was given one, otherwise the end.
+    private func placeCaret(in textView: NSTextView) {
         window.makeFirstResponder(textView)
         let end = (textView.string as NSString).length
-        textView.setSelectedRange(NSRange(location: end, length: 0))
-        textView.scrollRangeToVisible(NSRange(location: end, length: 0))
+        let location = min(max(0, initialCaret ?? end), end)
+        textView.setSelectedRange(NSRange(location: location, length: 0))
+        textView.scrollRangeToVisible(NSRange(location: location, length: 0))
     }
 
     /// Finds the note body specifically.

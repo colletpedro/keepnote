@@ -302,6 +302,25 @@ final class NoteStore: ObservableObject {
 
     // MARK: - The daily template
 
+    /// A new daily note for today: titled "Daily" and the date, tagged `daily`,
+    /// and starting from the template — its variables filled in for today —
+    /// with the caret where `DailyTemplate.apply` puts it. This is the only
+    /// place the template is ever applied: giving a note the tag never does.
+    @discardableResult
+    func createDaily(
+        color: NoteColor? = nil, locale: Locale = .current, calendar: Calendar = .current
+    ) throws -> (note: Note, caret: Int) {
+        let date = now()
+        let applied = DailyTemplate.apply(dailyTemplate.body, on: date, locale: locale, calendar: calendar)
+        let note = try create(
+            color: color,
+            title: DailyNotes.title(for: date, locale: locale, calendar: calendar),
+            body: applied.text,
+            tags: [DailyNotes.tag]
+        )
+        return (note, applied.caret)
+    }
+
     /// Sets the template to `body`. A text that is already the template's
     /// changes nothing — and so is not news to the other Macs.
     func setDailyTemplate(_ body: String, origin: ChangeOrigin = .local) {
