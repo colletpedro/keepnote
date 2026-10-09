@@ -18,7 +18,7 @@ OUT="$ROOT/build/tests"
 mkdir -p "$OUT"
 
 LOGIC=()
-for name in TextEdit ListEditing Formatting BlockEditing TagText TagLibrary DailyNotes NotePalette SaveStatus PreviewText SearchText DeckGeometry TabLabel Spring FrameRestore DockPolicy FloatDrag LegacyDefaults DeckPins AutoArchive; do
+for name in TextEdit ListEditing Formatting BlockEditing TagText TagLibrary DailyNotes DailyTemplate NotePalette SaveStatus PreviewText SearchText DeckGeometry TabLabel Spring FrameRestore DockPolicy FloatDrag LegacyDefaults DeckPins AutoArchive; do
     file="$ROOT/Sources/KeepNote/Core/$name.swift"
     [ -f "$file" ] && LOGIC+=("$file")
 done
