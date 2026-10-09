@@ -56,7 +56,7 @@ Isso compila o app em `build/` e o abre. Num clone novo não há certificado de 
 
 Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Acesso às Chaves, **Assistente de Certificado → Criar um Certificado…**, nome **KeepNote Dev**, tipo de identidade **Raiz Autoassinada**, tipo de certificado **Assinatura de Código**. O build passa a usá-lo sozinho. Outro certificado funciona com `KEEPNOTE_SIGN_ID="Nome"`.
 
-| Comando | |
+| Comando | O que faz |
 |---|---|
 | `./Scripts/build.sh` | build de debug em `build/` |
 | `./Scripts/build.sh --release` | build otimizado |
@@ -68,14 +68,14 @@ Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Ace
 
 ## Atalhos
 
-| Globais, de qualquer app | |
+| Globais, de qualquer app | O que faz |
 |---|---|
 | `⌥⌘N` | Nova nota |
 | `⌥⌘A` | All Notes |
 | `⌥⌘E` | Archive |
 | `⌥⌘Y` | Today's Daily |
 
-| Numa nota | |
+| Numa nota | O que faz |
 |---|---|
 | `esc` | Fechar |
 | `⌘F` | Buscar na nota |
@@ -86,7 +86,7 @@ Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Ace
 | `⇧⌘⌫` | Apagar (com desfazer) |
 | `⇥` / `⇧⇥` | Recuar / voltar um nível num item de lista |
 
-| Formatação | |
+| Formatação | O que faz |
 |---|---|
 | `⌘B` `⌘I` `⇧⌘X` | Negrito, itálico, tachado |
 | `⇧⌘H` | Destaque |

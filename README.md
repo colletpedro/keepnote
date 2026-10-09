@@ -56,7 +56,7 @@ That builds the app into `build/` and opens it. On a fresh clone there is no sig
 
 To stop those prompts, create a signing certificate once: in Keychain Access, **Certificate Assistant → Create a Certificate…**, name it **KeepNote Dev**, identity type **Self-Signed Root**, certificate type **Code Signing**. The build uses it automatically from then on. Another certificate works with `KEEPNOTE_SIGN_ID="Name"`.
 
-| Command | |
+| Command | What it does |
 |---|---|
 | `./Scripts/build.sh` | debug build into `build/` |
 | `./Scripts/build.sh --release` | optimized build |
@@ -68,14 +68,14 @@ To stop those prompts, create a signing certificate once: in Keychain Access, **
 
 ## Shortcuts
 
-| Global, from any app | |
+| Global, from any app | What it does |
 |---|---|
 | `⌥⌘N` | New note |
 | `⌥⌘A` | All Notes |
 | `⌥⌘E` | Archive |
 | `⌥⌘Y` | Today's Daily |
 
-| In a note | |
+| In a note | What it does |
 |---|---|
 | `esc` | Close |
 | `⌘F` | Find in the note |
@@ -86,7 +86,7 @@ To stop those prompts, create a signing certificate once: in Keychain Access, **
 | `⇧⌘⌫` | Delete (undoable) |
 | `⇥` / `⇧⇥` | Indent / outdent a list item |
 
-| Formatting | |
+| Formatting | What it does |
 |---|---|
 | `⌘B` `⌘I` `⇧⌘X` | Bold, italic, strikethrough |
 | `⇧⌘H` | Highlight |

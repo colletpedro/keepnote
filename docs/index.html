@@ -71,7 +71,7 @@
   <div class="wrap">
     <h2>A row of tabs, a note when you need it</h2>
     <p class="sub">Move the cursor to the right edge. The tabs fan out; touch one for a quick look, click it to write.</p>
-    <video class="player" src="media/keepnote.mp4" poster="media/keepnote-poster.jpg" width="1280" height="720" autoplay muted loop playsinline controls preload="metadata" aria-label="KeepNote video poster"></video>
+    <video class="player" src="media/keepnote.mp4" poster="media/keepnote-poster.jpg" width="1280" height="720" autoplay muted loop playsinline controls preload="metadata" aria-label="KeepNote demo video"></video>
   </div>
 </section>
 
@@ -85,7 +85,7 @@
       <li><h3>Markdown as you type</h3><p>Bold, links, headings, lists, checklists, quotes, code, tables, all with shortcuts.</p></li>
       <li><h3>Colors and tags</h3><p>Five paper colors and #tags with suggestions. Search covers title, tags and text.</p></li>
       <li><h3>Daily notes</h3><p>Today’s Daily is one shortcut away (⌥⌘Y). The last two days stay on the deck; older ones go to Daily in All Notes.</p></li>
-      <li><h3>Pin, keep, archive by time</h3><p>Pin up to five notes to the center. Notes unopened for 7, 14 or 30 days move to the Archive, never deleted.</p></li>
+      <li><h3>Pin, keep, archive by time</h3><p><em>Pin to Center</em> holds up to five notes in the middle of the deck, always whole. <em>Keep on Deck</em> exempts a note from archiving. Notes you have not opened for 7, 14 or 30 days (you choose; 14 by default) move to the Archive on their own, never deleted; in the last two days a clock appears on the tab.</p></li>
       <li><h3>Sync through a folder</h3><p>Optional plain-text files in a folder you pick, such as iCloud Drive. No server of ours in between.</p></li>
       <li><h3>Import and export</h3><p>Markdown, plain text, or a KeepNote archive that keeps colors, states and dates.</p></li>
       <li><h3>Quiet by design</h3><p>In the menu bar, and in the Dock only while one of its windows is open.</p></li>
@@ -119,10 +119,10 @@
     <h2>Why does macOS show a warning?</h2>
     <p>KeepNote is not notarized by Apple. Notarization needs a paid Apple Developer membership (US$ 99 a year), and KeepNote is a free, open-source project, so it ships without it for now. macOS shows this warning for every app that has not been through that process. It says Apple has not checked the app, not that something is wrong with it. These are the four things you can check for yourself instead:</p>
     <ol class="promises">
-      <li><div><b>You can read it, and build it.</b>All of the source code is in the <a href="https://github.com/colletpedro/keepnote">repository</a>, with no third-party libraries. <code>./Scripts/build.sh</code> builds the same app from it.</div></li>
-      <li><div><b>It cannot use the network.</b>KeepNote runs in the macOS sandbox without the network entitlements, so the system refuses any connection it tried to make. See for yourself: <code>codesign -d --entitlements - /Applications/KeepNote.app</code> lists no network access.</div></li>
-      <li><div><b>It only reaches what you give it.</b>Outside its own container, the sandbox lets KeepNote open only the folders and files you pick, for sync, import and export. The text of your notes is encrypted on disk with a key that stays in this Mac’s Keychain.</div></li>
-      <li><div><b>You can check the download.</b>Each release carries a <code>KeepNote.dmg.sha256</code> file. <code>shasum -a 256 KeepNote.dmg</code> must print the same value.</div></li>
+      <li><div><b>You can read it, and build it.</b> All of the source code is in the <a href="https://github.com/colletpedro/keepnote">repository</a>, with no third-party libraries. <code>./Scripts/build.sh</code> builds the same app from it.</div></li>
+      <li><div><b>It cannot use the network.</b> KeepNote runs in the macOS sandbox without the network entitlements, so the system refuses any connection it tried to make. See for yourself: <code>codesign -d --entitlements - /Applications/KeepNote.app</code> lists no network access.</div></li>
+      <li><div><b>It only reaches what you give it.</b> Outside its own container, the sandbox lets KeepNote open only the folders and files you pick, for sync, import and export. The text of your notes is encrypted on disk with a key that stays in this Mac’s Keychain.</div></li>
+      <li><div><b>You can check the download.</b> Each release carries a <code>KeepNote.dmg.sha256</code> file. <code>shasum -a 256 KeepNote.dmg</code> must print the same value.</div></li>
     </ol>
   </div>
 </section>

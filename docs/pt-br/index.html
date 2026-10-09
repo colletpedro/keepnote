@@ -71,7 +71,7 @@
   <div class="wrap">
     <h2>Uma fileira de abas, uma nota quando você precisa</h2>
     <p class="sub">Leve o cursor à borda direita. As abas abrem em leque; toque numa para espiar, clique para escrever.</p>
-    <video class="player" src="../media/keepnote.mp4" poster="../media/keepnote-poster.jpg" width="1280" height="720" autoplay muted loop playsinline controls preload="metadata" aria-label="Quadro do vídeo do KeepNote"></video>
+    <video class="player" src="../media/keepnote.mp4" poster="../media/keepnote-poster.jpg" width="1280" height="720" autoplay muted loop playsinline controls preload="metadata" aria-label="KeepNote demo video"></video>
   </div>
 </section>
 
@@ -85,7 +85,7 @@
       <li><h3>Markdown enquanto você escreve</h3><p>Negrito, links, títulos, listas, checklists, citações, código, tabelas, tudo com atalho.</p></li>
       <li><h3>Cores e tags</h3><p>Cinco cores de papel e #tags com sugestões. A busca cobre título, tags e texto.</p></li>
       <li><h3>Notas daily</h3><p>A daily de hoje está a um atalho (⌥⌘Y). Os dois últimos dias ficam no deck; os mais antigos vão para Daily no All Notes.</p></li>
-      <li><h3>Fixar, manter, arquivar por tempo</h3><p>Fixe até cinco notas no centro. Notas sem abrir por 7, 14 ou 30 dias vão para o Archive, nunca apagadas.</p></li>
+      <li><h3>Fixar, manter, arquivar por tempo</h3><p><em>Pin to Center</em> prende até cinco notas no meio do deck, sempre inteiras. <em>Keep on Deck</em> livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe; 14 por padrão) vão sozinhas para o Archive, nunca são apagadas; nos dois últimos dias aparece um relógio na aba.</p></li>
       <li><h3>Sync por pasta</h3><p>Arquivos de texto opcionais numa pasta que você escolhe, como o iCloud Drive. Nenhum servidor nosso no meio.</p></li>
       <li><h3>Importar e exportar</h3><p>Markdown, texto simples, ou um arquivo KeepNote que preserva cores, estados e datas.</p></li>
       <li><h3>Discreto por desenho</h3><p>Na barra de menus, e no Dock só enquanto uma janela dele está aberta.</p></li>
@@ -119,10 +119,10 @@
     <h2>Por que o macOS mostra um aviso?</h2>
     <p>O KeepNote não é notarizado pela Apple. A notarização exige uma assinatura paga do Apple Developer (US$ 99 por ano), e o KeepNote é um projeto gratuito e de código aberto, então por enquanto ele é distribuído sem ela. O macOS mostra esse aviso para todo app que não passou por esse processo. Ele diz que a Apple não verificou o app, não que há algo errado com ele. Estas são as quatro coisas que você mesmo pode conferir:</p>
     <ol class="promises">
-      <li><div><b>Dá para ler e compilar.</b>Todo o código-fonte está no <a href="https://github.com/colletpedro/keepnote">repositório</a>, sem bibliotecas de terceiros. <code>./Scripts/build.sh</code> compila o mesmo app a partir dele.</div></li>
-      <li><div><b>Ele não consegue usar a rede.</b>O KeepNote roda no sandbox do macOS sem os entitlements de rede, então o sistema recusa qualquer conexão que ele tentasse fazer. Confira: <code>codesign -d --entitlements - /Applications/KeepNote.app</code> não lista acesso à rede.</div></li>
-      <li><div><b>Ele só alcança o que você der.</b>Fora do próprio contêiner, o sandbox deixa o KeepNote abrir apenas as pastas e os arquivos que você escolher, para sync, importação e exportação. O texto das suas notas é cifrado no disco com uma chave que fica no Keychain deste Mac.</div></li>
-      <li><div><b>Dá para conferir o download.</b>Cada versão traz um arquivo <code>KeepNote.dmg.sha256</code> . <code>shasum -a 256 KeepNote.dmg</code> deve imprimir o mesmo valor.</div></li>
+      <li><div><b>Dá para ler e compilar.</b> Todo o código-fonte está no <a href="https://github.com/colletpedro/keepnote">repositório</a>, sem bibliotecas de terceiros. <code>./Scripts/build.sh</code> compila o mesmo app a partir dele.</div></li>
+      <li><div><b>Ele não consegue usar a rede.</b> O KeepNote roda no sandbox do macOS sem os entitlements de rede, então o sistema recusa qualquer conexão que ele tentasse fazer. Confira: <code>codesign -d --entitlements - /Applications/KeepNote.app</code> não lista acesso à rede.</div></li>
+      <li><div><b>Ele só alcança o que você der.</b> Fora do próprio contêiner, o sandbox deixa o KeepNote abrir apenas as pastas e os arquivos que você escolher, para sync, importação e exportação. O texto das suas notas é cifrado no disco com uma chave que fica no Keychain deste Mac.</div></li>
+      <li><div><b>Dá para conferir o download.</b> Cada versão traz um arquivo <code>KeepNote.dmg.sha256</code> . <code>shasum -a 256 KeepNote.dmg</code> deve imprimir o mesmo valor.</div></li>
     </ol>
   </div>
 </section>
