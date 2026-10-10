@@ -10,8 +10,10 @@ final class DailyTemplateModel: ObservableObject {
     @Published var text: String {
         didSet { guard text != oldValue else { return }; scheduleSave() }
     }
+    /// The card's colour, and the colour of every daily born from it.
+    @Published private(set) var color: NoteColor
     @Published private(set) var isSaving = false
-    /// When the text last changed; `nil` while the template was never written.
+    /// When the text or colour last changed; `nil` while the template was never written.
     @Published private(set) var editedAt: Date?
 
     private let store: NoteStore
@@ -21,6 +23,7 @@ final class DailyTemplateModel: ObservableObject {
     init(store: NoteStore) {
         self.store = store
         self.text = store.dailyTemplate.body
+        self.color = store.dailyTemplate.color
         self.editedAt = store.dailyTemplate.isSet ? store.dailyTemplate.updatedAt : nil
         self.debouncer = Debouncer(delay: AppSettings.shared.autosaveDelay)
         // A template that arrives from the sync folder or an import, while the
@@ -39,6 +42,15 @@ final class DailyTemplateModel: ObservableObject {
         debouncer.schedule { [weak self] in self?.commit() }
     }
 
+    /// A swatch was chosen: the colour is written at once, with whatever text
+    /// was waiting, and the card takes it. Dailies that already exist keep theirs.
+    func setColor(_ new: NoteColor) {
+        flush()
+        store.setDailyTemplate(color: new)
+        color = store.dailyTemplate.color
+        editedAt = store.dailyTemplate.isSet ? store.dailyTemplate.updatedAt : nil
+    }
+
     private func commit() {
         store.setDailyTemplate(text)
         editedAt = store.dailyTemplate.isSet ? store.dailyTemplate.updatedAt : nil
@@ -49,6 +61,7 @@ final class DailyTemplateModel: ObservableObject {
         // What was just typed is not undone by what arrives meanwhile.
         guard !debouncer.hasPendingWork else { return }
         if template.body != text { text = template.body }
+        color = template.color
         editedAt = template.isSet ? template.updatedAt : nil
     }
 
@@ -130,7 +143,7 @@ struct DailyTemplateCard: View {
     @ObservedObject var model: DailyTemplateModel
     var onShowTools: () -> Void = {}
 
-    private let color = NoteColor.default
+    private var color: NoteColor { model.color }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -174,6 +187,19 @@ struct DailyTemplateCard: View {
                             .allowsHitTesting(false)
                     }
                 }
+
+                HStack {
+                    NoteColorRow(selected: color) { model.setColor($0) }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(
+                    ZStack(alignment: .top) {
+                        color.surfaceSwiftUI
+                        Rectangle().fill(color.inkSwiftUI.opacity(0.12)).frame(height: 1)
+                    }
+                )
             }
         }
         .background(color.surfaceSwiftUI)

@@ -311,7 +311,7 @@ final class NoteStore: ObservableObject {
         color: NoteColor? = nil, locale: Locale = .current, calendar: Calendar = .current
     ) throws -> (note: Note, caret: Int) {
         let date = now()
-        let applied = DailyTemplate.apply(dailyTemplate.body, on: date, locale: locale, calendar: calendar)
+        let applied = DailyTemplateApply.apply(dailyTemplate.body, on: date, locale: locale, calendar: calendar)
         let note = try create(
             color: color,
             title: DailyNotes.title(for: date, locale: locale, calendar: calendar),
@@ -321,14 +321,17 @@ final class NoteStore: ObservableObject {
         return (note, applied.caret)
     }
 
-    /// Sets the template to `body`. A text that is already the template's
-    /// changes nothing — and so is not news to the other Macs.
-    func setDailyTemplate(_ body: String, origin: ChangeOrigin = .local) {
-        guard body != dailyTemplate.body else { return }
+    /// Sets the template's text, its colour, or both; what is left out stays.
+    /// Setting what is already there changes nothing — and so is not news to
+    /// the other Macs.
+    func setDailyTemplate(_ body: String? = nil, color: NoteColor? = nil, origin: ChangeOrigin = .local) {
+        let body = body ?? dailyTemplate.body
+        let color = color ?? dailyTemplate.color
+        guard body != dailyTemplate.body || color != dailyTemplate.color else { return }
         // Strictly later than the copy here, whatever the clock says, so the
-        // edit always wins over the text it replaced.
+        // edit always wins over what it replaced.
         let stamp = max(Date(), dailyTemplate.updatedAt.addingTimeInterval(0.001))
-        commitTemplate(DailyTemplate(body: body, updatedAt: stamp), origin: origin)
+        commitTemplate(DailyTemplate(body: body, updatedAt: stamp, color: color), origin: origin)
     }
 
     /// Takes a template that arrived from the sync folder or an archive, if it
@@ -805,11 +808,11 @@ final class StoreWriter: @unchecked Sendable {
     /// The template, or an empty one when there is none — or when its text
     /// cannot be opened with this Mac's key, which leaves it as if never set.
     private func loadTemplate() throws -> DailyTemplate {
-        let rows = try db.query("SELECT body_ciphertext, nonce, updated_at FROM daily_template WHERE id = 1;") { statement in
-            (statement.data(at: 0), statement.data(at: 1), statement.date(at: 2))
+        let rows = try db.query("SELECT body_ciphertext, nonce, updated_at, color FROM daily_template WHERE id = 1;") { statement in
+            (statement.data(at: 0), statement.data(at: 1), statement.date(at: 2), statement.int(at: 3))
         }
         guard let row = rows.first, let body = try? cipher.open(ciphertext: row.0, nonce: row.1) else { return .empty }
-        return DailyTemplate(body: body, updatedAt: row.2)
+        return DailyTemplate(body: body, updatedAt: row.2, color: NoteColor.resolve(rawValue: row.3))
     }
 
     private static func dailyDay(_ note: Note) -> SQLiteValue {
@@ -904,8 +907,8 @@ final class StoreWriter: @unchecked Sendable {
         case .template(let template):
             let sealed = try cipher.seal(template.body)
             try db.run(
-                "INSERT OR REPLACE INTO daily_template (id, body_ciphertext, nonce, updated_at) VALUES (1, ?, ?, ?);",
-                [.blob(sealed.ciphertext), .blob(sealed.nonce), .date(template.updatedAt)]
+                "INSERT OR REPLACE INTO daily_template (id, body_ciphertext, nonce, updated_at, color) VALUES (1, ?, ?, ?, ?);",
+                [.blob(sealed.ciphertext), .blob(sealed.nonce), .date(template.updatedAt), .integer(template.color.rawValue)]
             )
         }
     }

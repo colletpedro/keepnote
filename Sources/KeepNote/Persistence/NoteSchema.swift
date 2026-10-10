@@ -6,7 +6,7 @@ import Foundation
 /// that is deliberate: it is what lets the stack order, the state filter and
 /// the title/tag index work without ever touching the key.
 enum NoteSchema {
-    static let currentVersion: Int32 = 10
+    static let currentVersion: Int32 = 11
 
     static func migrate(_ db: SQLiteDatabase) throws {
         if db.userVersion < 1 {
@@ -49,6 +49,20 @@ enum NoteSchema {
             try migrateToV10(db)
             db.userVersion = 10
         }
+        if db.userVersion < 11 {
+            try migrateToV11(db)
+            db.userVersion = 11
+        }
+    }
+
+    /// The daily template's colour, as a note's raw colour value. Butter, the
+    /// colour dailies have always had, for a template written before this.
+    private static func migrateToV11(_ db: SQLiteDatabase) throws {
+        // Only when it is not there already: a database opened by a build that
+        // knew the column and then by one that re-runs this step stays whole.
+        let columns = try db.query("PRAGMA table_info(daily_template);") { $0.string(at: 1) }
+        guard !columns.contains("color") else { return }
+        try db.execute("ALTER TABLE daily_template ADD COLUMN color INTEGER NOT NULL DEFAULT 1;")
     }
 
     /// The daily template: one row at most, the text sealed like a note body.

@@ -570,30 +570,7 @@ struct NoteEditorView: View {
     /// shade. Paper shades are pale by design and a row of them on a footer of
     /// the same family disappeared, especially the one already in use.
     private var colorRow: some View {
-        HStack(spacing: 10) {
-            ForEach(NoteColor.allCases, id: \.self) { color in
-                let isSelected = color == model.color
-                Button { model.setColor(color) } label: {
-                    Circle()
-                        .fill(color.spineSwiftUI)
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().strokeBorder(.black.opacity(0.22), lineWidth: 1))
-                        .overlay(
-                            // A halo drawn outside the swatch, so the selected
-                            // colour is legible even against its own note.
-                            Circle()
-                                .strokeBorder(model.color.inkSwiftUI.opacity(0.8), lineWidth: 2)
-                                .padding(-3.5)
-                                .opacity(isSelected ? 1 : 0)
-                        )
-                        .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
-                }
-                .buttonStyle(.plain)
-                .help(color.displayName)
-            }
-        }
-        .padding(.leading, 3)
-        .animation(.easeOut(duration: 0.12), value: model.color)
+        NoteColorRow(selected: model.color) { model.setColor($0) }
     }
 
     /// Tags for the note, `#work #ideas`. Typing saves like the body does;
@@ -732,5 +709,45 @@ private struct TagChips: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .clipped()
+    }
+}
+
+
+/// The five colours as swatches, the same row in a note's footer and under the
+/// daily template: always within reach, the colour being something people
+/// change while writing.
+///
+/// The swatches are filled with each colour's *spine*, not its paper shade.
+/// Paper shades are pale by design and a row of them on a footer of the same
+/// family disappeared, especially the one already in use.
+struct NoteColorRow: View {
+    let selected: NoteColor
+    var onSelect: (NoteColor) -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(NoteColor.allCases, id: \.self) { color in
+                let isSelected = color == selected
+                Button { onSelect(color) } label: {
+                    Circle()
+                        .fill(color.spineSwiftUI)
+                        .frame(width: 16, height: 16)
+                        .overlay(Circle().strokeBorder(.black.opacity(0.22), lineWidth: 1))
+                        .overlay(
+                            // A halo drawn outside the swatch, so the selected
+                            // colour is legible even against its own note.
+                            Circle()
+                                .strokeBorder(selected.inkSwiftUI.opacity(0.8), lineWidth: 2)
+                                .padding(-3.5)
+                                .opacity(isSelected ? 1 : 0)
+                        )
+                        .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
+                }
+                .buttonStyle(.plain)
+                .help(color.displayName)
+            }
+        }
+        .padding(.leading, 3)
+        .animation(.easeOut(duration: 0.12), value: selected)
     }
 }

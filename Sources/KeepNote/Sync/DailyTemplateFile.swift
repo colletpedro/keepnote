@@ -14,6 +14,7 @@ enum DailyTemplateFile {
             "schema: \(HMNoteFile.schemaVersion)",
             "kind: \(kind)",
             "updated: \(HMNoteFile.isoFormatter.string(from: template.updatedAt))",
+            "color: \(template.color.rawValue)",
             HMNoteFile.bodyFence,
             "",
             template.body,
@@ -48,6 +49,8 @@ enum DailyTemplateFile {
             if bodyLines.first?.isEmpty == true { bodyLines.removeFirst() }
             body = bodyLines.joined(separator: "\n")
         }
-        return DailyTemplate(body: body, updatedAt: updated)
+        // A file from before the colour existed has none: Butter.
+        let color = NoteColor.resolve(rawValue: Int(fields["color"] ?? "") ?? NoteColor.default.rawValue)
+        return DailyTemplate(body: body, updatedAt: updated, color: color)
     }
 }

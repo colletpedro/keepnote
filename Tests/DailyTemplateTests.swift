@@ -9,11 +9,11 @@ func runDailyTemplateTests() {
     let english = Locale(identifier: "en_US")
     let portuguese = Locale(identifier: "pt_BR")
 
-    func apply(_ template: String, _ date: Date = friday, _ locale: Locale = english) -> DailyTemplate.Applied {
-        DailyTemplate.apply(template, on: date, locale: locale, calendar: utc)
+    func apply(_ template: String, _ date: Date = friday, _ locale: Locale = english) -> DailyTemplateApply.Applied {
+        DailyTemplateApply.apply(template, on: date, locale: locale, calendar: utc)
     }
     /// The text with `|` where the caret is.
-    func marked(_ applied: DailyTemplate.Applied) -> String {
+    func marked(_ applied: DailyTemplateApply.Applied) -> String {
         let ns = applied.text as NSString
         return ns.substring(to: applied.caret) + "|" + ns.substring(from: applied.caret)
     }
@@ -59,6 +59,6 @@ func runDailyTemplateTests() {
     expect("caret: with the variables replaced first",
            marked(apply("## {weekday} {date}\n- [ ] ", friday, portuguese)), "## sexta-feira 09/10/2026\n- [ ] |")
     expect("caret: a checked empty item counts too", marked(apply("- [x] ")), "- [x] |")
-    expect("caret: the text alone", String(DailyTemplate.caret(in: "- [ ] ")), "6")
-    expect("caret: of nothing", String(DailyTemplate.caret(in: "")), "0")
+    expect("caret: the text alone", String(DailyTemplateApply.caret(in: "- [ ] ")), "6")
+    expect("caret: of nothing", String(DailyTemplateApply.caret(in: "")), "0")
 }

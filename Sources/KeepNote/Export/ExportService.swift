@@ -190,6 +190,8 @@ enum NoteArchive {
     struct TemplateEntry: Codable {
         var body: String
         var updatedAt: Date
+        /// An archive from before the template had a colour has none: Butter.
+        var color: Int?
     }
 
     struct Entry: Codable {
@@ -240,7 +242,7 @@ enum NoteArchive {
                     autoArchivedDay: note.autoArchivedDay?.string
                 )
             },
-            dailyTemplate: dailyTemplate.flatMap { $0.isSet ? TemplateEntry(body: $0.body, updatedAt: $0.updatedAt) : nil }
+            dailyTemplate: dailyTemplate.flatMap { $0.isSet ? TemplateEntry(body: $0.body, updatedAt: $0.updatedAt, color: $0.color.rawValue) : nil }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -264,7 +266,7 @@ enum NoteArchive {
         guard payload.format == formatIdentifier else {
             throw ImportError.unrecognizedFormat
         }
-        let template = payload.dailyTemplate.map { DailyTemplate(body: $0.body, updatedAt: $0.updatedAt) }
+        let template = payload.dailyTemplate.map { DailyTemplate(body: $0.body, updatedAt: $0.updatedAt, color: NoteColor.resolve(rawValue: $0.color ?? NoteColor.default.rawValue)) }
         return (payload.notes.map { entry in
             Note(
                 id: entry.id,
