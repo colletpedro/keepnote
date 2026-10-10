@@ -160,7 +160,9 @@ func runOpenedDayStoreTests() {
     let note = try! store!.create(title: "n", body: "b")
     expect("opened: a new note starts today", store!.note(id: note.id)?.lastOpenedDay?.string, day(first))
 
-    clock = daysLater(3)
+    // Ten in the morning, local time: an hour later is still the same day,
+    // wherever the test runs.
+    clock = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: daysLater(3))!
     let edited = store!.note(id: note.id)!.updatedAt
     try! store!.markOpened(id: note.id)
     expect("opened: opening it moves its day", store!.note(id: note.id)?.lastOpenedDay?.string, day(clock))
@@ -172,10 +174,8 @@ func runOpenedDayStoreTests() {
     try! store!.markOpened(id: note.id)
     expect("opened: the same day is written once, not again", String(writes), "0")
     clock = clock.addingTimeInterval(3600)
-    if day(clock) == day(daysLater(3)) {
-        try! store!.markOpened(id: note.id)
-        expect("opened: nor an hour later", String(writes), "0")
-    }
+    try! store!.markOpened(id: note.id)
+    expect("opened: nor an hour later", String(writes), "0")
     clock = daysLater(4)
     try! store!.markOpened(id: note.id)
     expect("opened: the next day is written", String(writes), "1")

@@ -299,7 +299,13 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
 
     /// The screen whose frame holds `point` (Cocoa screen coordinates).
     static func screen(containing point: NSPoint, in screens: [NSScreen]) -> NSScreen? {
-        screens.first { $0.frame.contains(point) }
+        index(containing: point, in: screens.map(\.frame)).map { screens[$0] }
+    }
+
+    /// The same choice over plain frames, so it can be tested with any number
+    /// of screens, whatever is plugged in.
+    static func index(containing point: NSPoint, in frames: [NSRect]) -> Int? {
+        frames.firstIndex { $0.contains(point) }
     }
 
     /// Flush against the right edge, vertically centred on the tab it came

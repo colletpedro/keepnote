@@ -647,14 +647,15 @@ func runOpenArchivedDailyTests() {
 @MainActor
 func runNoteScreenTests() {
     let screens = NSScreen.screens
-    guard let first = screens.first else { return }
-    let inside = NSPoint(x: first.frame.midX, y: first.frame.midY)
-    expectTrue("screen: the one holding the cursor", NoteWindowController.screen(containing: inside, in: screens)?.frame == first.frame)
-    expectTrue("screen: none when the cursor is off every screen",
-               NoteWindowController.screen(containing: NSPoint(x: first.frame.minX - 50_000, y: 0), in: screens) == nil)
-    if screens.count > 1 {
-        let other = screens[1]
-        expectTrue("screen: the second screen when the cursor is on it",
-                   NoteWindowController.screen(containing: NSPoint(x: other.frame.midX, y: other.frame.midY), in: screens)?.frame == other.frame)
+    if let first = screens.first {
+        let inside = NSPoint(x: first.frame.midX, y: first.frame.midY)
+        expectTrue("screen: the one holding the cursor", NoteWindowController.screen(containing: inside, in: screens)?.frame == first.frame)
+        expectTrue("screen: none when the cursor is off every screen",
+                   NoteWindowController.screen(containing: NSPoint(x: first.frame.minX - 50_000, y: 0), in: screens) == nil)
     }
+    // Two screens, whatever is plugged in: the count of checks must not depend on it.
+    let frames = [NSRect(x: 0, y: 0, width: 1000, height: 800), NSRect(x: 1000, y: 0, width: 1200, height: 900)]
+    expect("screen: the first of two", String(NoteWindowController.index(containing: NSPoint(x: 500, y: 400), in: frames) ?? -1), "0")
+    expect("screen: the second screen when the cursor is on it", String(NoteWindowController.index(containing: NSPoint(x: 1500, y: 400), in: frames) ?? -1), "1")
+    expect("screen: none beyond them", String(NoteWindowController.index(containing: NSPoint(x: 5000, y: 400), in: frames) ?? -1), "-1")
 }
