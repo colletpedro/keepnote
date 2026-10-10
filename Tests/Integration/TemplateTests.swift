@@ -475,3 +475,177 @@ func runDailyTemplateLayoutTests() {
         window.contentView = nil
     }
 }
+
+// MARK: - The template's colour
+
+@MainActor
+func runDailyTemplateColorTests() {
+    let key = SymmetricKey(size: .bits256)
+    var utc = Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(identifier: "UTC")!
+    let english = Locale(identifier: "en_US")
+    var clock = utc.date(from: DateComponents(year: 2026, month: 10, day: 9, hour: 12))!
+    let database = scratchDirectory().appendingPathComponent("c.sqlite")
+    var store: NoteStore? = reopened(database, key: key)
+    store!.now = { clock }
+
+    // MARK: Butter until chosen
+
+    expect("colour: butter by default", String(store!.dailyTemplate.color.rawValue), String(NoteColor.butter.rawValue))
+    expectTrue("colour: a template never set has no date", !store!.dailyTemplate.isSet)
+    let first = try! store!.createDaily(locale: english, calendar: utc)
+    expectTrue("colour: a daily with no template is butter", first.note.color == .butter)
+
+    // MARK: A daily is born in the template's colour
+
+    store!.setDailyTemplate(color: .sky)
+    expectTrue("colour: choosing one sets the template", store!.dailyTemplate.isSet && store!.dailyTemplate.color == .sky)
+    expect("colour: the text is untouched", store!.dailyTemplate.body, "")
+    clock = clock.addingTimeInterval(86_400)
+    let second = try! store!.createDaily(locale: english, calendar: utc)
+    expectTrue("colour: the next daily is sky", second.note.color == .sky)
+    expectTrue("colour: whatever the setting for new notes says", store!.note(id: second.note.id)?.color == .sky)
+
+    // MARK: Existing dailies are left alone, and keep their own colour changes
+
+    store!.setDailyTemplate(color: .lilac)
+    expectTrue("colour: the first daily is still butter", store!.note(id: first.note.id)?.color == .butter)
+    expectTrue("colour: the second is still sky", store!.note(id: second.note.id)?.color == .sky)
+    try! store!.setColor(.mint, id: second.note.id)
+    expectTrue("colour: a daily's own swatches change it", store!.note(id: second.note.id)?.color == .mint)
+    expectTrue("colour: and not the template's", store!.dailyTemplate.color == .lilac)
+    clock = clock.addingTimeInterval(86_400)
+    let third = try! store!.createDaily(locale: english, calendar: utc)
+    expectTrue("colour: a later daily is born in the new colour", third.note.color == .lilac)
+    expectTrue("colour: the one before is untouched", store!.note(id: second.note.id)?.color == .mint)
+
+    // MARK: Text and colour are set apart, and the same again is no change
+
+    store!.setDailyTemplate("# Day")
+    expectTrue("colour: a text edit keeps the colour", store!.dailyTemplate.color == .lilac)
+    var announced = 0
+    let watch = store!.templateChanges.sink { _ in announced += 1 }
+    store!.setDailyTemplate(color: .lilac)
+    store!.setDailyTemplate("# Day", color: .lilac)
+    expect("colour: the same colour announces nothing", String(announced), "0")
+    store!.setDailyTemplate(color: .coral)
+    expect("colour: a new one is announced once", String(announced), "1")
+    withExtendedLifetime(watch) {}
+
+    // MARK: Stored, and back at the next launch
+
+    store!.waitUntilSaved()
+    store = nil
+    expectTrue("colour: back at the next launch", reopened(database, key: key).dailyTemplate.color == .coral)
+
+    // A database from before the colour: the template is butter.
+    let oldURL = scratchDirectory().appendingPathComponent("old.sqlite")
+    do {
+        let old = reopened(oldURL, key: key)
+        old.setDailyTemplate("from before", color: .mint)
+        old.waitUntilSaved()
+    }
+    do {
+        let db = try! SQLiteDatabase(path: oldURL.path)
+        try! db.execute("ALTER TABLE daily_template DROP COLUMN color; PRAGMA user_version = 10;")
+    }
+    let migrated = reopened(oldURL, key: key)
+    expect("colour: an older database keeps the text", migrated.dailyTemplate.body, "from before")
+    expectTrue("colour: and reads as butter", migrated.dailyTemplate.color == .butter)
+    expect("colour: at the current schema",
+           String(try! SQLiteDatabase(path: oldURL.path).scalarInt("PRAGMA user_version;")), String(NoteSchema.currentVersion))
+
+    // MARK: The model
+
+    let modelStore = reopened(scratchDirectory().appendingPathComponent("m.sqlite"), key: key)
+    let model = DailyTemplateModel(store: modelStore)
+    expectTrue("colour: the card starts butter", model.color == .butter)
+    model.text = "typed, not yet saved"
+    model.setColor(.sky)
+    expectTrue("colour: the card takes it", model.color == .sky)
+    expectTrue("colour: the store has it", modelStore.dailyTemplate.color == .sky)
+    expect("colour: the text waiting is saved with it", modelStore.dailyTemplate.body, "typed, not yet saved")
+    _ = modelStore.applyIncomingTemplate(DailyTemplate(body: "elsewhere", updatedAt: Date().addingTimeInterval(60), color: .coral))
+    spin(0.1)
+    expectTrue("colour: a colour that arrives shows on the card", model.color == .coral)
+}
+
+@MainActor
+func runDailyTemplateColorSyncTests() {
+    let key = SymmetricKey(size: .bits256)
+
+    // MARK: The file
+
+    let template = DailyTemplate(body: "# Day", updatedAt: Date(timeIntervalSince1970: 1_790_000_000), color: .lilac)
+    let text = DailyTemplateFile.serialized(template)
+    expectTrue("file: the colour is written", text.contains("color: \(NoteColor.lilac.rawValue)"))
+    expectTrue("file: and read back", DailyTemplateFile.parse(text)?.color == .lilac)
+    for color in NoteColor.allCases {
+        let back = DailyTemplateFile.parse(DailyTemplateFile.serialized(DailyTemplate(body: "x", updatedAt: template.updatedAt, color: color)))
+        expectTrue("file: \(color.displayName) round-trips", back?.color == color)
+    }
+    let without = text.components(separatedBy: "\n").filter { !$0.hasPrefix("color:") }.joined(separator: "\n")
+    expectTrue("file: an older file, with no colour, is butter", DailyTemplateFile.parse(without)?.color == .butter)
+    expect("file: and keeps its text", DailyTemplateFile.parse(without)?.body, "# Day")
+    let odd = text.replacingOccurrences(of: "color: \(NoteColor.lilac.rawValue)", with: "color: nonsense")
+    expectTrue("file: an unreadable colour is butter", DailyTemplateFile.parse(odd)?.color == .butter)
+
+    // MARK: Between two Macs, through the folder
+
+    let folder = scratchDirectory().appendingPathComponent("Sync", isDirectory: true)
+    try! FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    let a = reopened(scratchDirectory().appendingPathComponent("a.sqlite"), key: key)
+    let syncA = FolderSyncService(store: a, folder: folder)
+    spin(0.3)
+    a.setDailyTemplate("# Shared", color: .sky)
+    spin(0.2)
+    syncA.waitUntilWritten()
+    expectTrue("sync: the colour reaches the folder", templateFile(in: folder)?.color == .sky)
+    let b = reopened(scratchDirectory().appendingPathComponent("b.sqlite"), key: key)
+    let syncB = FolderSyncService(store: b, folder: folder)
+    spin(0.5)
+    syncB.waitUntilWritten()
+    spin(0.2)
+    expectTrue("sync: another Mac takes it", b.dailyTemplate.color == .sky && b.dailyTemplate.body == "# Shared")
+    b.setDailyTemplate(color: .coral)
+    spin(0.2)
+    syncB.waitUntilWritten()
+    expectTrue("sync: a colour alone travels", templateFile(in: folder)?.color == .coral && templateFile(in: folder)?.body == "# Shared")
+    syncA.reconfigure()
+    spin(0.5)
+    syncA.waitUntilWritten()
+    spin(0.2)
+    expectTrue("sync: and the first Mac follows", a.dailyTemplate.color == .coral)
+    withExtendedLifetime((syncA, syncB)) {}
+}
+
+@MainActor
+func runDailyTemplateColorArchiveTests() {
+    let key = SymmetricKey(size: .bits256)
+    let note = Note(title: "n", body: "b", tags: ["x"])
+    let template = DailyTemplate(body: "# Day", updatedAt: Date(timeIntervalSince1970: 1_790_000_000), color: .mint)
+
+    for color in NoteColor.allCases {
+        let archive = try! NoteArchive.encode(notes: [note], dailyTemplate: DailyTemplate(body: "x", updatedAt: template.updatedAt, color: color))
+        expectTrue("archive: \(color.displayName) round-trips", (try! NoteArchive.decodeTemplate(archive))?.color == color)
+    }
+    let old = Data("""
+    {"format":"com.keepnote.archive","version":1,"exportedAt":"2026-10-01T10:00:00Z","notes":[],
+     "dailyTemplate":{"body":"from before","updatedAt":"2026-10-01T10:00:00Z"}}
+    """.utf8)
+    let decoded = try! NoteArchive.decodeTemplate(old)
+    expect("archive: an older archive's template keeps its text", decoded?.body, "from before")
+    expectTrue("archive: and is butter", decoded?.color == .butter)
+
+    // Imported: the colour comes with the template.
+    let file = scratchDirectory().appendingPathComponent("c.hmnotearchive")
+    try! NoteArchive.encode(notes: [note], dailyTemplate: template).write(to: file)
+    let store = reopened(scratchDirectory().appendingPathComponent("i.sqlite"), key: key)
+    _ = try! NoteImporter.importContents(of: file, into: store)
+    expectTrue("import: the colour arrives with the template", store.dailyTemplate.color == .mint && store.dailyTemplate.body == "# Day")
+    let oldFile = scratchDirectory().appendingPathComponent("o.hmnotearchive")
+    try! old.write(to: oldFile)
+    let fresh = reopened(scratchDirectory().appendingPathComponent("j.sqlite"), key: key)
+    _ = try! NoteImporter.importContents(of: oldFile, into: fresh)
+    expectTrue("import: an older archive gives butter", fresh.dailyTemplate.color == .butter && fresh.dailyTemplate.body == "from before")
+}
