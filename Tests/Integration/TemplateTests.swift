@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import CryptoKit
+import SwiftUI
 
 // MARK: - The daily template: stored, synced, archived — and not a note
 
@@ -329,4 +330,44 @@ func runDailyTemplateApplyTests() {
     spin(0.3)
     expect("apply: without a caret it is the end", String(plain.window.contentView.flatMap(textView(in:))?.selectedRange().location ?? -1), "0")
     plain.close()
+}
+
+// MARK: - The template inside All Notes
+
+@MainActor
+func runDailyTemplateRowTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("r.sqlite"), key: SymmetricKey(size: .bits256))
+    store.setDailyTemplate("# Day\n- [ ] ")
+    _ = try! store.create(title: "Daily 09/10", body: "x", tags: ["daily"])
+    let actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in },
+                                  delete: { _ in }, export: { _ in })
+
+    func host(selecting: Set<UUID>) -> (NSWindow, NSHostingView<AllNotesView>) {
+        let view = AllNotesView(store: store, actions: actions, initialSidebar: .library(.daily), initialSelection: selecting)
+        let hosting = NSHostingView(rootView: view)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1080, height: 640), styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = hosting
+        hosting.layoutSubtreeIfNeeded()
+        spin(0.5)
+        hosting.layoutSubtreeIfNeeded()
+        return (window, hosting)
+    }
+
+    // Selected: the card shows, with the template in it.
+    let (window, hosting) = host(selecting: [DailyTemplatePane.rowID])
+    expect("row: the card shows the template", textView(in: hosting)?.string, "# Day\n- [ ] ")
+    expect("row: it is no note", String(store.notes.count), "1")
+    expect("row: no search finds it", String(store.search("Day").count), "0")
+    expect("row: no tag counts it", String(TagLibrary.index(store.notes).tags.count), "1")
+
+    // Typing in the card saves on its own.
+    _ = type("one", into: window)
+    spin(0.8)
+    expect("row: typing saves by itself", store.dailyTemplate.body, "# Day\n- [ ] one")
+    expect("row: and makes no note", String(store.notes.count), "1")
+
+    // Not selected: the template is not in the pane.
+    let (_, plain) = host(selecting: [])
+    expectTrue("row: unselected, no editor", textView(in: plain) == nil)
+    window.contentView = nil
 }

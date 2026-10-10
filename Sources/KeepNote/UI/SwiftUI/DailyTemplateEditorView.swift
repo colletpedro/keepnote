@@ -156,3 +156,123 @@ struct DailyTemplateEditorView: View {
             )
     }
 }
+
+
+// MARK: - In All Notes
+
+/// The template as it appears in All Notes: a card like a note's, editable in
+/// place with the full editor, and under it the line that explains the
+/// variables. Saves on its own, as notes do.
+struct DailyTemplatePane: View {
+    /// The fixed row at the top of the Daily list stands for the template in
+    /// the list's selection. It is not a note and has no row in the store.
+    static let rowID = UUID(uuidString: "00000000-0000-0000-0000-00000000DA17")!
+
+    @StateObject private var model: DailyTemplateModel
+
+    init(store: NoteStore) {
+        _model = StateObject(wrappedValue: DailyTemplateModel(store: store))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DailyTemplateCard(model: model, onShowTools: DailyTemplateCard.showTools)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.14), radius: 8, y: 2)
+            Text(DailyTemplateEditorView.help)
+                .font(.system(size: 11.5))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .onDisappear { model.flush() }
+    }
+}
+
+/// The paper of the template: spine, title, editor.
+struct DailyTemplateCard: View {
+    @ObservedObject var model: DailyTemplateModel
+    var onShowTools: () -> Void = {}
+
+    private let color = NoteColor.default
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ZStack {
+                color.spineSwiftUI
+                SpineLabel(text: DailyTemplateEditorView.title, color: color.inkSwiftUI.opacity(0.78), topInset: 4)
+                HStack {
+                    Spacer()
+                    PerforationLine(color: color.inkSwiftUI.opacity(0.28))
+                        .padding(.vertical, 10)
+                }
+            }
+            .frame(width: EdgeMetrics.tabWidth)
+
+            VStack(spacing: 0) {
+                HStack(spacing: 8) {
+                    Text(DailyTemplateEditorView.title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(color.inkSwiftUI)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    TimelineView(.periodic(from: .now, by: 30)) { context in
+                        Text(model.statusLabel(now: context.date))
+                            .font(.system(size: 12))
+                            .foregroundStyle(color.secondaryInkSwiftUI)
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    Button(action: onShowTools) {
+                        Image(systemName: "wrench.and.screwdriver").font(.system(size: 11))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(color.secondaryInkSwiftUI)
+                    .help("Tools")
+                }
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+
+                ZStack(alignment: .topLeading) {
+                    NoteTextView(text: $model.text, color: color, findQuery: "", findIndex: 0)
+                    if model.text.isEmpty {
+                        Text(DailyTemplateEditorView.placeholder)
+                            .font(.system(size: MarkdownStyler.baseSize))
+                            .foregroundStyle(color.secondaryInkSwiftUI)
+                            .padding(.horizontal, 14 + 5)
+                            .padding(.top, 12)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+        }
+        .background(color.surfaceSwiftUI)
+    }
+
+    /// The Tools button: the note editor's menu, acting on the text directly.
+    static func showTools() {
+        guard let window = NSApp.keyWindow, let content = window.contentView,
+              let textView = findTextView(in: content) else { return }
+        let menu = FormatCommand.makeToolsMenu(target: textView)
+        let point = content.convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        menu.popUp(positioning: nil, at: point, in: content)
+        let kept = textView.selectedRange()
+        window.makeFirstResponder(textView)
+        textView.setSelectedRange(kept)
+    }
+
+    static func findTextView(in view: NSView) -> NSTextView? {
+        if let textView = view as? NSTextView, textView.identifier == NoteTextView.bodyIdentifier, !textView.isFieldEditor {
+            return textView
+        }
+        for subview in view.subviews {
+            if let found = findTextView(in: subview) { return found }
+        }
+        return nil
+    }
+}

@@ -65,6 +65,12 @@ struct AllNotesView: View {
 
     private var isDailyList: Bool { sidebarSelection == .library(.daily) }
 
+    /// The template's fixed row tops the Daily list — except while searching:
+    /// it is not a note, so no search finds it.
+    private var showsTemplateRow: Bool { isDailyList && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    private var templateSelected: Bool { showsTemplateRow && selection.contains(DailyTemplatePane.rowID) }
+
     /// Clicking a tag on a note selects it in the sidebar. The reserved tag
     /// is the Daily shelf.
     private func showTag(_ tag: String) {
@@ -106,6 +112,11 @@ struct AllNotesView: View {
         .onReceive(NotificationCenter.default.publisher(for: .keepNoteShowNotesSelection)) { note in
             if let value = note.userInfo?["selection"] as? String, let wanted = NoteSelection(storageValue: value) {
                 sidebarSelection = wanted
+                // Changing the list clears the selection, so the template is
+                // selected a beat later.
+                if note.userInfo?["template"] as? Bool == true {
+                    DispatchQueue.main.async { selection = [DailyTemplatePane.rowID] }
+                }
             }
         }
     }
@@ -136,7 +147,7 @@ struct AllNotesView: View {
                 }
             }
             Divider()
-            if isDailyList && results.isEmpty && query.isEmpty {
+            if isDailyList && results.isEmpty && query.isEmpty && !showsTemplateRow {
                 DailyEmptyState()
             } else {
                 dayOrFlatList
@@ -146,6 +157,10 @@ struct AllNotesView: View {
 
     private var dayOrFlatList: some View {
         List(selection: $selection) {
+            if showsTemplateRow {
+                DailyTemplateRow()
+                    .tag(DailyTemplatePane.rowID)
+            }
             if isDailyList {
                 // Day by day, the latest day first.
                 ForEach(DailyNotes.groups(results), id: \.day) { group in
@@ -165,11 +180,12 @@ struct AllNotesView: View {
         .contextMenu(forSelectionType: UUID.self) { ids in
             contextMenu(for: ids)
         } primaryAction: { ids in
-            ids.forEach(actions.open)
+            ids.subtracting([DailyTemplatePane.rowID]).forEach(actions.open)
         }
         .onDeleteCommand {
-            guard !selection.isEmpty else { return }
-            actions.delete(Array(selection))
+            let notes = selection.subtracting([DailyTemplatePane.rowID])
+            guard !notes.isEmpty else { return }
+            actions.delete(Array(notes))
             selection.removeAll()
         }
     }
@@ -194,7 +210,7 @@ struct AllNotesView: View {
                 .lineLimit(1)
             Spacer(minLength: 8)
             if isDailyList {
-                Button("Edit Template\u{2026}", action: actions.editDailyTemplate)
+                Button("Edit Template\u{2026}") { selection = [DailyTemplatePane.rowID] }
                     .controlSize(.small)
                     .help("Edit the text new daily notes start from")
             }
@@ -209,12 +225,14 @@ struct AllNotesView: View {
     private var countLabel: String {
         let total = results.count
         let notes = "\(total) note\(total == 1 ? "" : "s")"
-        return selection.count > 1 ? "\(selection.count) of \(notes)" : notes
+        return selectedNotes.count > 1 ? "\(selectedNotes.count) of \(notes)" : notes
     }
 
     @ViewBuilder
     private var detail: some View {
-        if selectedNotes.count == 1, let note = selectedNotes.first {
+        if templateSelected && selectedNotes.isEmpty {
+            DailyTemplatePane(store: store)
+        } else if selectedNotes.count == 1, let note = selectedNotes.first {
             NoteReadingPane(note: note, store: store, actions: actions, onTag: showTag)
                 .id(note.id)
         } else if selectedNotes.count > 1 {
@@ -379,6 +397,28 @@ struct AllNotesSidebar: View {
             DispatchQueue.main.async { onDropNotes(tag, ids) }
         }
         return true
+    }
+}
+
+/// The fixed row at the top of the Daily list that stands for the daily
+/// template. Not a note: it is no part of any count, search, tag or list.
+private struct DailyTemplateRow: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.plaintext")
+                .font(.system(size: 13))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(DailyTemplateEditorView.title)
+                    .font(.system(size: 13, weight: .medium))
+                Text("Where new daily notes start")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 3)
     }
 }
 
