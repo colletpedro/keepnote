@@ -122,7 +122,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     /// Today's Daily: the most recently edited daily of today if there is one
     /// (even if it has been archived), otherwise a new one — tagged `daily`,
-    /// titled "Daily" and the day and month, starting from the daily template
+    /// titled "Daily" and the day and month, starting from the daily template and its colour
     /// — with the cursor in its body.
     func openTodaysDaily() {
         let today = store.today
@@ -131,7 +131,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             return
         }
         do {
-            let made = try store.createDaily(color: settings.defaultNoteColor)
+            let made = try store.createDaily()
             open(noteID: made.note.id, from: nil, caret: made.caret)
         } catch {
             present(error)

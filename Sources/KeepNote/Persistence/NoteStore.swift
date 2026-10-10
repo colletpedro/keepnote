@@ -313,7 +313,7 @@ final class NoteStore: ObservableObject {
         let date = now()
         let applied = DailyTemplateApply.apply(dailyTemplate.body, on: date, locale: locale, calendar: calendar)
         let note = try create(
-            color: color,
+            color: color ?? dailyTemplate.color,
             title: DailyNotes.title(for: date, locale: locale, calendar: calendar),
             body: applied.text,
             tags: [DailyNotes.tag]
