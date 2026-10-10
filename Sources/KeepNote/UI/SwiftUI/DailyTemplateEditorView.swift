@@ -76,7 +76,7 @@ final class DailyTemplateModel: ObservableObject {
 enum DailyTemplateText {
     static let title = "Daily Template"
     static let placeholder = "Write what a new daily note should start with."
-    static let help = "Use {date} for today\u{2019}s date and {weekday} for the day of the week. They are filled in when a new daily note is created."
+    static let help = "Use {date} for today\u{2019}s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color."
 }
 
 // MARK: - In All Notes
