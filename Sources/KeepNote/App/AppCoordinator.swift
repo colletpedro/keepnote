@@ -715,11 +715,13 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     /// All Notes, in front. `selecting` picks what the sidebar shows: kept for
     /// the next opening, and sent to the window if it is already open.
-    func showAllNotes(selecting selection: NoteSelection? = nil) {
+    /// `template` also selects the daily template's row, on the Daily list.
+    func showAllNotes(selecting selection: NoteSelection? = nil, template: Bool = false) {
         if let selection {
             settings.allNotesSelection = selection.storageValue
             NotificationCenter.default.post(
-                name: .keepNoteShowNotesSelection, object: nil, userInfo: ["selection": selection.storageValue])
+                name: .keepNoteShowNotesSelection, object: nil,
+                userInfo: ["selection": selection.storageValue, "template": template])
         }
         if let allNotesWindow {
             allNotesWindow.show()
@@ -730,7 +732,9 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             size: NSSize(width: 1080, height: 640),
             autosaveName: "KeepNote.AllNotes",
             minSize: NSSize(width: 900, height: 480),
-            rootView: AllNotesView(store: store, actions: listActions())
+            rootView: AllNotesView(
+                store: store, actions: listActions(),
+                initialSelection: template ? [DailyTemplatePane.rowID] : [])
         )
         controller.onClose = { [weak self] in
             self?.allNotesWindow = nil
@@ -786,21 +790,10 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         settingsWindow?.show()
     }
 
-    /// Edit Daily Template…: the text new daily notes start from, in a window
-    /// of its own.
+    /// Edit Daily Template…: All Notes on the Daily list, the template's row
+    /// selected, whichever way it was asked for.
     func showDailyTemplate() {
-        if let dailyTemplateWindow {
-            dailyTemplateWindow.show()
-            return
-        }
-        let controller = DailyTemplateWindowController(store: store)
-        controller.onClose = { [weak self] in
-            self?.dailyTemplateWindow = nil
-            self?.standardWindowDidClose()
-        }
-        dailyTemplateWindow = controller
-        applyDockPolicy()
-        controller.show()
+        showAllNotes(selecting: .library(.daily), template: true)
     }
 
     /// First launch only (or `--show-welcome`). "Get Started" records that the

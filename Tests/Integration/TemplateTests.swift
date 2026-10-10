@@ -369,5 +369,22 @@ func runDailyTemplateRowTests() {
     // Not selected: the template is not in the pane.
     let (_, plain) = host(selecting: [])
     expectTrue("row: unselected, no editor", textView(in: plain) == nil)
+
+    // Asked for from outside (a menu, Settings) while All Notes is open on
+    // another list: it goes to Daily with the template selected.
+    let elsewhere = AllNotesView(store: store, actions: actions, initialSidebar: .library(.all), initialSelection: [])
+    let outer = NSHostingView(rootView: elsewhere)
+    let outerWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1080, height: 640), styleMask: [.titled], backing: .buffered, defer: false)
+    outerWindow.contentView = outer
+    outer.layoutSubtreeIfNeeded()
+    spin(0.3)
+    expectTrue("row: on another list, no editor", textView(in: outer) == nil)
+    NotificationCenter.default.post(name: .keepNoteShowNotesSelection, object: nil,
+                                    userInfo: ["selection": NoteSelection.library(.daily).storageValue, "template": true])
+    spin(0.5)
+    outer.layoutSubtreeIfNeeded()
+    spin(0.3)
+    expect("row: the menus open the Daily list on the template", textView(in: outer)?.string, "# Day\n- [ ] one")
+    outerWindow.contentView = nil
     window.contentView = nil
 }
