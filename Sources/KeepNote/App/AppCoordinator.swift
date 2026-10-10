@@ -22,7 +22,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     private var archiveWindow: HostingWindowController<ArchiveView>?
     private var settingsWindow: SettingsWindowController?
     private var welcomeWindow: HostingWindowController<WelcomeView>?
-    private var dailyTemplateWindow: DailyTemplateWindowController?
     /// The system About panel, while it is open.
     private var aboutPanel: NSWindow?
     private var isAboutOpen = false
@@ -184,7 +183,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         if archiveWindow != nil { kinds.insert(.archive) }
         if settingsWindow != nil { kinds.insert(.settings) }
         if welcomeWindow != nil { kinds.insert(.welcome) }
-        if dailyTemplateWindow != nil { kinds.insert(.dailyTemplate) }
         if isAboutOpen { kinds.insert(.about) }
         return kinds
     }
@@ -242,7 +240,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     func flushEverything() {
         noteWindows.values.forEach { $0.flush() }
-        dailyTemplateWindow?.flush()
     }
 
     /// Before the process goes: pending autosaves are written, and the

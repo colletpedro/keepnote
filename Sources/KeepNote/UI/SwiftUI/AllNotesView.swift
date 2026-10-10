@@ -410,7 +410,7 @@ private struct DailyTemplateRow: View {
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
-                Text(DailyTemplateEditorView.title)
+                Text(DailyTemplateText.title)
                     .font(.system(size: 13, weight: .medium))
                 Text("Where new daily notes start")
                     .font(.system(size: 11))

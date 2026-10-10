@@ -60,7 +60,7 @@ MainActor.assumeIsolated {
     runDailyTemplateStoreTests()
     runDailyTemplateSyncTests()
     runDailyTemplateArchiveTests()
-    runDailyTemplateWindowTests()
+    runDailyTemplateModelTests()
     runDailyTemplateApplyTests()
     runDailyTemplateRowTests()
     removeScratch()

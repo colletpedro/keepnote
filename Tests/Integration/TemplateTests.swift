@@ -197,53 +197,32 @@ func runDailyTemplateArchiveTests() {
     expect("import: and is no note", String(fresh.notes.count), "0")
 }
 
-// MARK: - The template's window
+// MARK: - The template's editing model
 
 @MainActor
-func runDailyTemplateWindowTests() {
-    let key = SymmetricKey(size: .bits256)
-    let store = reopened(scratchDirectory().appendingPathComponent("w.sqlite"), key: key)
+func runDailyTemplateModelTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("m.sqlite"), key: SymmetricKey(size: .bits256))
     store.setDailyTemplate("# Start\n")
-    let before = store.notes.count
+    let model = DailyTemplateModel(store: store)
+    expect("model: opens on the saved text", model.text, "# Start\n")
 
-    let controller = DailyTemplateWindowController(store: store)
-    controller.window.contentView?.layoutSubtreeIfNeeded()
-    expect("window: the title is fixed", controller.window.title, "Daily Template")
-    expect("window: it opens on the saved text",
-           controller.window.contentView.flatMap(textView(in:))?.string, "# Start\n")
+    model.text = "# Start\n- [ ] one"
+    model.flush()
+    expect("model: typing is saved", store.dailyTemplate.body, "# Start\n- [ ] one")
 
-    expectTrue("window: typing goes into the editor", type("- [ ] one", into: controller.window))
-    controller.flush()
-    expect("window: and is saved as the template", store.dailyTemplate.body, "# Start\n- [ ] one")
-    expect("window: editing it makes no note", String(store.notes.count), String(before))
-
-    // The note editor's formatting works on it.
-    if let body = controller.window.contentView.flatMap(textView(in:)) as? MarkdownTextView {
-        body.setSelectedRange(NSRange(location: (body.string as NSString).length, length: 0))
-        body.insertNewline(nil)
-        expect("window: Return continues a checklist", body.string, "# Start\n- [ ] one\n- [ ] ")
-    } else {
-        expectTrue("window: the editor is the note editor", false)
-    }
-
-    // A newer template from another Mac shows, once nothing is waiting to be
-    // saved: what was just typed is not undone by it.
+    // What was just typed is not undone by a version that arrives meanwhile.
+    model.text += "\n- [ ] two"
     _ = store.applyIncomingTemplate(DailyTemplate(body: "too soon", updatedAt: Date().addingTimeInterval(30)))
     spin(0.1)
-    expect("window: text still being saved is kept",
-           controller.window.contentView.flatMap(textView(in:))?.string, "# Start\n- [ ] one\n- [ ] ")
-    controller.flush()
-    _ = store.applyIncomingTemplate(DailyTemplate(body: "from elsewhere", updatedAt: Date().addingTimeInterval(60)))
-    spin(0.1)
-    expect("window: a template that arrives replaces the text",
-           controller.window.contentView.flatMap(textView(in:))?.string, "from elsewhere")
+    expect("model: text waiting to be saved is kept", model.text, "# Start\n- [ ] one\n- [ ] two")
+    model.flush()
+    expect("model: and wins when saved", store.dailyTemplate.body, "# Start\n- [ ] one\n- [ ] two")
 
-    var closed = false
-    controller.onClose = { closed = true }
-    _ = type("!", into: controller.window)
-    controller.close()
-    expectTrue("window: closing reports it", closed)
-    expect("window: and saves what was typed", store.dailyTemplate.body, "from elsewhere!")
+    // With nothing waiting, the arriving version shows.
+    _ = store.applyIncomingTemplate(DailyTemplate(body: "from elsewhere", updatedAt: Date().addingTimeInterval(120)))
+    spin(0.1)
+    expect("model: a version that arrives replaces the text", model.text, "from elsewhere")
+    expect("model: editing makes no note", String(store.notes.count), "0")
 }
 
 // MARK: - Applied only when a new daily is born

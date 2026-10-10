@@ -3,13 +3,13 @@ import Foundation
 /// The kinds of window KeepNote puts on screen.
 enum AppWindowKind: Hashable, CaseIterable, Sendable {
     // Standard windows: titled, in the window list, worth a Dock icon.
-    case allNotes, archive, settings, about, welcome, dailyTemplate
+    case allNotes, archive, settings, about, welcome
     // Part of the edge, not windows the user manages.
     case deck, peek, anchoredNote, detachedNote
 
     var isStandard: Bool {
         switch self {
-        case .allNotes, .archive, .settings, .about, .welcome, .dailyTemplate: return true
+        case .allNotes, .archive, .settings, .about, .welcome: return true
         case .deck, .peek, .anchoredNote, .detachedNote: return false
         }
     }

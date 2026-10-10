@@ -112,7 +112,7 @@ struct GeneralSettingsPane: View {
                 Option(help: "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.") {
                     Toggle("Show over full-screen apps", isOn: $settings.showOverFullScreen)
                 }
-                HelpNote(text: "KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About, Welcome or Daily Template. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.")
+                HelpNote(text: "KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.")
             }
         }
         .formStyle(.grouped)
@@ -206,7 +206,7 @@ struct DailySettingsPane: View {
                 Option(help: "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.") {
                     Button("Edit Daily Template\u{2026}", action: actions.editDailyTemplate)
                 }
-                HelpNote(text: DailyTemplateEditorView.help)
+                HelpNote(text: DailyTemplateText.help)
                 HelpNote(text: "The template is used only when a new daily note is created: from the calendar button on the deck, \u{2325}\u{2318}Y or the menu. Adding the daily tag to a note you already have never changes its text.")
             }
         }
