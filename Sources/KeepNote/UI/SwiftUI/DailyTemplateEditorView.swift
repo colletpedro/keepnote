@@ -82,8 +82,12 @@ struct DailyTemplatePane: View {
         _model = StateObject(wrappedValue: DailyTemplateModel(store: store))
     }
 
+    /// The container of an ordinary note in this pane: a stack with the same
+    /// 16 pt margin, an info bar above the card, the card below it. The card
+    /// takes what is left and the text scrolls inside it.
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            infoBar
             DailyTemplateCard(model: model, onShowTools: DailyTemplateCard.showTools)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
@@ -91,13 +95,33 @@ struct DailyTemplatePane: View {
                         .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
                 )
                 .shadow(color: .black.opacity(0.14), radius: 8, y: 2)
+            // No `fixedSize` here: pinning the line to its ideal height made
+            // the stack size itself from the card's ideal size instead of
+            // the pane's, and the card grew past it (see the render tests).
             Text(DailyTemplateText.help)
                 .font(.system(size: 11.5))
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
         .onDisappear { model.flush() }
+    }
+
+    private var infoBar: some View {
+        HStack(spacing: 8) {
+            Text("Starts every new daily note")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                Text(model.statusLabel(now: context.date))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(minHeight: 22)
     }
 }
 
@@ -128,13 +152,6 @@ struct DailyTemplateCard: View {
                         .foregroundStyle(color.inkSwiftUI)
                         .lineLimit(1)
                     Spacer(minLength: 8)
-                    TimelineView(.periodic(from: .now, by: 30)) { context in
-                        Text(model.statusLabel(now: context.date))
-                            .font(.system(size: 12))
-                            .foregroundStyle(color.secondaryInkSwiftUI)
-                            .lineLimit(1)
-                            .fixedSize()
-                    }
                     Button(action: onShowTools) {
                         Image(systemName: "wrench.and.screwdriver").font(.system(size: 11))
                     }
@@ -160,6 +177,9 @@ struct DailyTemplateCard: View {
             }
         }
         .background(color.surfaceSwiftUI)
+        // The paper is always light, as in a note's window: text, caret and
+        // placeholder stay dark on it in Dark Mode too.
+        .environment(\.colorScheme, .light)
     }
 
     /// The Tools button: the note editor's menu, acting on the text directly.

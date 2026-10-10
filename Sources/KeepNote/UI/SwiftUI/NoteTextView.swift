@@ -38,6 +38,8 @@ struct NoteTextView: NSViewRepresentable {
         textView.autoresizingMask = [.width]
 
         let scrollView = NSScrollView()
+        // The paper is light in every mode, so the text on it resolves in Aqua.
+        scrollView.appearance = NSAppearance(named: .aqua)
         scrollView.drawsBackground = false
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
@@ -69,6 +71,13 @@ struct NoteTextView: NSViewRepresentable {
         textView.onWidthChange = { [weak coordinator] in coordinator?.restyle(force: true) }
         coordinator.restyle(force: true)
         return scrollView
+    }
+
+    /// The editor takes the room it is offered and never asks for more: a
+    /// scroll view's own size follows its text, so left to itself a long text
+    /// would stretch whatever holds it — the window included.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? 300, height: proposal.height ?? 120)
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
