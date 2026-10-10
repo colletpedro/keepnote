@@ -191,6 +191,38 @@ MainActor.assumeIsolated {
         }
     }
 
+    // MARK: All Notes > Daily with the template selected, beside an ordinary
+    // note in the same pane, at the default and the minimum window size.
+
+    do {
+        let templateDB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("keepnote-template-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: templateDB) }
+        let templateStore = try! NoteStore(databaseURL: templateDB, cipher: BodyCipher(key: SymmetricKey(size: .bits256)))
+        templateStore.setDailyTemplate("# {weekday}, {date}\n\n## Plan\n- [ ] First thing\n- [ ] \n\n## Notes\nWrite here.")
+        var dailyID: UUID?
+        for (index, title) in ["Daily", "Daily", "Daily"].enumerated() {
+            let date = Date(timeIntervalSinceNow: -3600 * Double(index + 1))
+            let note = Note(title: title, body: "Standup at ten.\n- [ ] Review the deck", color: .butter, state: .active, tags: ["daily"],
+                            createdAt: date, updatedAt: date, dailyDay: DailyDay(Date(timeIntervalSinceNow: -86400 * Double(index))))
+            try! templateStore.insert(note, origin: .local)
+            if dailyID == nil { dailyID = note.id }
+        }
+        let actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in },
+                                      delete: { _ in }, export: { _ in })
+        let sizes: [(String, CGSize)] = [("default", CGSize(width: 1080, height: 640)), ("min", CGSize(width: 900, height: 480))]
+        for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            for (sizeName, size) in sizes {
+                renderWindow("allnotes-template-\(suffix)-\(sizeName)", size: size, appearance: appearance,
+                             AllNotesView(store: templateStore, actions: actions, initialSidebar: .library(.daily),
+                                          initialSelection: [DailyTemplatePane.rowID]))
+                renderWindow("allnotes-note-\(suffix)-\(sizeName)", size: size, appearance: appearance,
+                             AllNotesView(store: templateStore, actions: actions, initialSidebar: .library(.daily),
+                                          initialSelection: dailyID.map { [$0] } ?? []))
+            }
+        }
+    }
+
     // MARK: All Notes > Daily with no daily at all.
 
     do {
