@@ -221,6 +221,16 @@ MainActor.assumeIsolated {
                                           initialSelection: dailyID.map { [$0] } ?? []))
             }
         }
+        // The template in each of the five colours.
+        for color in NoteColor.allCases {
+            templateStore.setDailyTemplate(color: color)
+            for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+                renderWindow("allnotes-template-color-\(color.displayName.lowercased())-\(suffix)", size: CGSize(width: 1080, height: 640), appearance: appearance,
+                             AllNotesView(store: templateStore, actions: actions, initialSidebar: .library(.daily),
+                                          initialSelection: [DailyTemplatePane.rowID]))
+            }
+        }
+        templateStore.setDailyTemplate(color: .butter)
     }
 
     // MARK: All Notes > Daily with no daily at all.
