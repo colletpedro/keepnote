@@ -367,3 +367,111 @@ func runDailyTemplateRowTests() {
     outerWindow.contentView = nil
     window.contentView = nil
 }
+
+// MARK: - The template's card inside the real All Notes window
+
+/// WCAG contrast ratio of two colours, both read in sRGB.
+func contrastRatio(_ a: NSColor, _ b: NSColor) -> Double {
+    func luminance(_ color: NSColor) -> Double {
+        let c = color.usingColorSpace(.sRGB) ?? color
+        func channel(_ v: CGFloat) -> Double { let v = Double(v); return v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        return 0.2126 * channel(c.redComponent) + 0.7152 * channel(c.greenComponent) + 0.0722 * channel(c.blueComponent)
+    }
+    let (l1, l2) = (luminance(a), luminance(b))
+    return (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
+}
+
+@MainActor
+func runDailyTemplateLayoutTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("l.sqlite"), key: SymmetricKey(size: .bits256))
+    // Long enough to be taller than the pane, so scrolling inside is what keeps it in.
+    store.setDailyTemplate((0..<80).map { "- [ ] line \($0)" }.joined(separator: "\n"))
+    for index in 0..<4 {
+        let date = Date(timeIntervalSinceNow: -3600 * Double(index + 1))
+        let note = Note(title: "Daily", body: "Standup", color: .butter, state: .active, tags: ["daily"],
+                        createdAt: date, updatedAt: date, dailyDay: DailyDay(Date(timeIntervalSinceNow: -86400 * Double(index))))
+        try! store.insert(note, origin: .local)
+    }
+    let actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in },
+                                  delete: { _ in }, export: { _ in })
+
+    func tables(in view: NSView) -> [NSTableView] {
+        var found: [NSTableView] = []
+        if let table = view as? NSTableView { found.append(table) }
+        for sub in view.subviews { found += tables(in: sub) }
+        return found
+    }
+
+    let cases: [(String, NSAppearance.Name, NSSize)] = [
+        ("light, default size", .aqua, NSSize(width: 1080, height: 640)),
+        ("dark, default size", .darkAqua, NSSize(width: 1080, height: 640)),
+        ("light, minimum size", .aqua, NSSize(width: 900, height: 480)),
+        ("dark, minimum size", .darkAqua, NSSize(width: 900, height: 480)),
+    ]
+    /// The window as the app builds it, off screen, with `selecting` selected.
+    func openWindow(_ appearance: NSAppearance.Name, _ size: NSSize, selecting: Set<UUID>) -> HostingWindowController<AllNotesView> {
+        let controller = HostingWindowController(
+            title: "All Notes", size: size, autosaveName: "KeepNote.Test.\(UUID().uuidString)",
+            minSize: NSSize(width: 900, height: 480),
+            rootView: AllNotesView(store: store, actions: actions, initialSidebar: .library(.daily), initialSelection: selecting))
+        let window = controller.window
+        window.appearance = NSAppearance(named: appearance)
+        window.setFrame(NSRect(origin: NSPoint(x: -10_000, y: -10_000), size: size), display: false)
+        // The real orderFrontRegardless, swapped with a no-op by the runner:
+        // far off screen, so nothing is seen.
+        window.test_orderFrontRegardless()
+        spin(1.2)
+        window.contentView?.layoutSubtreeIfNeeded()
+        spin(0.3)
+        return controller
+    }
+
+    for (name, appearance, size) in cases {
+        // What an ordinary note does to the window is the measure: the
+        // template may not ask for more room than that.
+        let noteID = store.notes.first!.id
+        let reference = openWindow(appearance, size, selecting: [noteID])
+        let referenceFrame = reference.window.frame
+        reference.window.orderOut(nil)
+        reference.window.contentView = nil
+
+        let controller = openWindow(appearance, size, selecting: [DailyTemplatePane.rowID])
+        let window = controller.window
+        guard let content = window.contentView else { expectTrue("layout (\(name)): a content view", false); continue }
+
+        expect("layout (\(name)): the window is the size an ordinary note leaves it",
+               "\(Int(window.frame.width))x\(Int(window.frame.height))", "\(Int(referenceFrame.width))x\(Int(referenceFrame.height))")
+        expectTrue("layout (\(name)): the content is no taller than the window",
+                   content.frame.height <= window.frame.height + 0.5 && content.frame.width <= window.frame.width + 0.5)
+
+        guard let body = textView(in: content) else { expectTrue("layout (\(name)): the editor is there", false); continue }
+        // The editor's scroll view is the card's paper; the text inside it may
+        // be as long as it likes.
+        let card = (body.enclosingScrollView ?? body).convert((body.enclosingScrollView ?? body).bounds, to: nil)
+        let visible = window.contentLayoutRect
+        expectTrue("layout (\(name)): the card is below the toolbar", card.maxY <= visible.maxY + 0.5)
+        expectTrue("layout (\(name)): and above the bottom edge", card.minY >= visible.minY - 0.5)
+        expectTrue("layout (\(name)): and inside the window's width", card.minX >= 0 && card.maxX <= window.frame.width + 0.5)
+
+        let lists = tables(in: content).filter { !$0.isHidden && $0.numberOfRows > 0 }
+        let boxes = lists.map { $0.convert($0.bounds, to: nil) }
+        expectTrue("layout (\(name)): the sidebar and the list are both there", lists.count >= 2)
+        expectTrue("layout (\(name)): each has width", boxes.allSatisfy { $0.width > 0 })
+        expectTrue("layout (\(name)): and rows", lists.allSatisfy { $0.numberOfRows > 0 })
+        expectTrue("layout (\(name)): the card is in the column to their right", boxes.allSatisfy { card.minX >= $0.maxX - 0.5 })
+        expectTrue("layout (\(name)): the lists are inside the window too",
+                   boxes.allSatisfy { $0.minX >= -0.5 && $0.maxX <= window.frame.width + 0.5 && $0.maxY <= visible.maxY + 0.5 })
+
+        // Dark or light, the text on the paper is dark on light.
+        let ink = (body.typingAttributes[.foregroundColor] as? NSColor) ?? .labelColor
+        let paper = NoteColor.default.surface
+        var ratio = 0.0
+        body.effectiveAppearance.performAsCurrentDrawingAppearance { ratio = contrastRatio(ink, paper) }
+        expectTrue("layout (\(name)): the text has 4.5:1 against the paper (\(String(format: "%.1f", ratio)))", ratio >= 4.5)
+        expect("layout (\(name)): the editor is drawn in the light appearance",
+               body.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])?.rawValue, NSAppearance.Name.aqua.rawValue)
+
+        window.orderOut(nil)
+        window.contentView = nil
+    }
+}
