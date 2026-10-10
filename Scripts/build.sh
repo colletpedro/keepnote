@@ -19,13 +19,16 @@
 #                                      restart the Dock and Finder, to drop a
 #                                      stale icon (use with --install or alone)
 #
+# KEEPNOTE_BUILD_DIR builds somewhere other than ./build (release.sh uses a
+# fresh folder of its own).
+#
 # The ./build copy is for building only. --install unregisters it from Launch
 # Services so Spotlight and the Finder find just the installed app.
 #
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="$ROOT/build"
+BUILD_DIR="${KEEPNOTE_BUILD_DIR:-$ROOT/build}"
 APP="$BUILD_DIR/KeepNote.app"
 CONFIG="debug"
 RUN=0
