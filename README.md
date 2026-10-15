@@ -20,6 +20,10 @@ Requires a Mac with an Apple chip (M1 or later) and macOS 13 or newer. The downl
 
 **3. Allow it once.** Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open Anyway** next to KeepNote, and confirm. macOS will not ask again for this copy of the app. (On macOS 13 and 14 you can also Control-click the app and choose **Open**.)
 
+## Updates
+
+KeepNote does not check for updates by itself, because it has no network access. New versions are published on [the site](https://colletpedro.github.io/keepnote/) and on the [releases page](https://github.com/colletpedro/keepnote/releases). **Settings → About → Check for Updates…** opens the site in your browser.
+
 ## Why does macOS show a warning?
 
 KeepNote is not notarized by Apple. Notarization needs a paid Apple Developer membership (US$ 99 a year), and KeepNote is a free, open-source project, so it ships without it for now. macOS shows this warning for every app that has not been through that process. It says Apple has not checked the app, not that something is wrong with it. These are the four things you can check for yourself instead:

@@ -55,7 +55,7 @@
       <p class="facts">Código aberto · macOS · Sem acesso à rede</p>
       <div class="cta">
         <a class="btn" href="https://github.com/colletpedro/keepnote/releases/latest/download/KeepNote.dmg">Baixar para Mac</a>
-        <small>Chip Apple (M1 ou mais novo), macOS 13 ou mais recente.<br><a href="#warning">O macOS mostra um aviso na primeira abertura. Veja por quê.</a></small>
+        <small><span id="version-line" hidden>Versão atual <span id="version"></span>.<br></span>Chip Apple (M1 ou mais novo), macOS 13 ou mais recente.<br><a href="#warning">O macOS mostra um aviso na primeira abertura. Veja por quê.</a></small>
       </div>
     </div>
     <ul class="deck" aria-hidden="true">
@@ -114,6 +114,7 @@
         <p>Ajustes do Sistema → Privacidade e Segurança → Segurança → Abrir Mesmo Assim. Não pergunta de novo. (No macOS 13 e 14, clicar no app com Control e escolher Abrir também funciona.)</p>
       </li>
     </ol>
+    <p class="sub">O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem aqui no site e na <a href="https://github.com/colletpedro/keepnote/releases">página de releases</a>. No app, Ajustes → About → Check for Updates… abre esta página.</p>
   </div>
 </section>
 
@@ -137,5 +138,13 @@
     <span><a href="https://github.com/colletpedro/keepnote">Código-fonte</a> · <a href="https://github.com/colletpedro/keepnote/releases">Versões</a> · <a href="https://github.com/colletpedro/keepnote/blob/main/LICENSE">Licença</a></span>
   </div>
 </footer>
+<script>
+// The version comes from version.json, the one place it is written for the
+// site. Without scripts the line simply stays hidden.
+fetch("../version.json").then(function (r) { return r.json(); }).then(function (v) {
+  document.getElementById("version").textContent = v.version;
+  document.getElementById("version-line").hidden = false;
+}).catch(function () {});
+</script>
 </body>
 </html>

@@ -41,7 +41,7 @@ enum SettingsTab: Int, CaseIterable {
         case .daily: return 230
         case .sync: return 440
         case .shortcuts: return 740
-        case .about: return 340
+        case .about: return 400
         }
     }
 }
@@ -371,6 +371,9 @@ enum AppInfo {
     static var build: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
     }
+    /// Where new versions are published. The app never asks it anything: the
+    /// address is only handed to the browser.
+    static let siteURL = URL(string: "https://colletpedro.github.io/keepnote/")!
 }
 
 struct AboutSettingsPane: View {
@@ -386,6 +389,9 @@ struct AboutSettingsPane: View {
             Text("Version \(AppInfo.version) (\(AppInfo.build))")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+            Button("Check for Updates\u{2026}") { NSWorkspace.shared.open(AppInfo.siteURL) }
+                .controlSize(.small)
+                .help("Opens the KeepNote site in your browser")
             Text("Sticky notes on the edge of your screen.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -397,7 +403,7 @@ struct AboutSettingsPane: View {
                 Button("Export All Notes\u{2026}", action: actions.exportAll)
                 Button("Show Welcome\u{2026}", action: actions.showWelcome)
             }
-            HelpNote(text: "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window.")
+            HelpNote(text: "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser.")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -24,6 +24,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST="$ROOT/dist"
+# The site shows the version from docs/version.json; it must be the app's.
+APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ROOT/Resources/Info.plist")"
+SITE_VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ROOT/docs/version.json")"
+[ "$APP_VERSION" = "$SITE_VERSION" ] \
+    || { echo "error: docs/version.json says \"$SITE_VERSION\" but Info.plist says \"$APP_VERSION\"" >&2; exit 1; }
+
 WORK="$(mktemp -d)"
 APP="$WORK/KeepNote.app"
 DMG="$DIST/KeepNote.dmg"

@@ -55,7 +55,7 @@
       <p class="facts">Open source · macOS · No network access</p>
       <div class="cta">
         <a class="btn" href="https://github.com/colletpedro/keepnote/releases/latest/download/KeepNote.dmg">Download for Mac</a>
-        <small>Apple chip (M1 or later), macOS 13 or newer.<br><a href="#warning">macOS will show a warning on first open. Here is why.</a></small>
+        <small><span id="version-line" hidden>Current version <span id="version"></span>.<br></span>Apple chip (M1 or later), macOS 13 or newer.<br><a href="#warning">macOS will show a warning on first open. Here is why.</a></small>
       </div>
     </div>
     <ul class="deck" aria-hidden="true">
@@ -114,6 +114,7 @@
         <p>System Settings → Privacy & Security → Security → Open Anyway. It will not ask again. (On macOS 13 and 14, Control-click the app and choose Open also works.)</p>
       </li>
     </ol>
+    <p class="sub">KeepNote does not check for updates by itself, because it has no network access. New versions are published here on the site and on the <a href="https://github.com/colletpedro/keepnote/releases">releases page</a>. In the app, Settings → About → Check for Updates… opens this page.</p>
   </div>
 </section>
 
@@ -137,5 +138,13 @@
     <span><a href="https://github.com/colletpedro/keepnote">Source code</a> · <a href="https://github.com/colletpedro/keepnote/releases">Releases</a> · <a href="https://github.com/colletpedro/keepnote/blob/main/LICENSE">License</a></span>
   </div>
 </footer>
+<script>
+// The version comes from version.json, the one place it is written for the
+// site. Without scripts the line simply stays hidden.
+fetch("version.json").then(function (r) { return r.json(); }).then(function (v) {
+  document.getElementById("version").textContent = v.version;
+  document.getElementById("version-line").hidden = false;
+}).catch(function () {});
+</script>
 </body>
 </html>
