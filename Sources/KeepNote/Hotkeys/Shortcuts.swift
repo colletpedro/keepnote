@@ -124,6 +124,22 @@ final class ShortcutStore: ObservableObject {
         combo(for: action)?.displayString
     }
 
+    /// A tooltip naming the shortcut as it is now: "Float Note (⌥⌘P)".
+    func tooltip(_ title: String, _ action: ShortcutAction) -> String {
+        label(for: action).map { L("%@ (%@)", title, $0) } ?? title
+    }
+
+    /// Every shortcut back to KeepNote's own, none of them left without one.
+    func restoreDefaults() {
+        for action in ShortcutAction.all { defaults.removeObject(forKey: Self.key(action)) }
+        changed()
+    }
+
+    /// Whether every shortcut is the one KeepNote comes with.
+    var isAllDefault: Bool {
+        ShortcutAction.all.allSatisfy { defaults.object(forKey: Self.key($0)) == nil }
+    }
+
     private func changed() {
         revision &+= 1
         NotificationCenter.default.post(name: .keepNoteShortcutsChanged, object: self)
@@ -182,6 +198,12 @@ enum ShortcutEditing {
             return .usedBy(fixed.title)
         }
         return isAvailable(combo) ? nil : .inUseByAnotherApp
+    }
+
+    /// Restore Defaults: KeepNote's own shortcuts back, registered again at
+    /// once (the store's change does that).
+    static func restoreDefaults(store: ShortcutStore, hotkeys: HotkeyService) {
+        store.restoreDefaults()
     }
 
     static func record(_ combo: KeyCombo?, for action: ShortcutAction, store: ShortcutStore,

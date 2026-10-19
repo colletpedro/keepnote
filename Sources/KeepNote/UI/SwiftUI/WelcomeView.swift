@@ -16,6 +16,12 @@ struct WelcomeView: View {
     private var allNotes: String { keys(.global(.allNotes)) }
     private var archive: String { keys(.global(.archive)) }
     private var daily: String { keys(.global(.todaysDaily)) }
+    private var floatHint: String {
+        if let keys = shortcuts.label(for: .note(.float)) {
+            return L("To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back.", keys)
+        }
+        return L("To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back.")
+    }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -54,7 +60,7 @@ struct WelcomeView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Text(L("To keep a note on screen, use Float Note on its spine (\u{2325}\u{2318}P), or drag it off the edge. Return to Deck puts it back."))
+            Text(floatHint)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

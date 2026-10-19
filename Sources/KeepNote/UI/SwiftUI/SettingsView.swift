@@ -228,6 +228,15 @@ private func stepper(_ label: String, value: Binding<Int>, in range: ClosedRange
 
 struct DailySettingsPane: View {
     var actions: SettingsActions
+    @ObservedObject var shortcuts: ShortcutStore = .shared
+
+    /// Names the Today's Daily shortcut as it is set now.
+    private var templateHelp: String {
+        if let keys = shortcuts.label(for: .global(.todaysDaily)) {
+            return L("The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text.", keys)
+        }
+        return L("The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text.")
+    }
 
     var body: some View {
         Form {
@@ -236,7 +245,7 @@ struct DailySettingsPane: View {
                     Button(L("Edit Daily Template\u{2026}"), action: actions.editDailyTemplate)
                 }
                 HelpNote(text: DailyTemplateText.help)
-                HelpNote(text: L("The template is used only when a new daily note is created: from the calendar button on the deck, \u{2325}\u{2318}Y or the menu. Adding the daily tag to a note you already have never changes its text."))
+                HelpNote(text: templateHelp)
             }
         }
         .formStyle(.grouped)
@@ -361,6 +370,15 @@ struct ShortcutsSettingsPane: View {
 
     var body: some View {
         Form {
+            Section {
+                HStack(spacing: 12) {
+                    HelpNote(text: L("Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here."))
+                    Spacer(minLength: 8)
+                    Button(L("Restore Defaults")) { ShortcutEditing.restoreDefaults(store: store, hotkeys: hotkeys) }
+                        .disabled(store.isAllDefault)
+                }
+            }
+
             Section(L("Global")) {
                 ForEach(GlobalCommand.allCases) { command in
                     globalRow(command)

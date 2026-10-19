@@ -325,6 +325,8 @@ final class NoteEditorModel: ObservableObject {
 /// The open note. Same card as the tab in the deck, at full size.
 struct NoteEditorView: View {
     @ObservedObject var model: NoteEditorModel
+    /// Tooltips name the shortcuts as they are set now.
+    @ObservedObject var shortcuts: ShortcutStore = .shared
     var presentation: NotePresentation
     var onClose: () -> Void
     var onDelete: () -> Void
@@ -423,7 +425,7 @@ struct NoteEditorView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .help(floating ? L("Return to Deck") : L("Float Note"))
+        .help(shortcuts.tooltip(floating ? L("Return to Deck") : L("Float Note"), .note(.float)))
         .accessibilityLabel(floating ? L("Return to Deck") : L("Float Note"))
     }
 
@@ -648,12 +650,14 @@ struct NoteEditorView: View {
                 Button(L("Delete"), action: onDelete)
                     .buttonStyle(.plain)
                     .fixedSize()
+                    .help(shortcuts.tooltip(L("Delete"), .note(.delete)))
                     .foregroundStyle(Color(nsColor: NSColor(srgbRed: 0.80, green: 0.24, blue: 0.22, alpha: 1)))
 
                 Button(model.state == .archived ? L("Reopen") : L("Mark complete")) {
                     model.toggleComplete()
                 }
                 .buttonStyle(NoteFooterButtonStyle(color: model.color))
+                .help(shortcuts.tooltip(model.state == .archived ? L("Reopen") : L("Mark complete"), .note(.archive)))
 
                 Button(L("Close"), action: onClose)
                     .buttonStyle(NoteFooterButtonStyle(color: model.color))

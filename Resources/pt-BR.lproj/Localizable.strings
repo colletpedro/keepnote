@@ -5,6 +5,7 @@
 "%@  archive" = "%@  arquivadas";
 "%@  new note" = "%@  nova nota";
 "%@  today’s daily" = "%@  daily de hoje";
+"%@ (%@)" = "%@ (%@)";
 "%@ changes color" = "%@ muda a cor";
 "%@ deletes with ten seconds to undo" = "%@ apaga, com dez segundos para desfazer";
 "%@ finds" = "%@ busca";
@@ -240,6 +241,7 @@
 "Rename “#%@”" = "Renomear “#%@”";
 "Reopen" = "Reabrir";
 "Report a problem" = "Relatar um problema";
+"Restore Defaults" = "Restaurar Padrões";
 "Return to Deck" = "Voltar à Pilha";
 "Right" = "Direita";
 "Saving…" = "Salvando…";
@@ -252,6 +254,7 @@
 "Settings" = "Ajustes";
 "Settings…" = "Ajustes…";
 "Shortcuts" = "Atalhos";
+"Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here." = "Os atalhos ficam guardados neste Mac. Os menus, as dicas e a janela de boas-vindas mostram sempre os definidos aqui.";
 "Show All" = "Mostrar Tudo";
 "Show All Dailies" = "Mostrar Todas as Dailies";
 "Show Welcome…" = "Mostrar Boas-vindas…";
@@ -285,11 +288,13 @@
 "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "O lado da tela em que a pilha fica, em todos os monitores. As notas, as espiadas e o arrasto de volta para a pilha acompanham.";
 "The stored encryption key is not a valid 256-bit key." = "A chave de criptografia guardada não é uma chave de 256 bits válida.";
 "The sync folder could not be reopened: %@" = "Não foi possível reabrir a pasta de sincronização: %@";
-"The template is used only when a new daily note is created: from the calendar button on the deck, ⌥⌘Y or the menu. Adding the daily tag to a note you already have never changes its text." = "O modelo só é usado quando uma nova nota daily é criada: pelo botão de calendário na pilha, por ⌥⌘Y ou pelo menu. Adicionar a tag daily a uma nota que você já tem nunca muda o texto dela.";
+"The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text." = "O modelo só é usado quando uma nova nota daily é criada: pelo botão de calendário na pilha ou pelo menu. Adicionar a tag daily a uma nota que você já tem nunca muda o texto dela.";
+"The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text." = "O modelo só é usado quando uma nova nota daily é criada: pelo botão de calendário na pilha, por %@ ou pelo menu. Adicionar a tag daily a uma nota que você já tem nunca muda o texto dela.";
 "These work from any app. KeepNote also lives in the menu bar, and in the Dock while one of its windows is open." = "Eles funcionam em qualquer app. O KeepNote também fica na barra de menus, e no Dock enquanto uma das janelas dele está aberta.";
 "This note could not be decrypted with the key on this Mac." = "Não foi possível decifrar esta nota com a chave deste Mac.";
 "Title" = "Título";
-"To keep a note on screen, use Float Note on its spine (⌥⌘P), or drag it off the edge. Return to Deck puts it back." = "Para manter uma nota na tela, use Flutuar Nota na lombada (⌥⌘P) ou arraste-a para longe da borda. Voltar à Pilha a devolve.";
+"To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back." = "Para manter uma nota na tela, use Flutuar Nota na lombada (%@) ou arraste-a para longe da borda. Voltar à Pilha a devolve.";
+"To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back." = "Para manter uma nota na tela, use Flutuar Nota na lombada ou arraste-a para longe da borda. Voltar à Pilha a devolve.";
 "Today's date" = "Data de hoje";
 "Today’s Daily" = "Daily de Hoje";
 "Today’s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there." = "Daily de Hoje abre a daily mais recente de hoje, ou cria uma com o dia e o mês no título. Qualquer nota vira uma daily quando tem a tag daily, quantas você quiser por dia. As dailies dos seus dois dias mais recentes ficam na pilha; as mais antigas são arquivadas (nunca apagadas) e guardadas em Daily, em Todas as Notas. Uma que você mesmo trouxer de volta à pilha fica lá.";

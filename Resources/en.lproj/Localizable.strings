@@ -5,6 +5,7 @@
 "%@  archive" = "%@  archive";
 "%@  new note" = "%@  new note";
 "%@  today’s daily" = "%@  today’s daily";
+"%@ (%@)" = "%@ (%@)";
 "%@ changes color" = "%@ changes color";
 "%@ deletes with ten seconds to undo" = "%@ deletes with ten seconds to undo";
 "%@ finds" = "%@ finds";
@@ -240,6 +241,7 @@
 "Rename “#%@”" = "Rename “#%@”";
 "Reopen" = "Reopen";
 "Report a problem" = "Report a problem";
+"Restore Defaults" = "Restore Defaults";
 "Return to Deck" = "Return to Deck";
 "Right" = "Right";
 "Saving…" = "Saving…";
@@ -252,6 +254,7 @@
 "Settings" = "Settings";
 "Settings…" = "Settings…";
 "Shortcuts" = "Shortcuts";
+"Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here." = "Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here.";
 "Show All" = "Show All";
 "Show All Dailies" = "Show All Dailies";
 "Show Welcome…" = "Show Welcome…";
@@ -285,11 +288,13 @@
 "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it.";
 "The stored encryption key is not a valid 256-bit key." = "The stored encryption key is not a valid 256-bit key.";
 "The sync folder could not be reopened: %@" = "The sync folder could not be reopened: %@";
-"The template is used only when a new daily note is created: from the calendar button on the deck, ⌥⌘Y or the menu. Adding the daily tag to a note you already have never changes its text." = "The template is used only when a new daily note is created: from the calendar button on the deck, ⌥⌘Y or the menu. Adding the daily tag to a note you already have never changes its text.";
+"The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text." = "The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text.";
+"The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text." = "The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text.";
 "These work from any app. KeepNote also lives in the menu bar, and in the Dock while one of its windows is open." = "These work from any app. KeepNote also lives in the menu bar, and in the Dock while one of its windows is open.";
 "This note could not be decrypted with the key on this Mac." = "This note could not be decrypted with the key on this Mac.";
 "Title" = "Title";
-"To keep a note on screen, use Float Note on its spine (⌥⌘P), or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine (⌥⌘P), or drag it off the edge. Return to Deck puts it back.";
+"To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back.";
+"To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back.";
 "Today's date" = "Today's date";
 "Today’s Daily" = "Today’s Daily";
 "Today’s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there." = "Today’s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there.";
