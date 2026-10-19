@@ -541,7 +541,8 @@ MainActor.assumeIsolated {
 
         /// `pinned` are positions in the list given to the deck; they are pinned in
         /// that order and the deck is arranged around them, as the app does.
-        @MainActor func renderDeck(_ name: String, count: Int, hoverTab: Int? = nil, pinned: [Int] = [], expiring: [Int] = []) {
+        @MainActor func renderDeck(_ name: String, count: Int, hoverTab: Int? = nil, pinned: [Int] = [], expiring: [Int] = [],
+                                   edge: ScreenEdge = .right) {
             var listed = Array(deckNotes.prefix(count))
             for position in expiring {
                 listed[position].lastOpenedDay = DailyDay(epoch: DailyDay(Date()).epochDay - 13)
@@ -553,7 +554,7 @@ MainActor.assumeIsolated {
             let arrangement = PinnedDeck.arrange(listed)
             let notes = arrangement.items
             let block: DeckGeometry.PinnedBlock? = arrangement.pinned > 0 ? .init(above: arrangement.above, count: arrangement.pinned) : nil
-            let geometry = DeckGeometry.layout(count: count, usableHeight: usable, columnWidth: width, pinned: block)
+            let geometry = DeckGeometry.layout(count: count, usableHeight: usable, columnWidth: width, pinned: block, edge: edge)
             let size = CGSize(width: width + 40, height: usable)
             let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless],
                                   backing: .buffered, defer: false)
@@ -562,8 +563,11 @@ MainActor.assumeIsolated {
             backdrop.wantsLayer = true
             backdrop.layer?.backgroundColor = NSColor(white: 0.55, alpha: 1).cgColor
             window.contentView = backdrop
-            let stack = EdgeStackView(frame: NSRect(x: 40, y: (usable - geometry.deckHeight) / 2,
+            // Flush with the backdrop's edge on the deck's side, the room for
+            // the lift and the shadows on the other.
+            let stack = EdgeStackView(frame: NSRect(x: edge == .right ? 40 : 0, y: (usable - geometry.deckHeight) / 2,
                                                     width: width, height: geometry.deckHeight))
+            stack.edge = edge
             backdrop.addSubview(stack)
             stack.fanOut(notes: notes, usableHeight: usable, pinned: block, stagger: 0, preserveScroll: false)
             stack.setFloating([notes[min(2, count - 1)].id])
@@ -600,6 +604,65 @@ MainActor.assumeIsolated {
         renderDeck("deck-pinned-hover", count: 30, hoverTab: 10, pinned: [2, 8, 14])
         renderDeck("deck-expiring", count: 6, pinned: [3], expiring: [0, 1, 4])
         renderDeck("deck-expiring-packed", count: 24, expiring: [2, 3, 9, 10])
+        // The same decks on the left edge, mirrored.
+        renderDeck("deck-left-8", count: 8, edge: .left)
+        renderDeck("deck-left-36", count: 36, edge: .left)
+        renderDeck("deck-left-60", count: 60, edge: .left)
+        renderDeck("deck-left-20-hover", count: 20, hoverTab: 8, edge: .left)
+        renderDeck("deck-left-pinned-hover", count: 30, hoverTab: 10, pinned: [2, 8, 14], edge: .left)
+        renderDeck("deck-left-expiring", count: 6, pinned: [3], expiring: [0, 1, 4], edge: .left)
+
+        // A screen with the deck open on each edge: a peek out of the hovered
+        // tab, and a note anchored where it sits, both towards the middle.
+        @MainActor func renderScreen(_ name: String, edge: ScreenEdge, anchored: Bool) {
+            let area = NSRect(x: 0, y: 0, width: 1000, height: 640)
+            let window = NSWindow(contentRect: area, styleMask: [.borderless], backing: .buffered, defer: false)
+            window.appearance = NSAppearance(named: .aqua)
+            let backdrop = NSView(frame: area)
+            backdrop.wantsLayer = true
+            backdrop.layer?.backgroundColor = NSColor(white: 0.55, alpha: 1).cgColor
+            window.contentView = backdrop
+            let notes = Array(deckNotes.prefix(6))
+            let geometry = DeckGeometry.layout(count: notes.count, usableHeight: area.height - 24, columnWidth: width, edge: edge)
+            let deckFrame = NSRect(x: edge.flushX(width: width, in: area), y: area.midY - geometry.deckHeight / 2,
+                                   width: width, height: geometry.deckHeight)
+            let stack = EdgeStackView(frame: deckFrame)
+            stack.edge = edge
+            // The tab the peek or the note belongs to, in "screen" coordinates.
+            let tab = geometry.frames[2].offsetBy(dx: deckFrame.minX, dy: deckFrame.minY + geometry.columnBottom)
+            func card(_ frame: NSRect, _ view: some View, round: CACornerMask) -> NSView {
+                let host = NSHostingView(rootView: view)
+                host.frame = frame
+                host.wantsLayer = true
+                host.layer?.cornerRadius = 12
+                host.layer?.maskedCorners = round
+                host.layer?.masksToBounds = true
+                return host
+            }
+            let inner: CACornerMask = edge == .right ? [.layerMinXMinYCorner, .layerMinXMaxYCorner] : [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+            if anchored {
+                let frame = NoteWindowController.anchoredFrame(in: area, centerY: tab.midY, edge: edge)
+                let model = NoteEditorModel(note: notes[2], store: deckStore)
+                backdrop.addSubview(card(frame, NoteEditorView(model: model, presentation: .anchored, onClose: {}, onDelete: {}, onTogglePin: {}), round: inner))
+            } else {
+                let frame = NotePreviewController.frame(for: tab, deckWidth: width, area: area, edge: edge)
+                backdrop.addSubview(card(frame, NotePreviewView(note: notes[2]), round: inner))
+            }
+            // The deck over the card, as the app orders it.
+            backdrop.addSubview(stack)
+            stack.fanOut(notes: notes, usableHeight: area.height - 24, stagger: 0, preserveScroll: false)
+            RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+            backdrop.layoutSubtreeIfNeeded()
+            let rep = backdrop.bitmapImageRepForCachingDisplay(in: backdrop.bounds)!
+            backdrop.cacheDisplay(in: backdrop.bounds, to: rep)
+            let url = outDir.appendingPathComponent("\(name).png")
+            try! rep.representation(using: .png, properties: [:])!.write(to: url)
+            print("wrote", url.path)
+        }
+        for edge in ScreenEdge.allCases {
+            renderScreen("screen-\(edge.rawValue)-peek", edge: edge, anchored: false)
+            renderScreen("screen-\(edge.rawValue)-anchored", edge: edge, anchored: true)
+        }
         Motion.reduceMotionOverride = nil
     }
 
