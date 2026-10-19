@@ -9,6 +9,10 @@
 "%@ changes color" = "%@ muda a cor";
 "%@ deletes with ten seconds to undo" = "%@ apaga, com dez segundos para desfazer";
 "%@ finds" = "%@ busca";
+"%@ now has no shortcut" = "%@ agora está sem atalho";
+"%@ set to %@" = "%@ definido como %@";
+"%@ unchanged: %@" = "%@ sem alteração: %@";
+"%@. %@ keeps %@" = "%@. %@ continua com %@";
 "%d archived" = "%d arquivadas";
 "%d days" = "%d dias";
 "%d days ago" = "há %d dias";
@@ -74,7 +78,9 @@
 "Close (esc)" = "Fechar (esc)";
 "Code block" = "Bloco de código";
 "Colors, states and dates came across unchanged." = "Cores, estados e datas vieram sem alteração.";
+"Command" = "Command";
 "Continue" = "Continuar";
+"Control" = "Control";
 "Copy" = "Copiar";
 "Coral" = "Coral";
 "Could not apply a change from the folder: %@" = "Não foi possível aplicar uma alteração da pasta: %@";
@@ -99,6 +105,7 @@
 "Delete Tag…" = "Apagar Tag…";
 "Delete the tag “#%@”?" = "Apagar a tag “#%@”?";
 "Divider" = "Divisor";
+"Down Arrow" = "Seta para Baixo";
 "Earlier dailies" = "Dailies anteriores";
 "Edit" = "Editar";
 "Edit Daily Template…" = "Editar Modelo da Daily…";
@@ -107,6 +114,7 @@
 "Edit the text new daily notes start from" = "Editar o texto com que as novas notas daily começam";
 "Edited %@" = "Editada %@";
 "End the list, or outdent when nested" = "Encerrar a lista, ou recuar quando aninhada";
+"Escape" = "Esc";
 "Every note with this tag gets the new name." = "Todas as notas com esta tag recebem o novo nome.";
 "Export %d Notes…" = "Exportar %d Notas…";
 "Export All Notes…" = "Exportar Todas as Notas…";
@@ -126,6 +134,7 @@
 "Forget Folder" = "Esquecer Pasta";
 "Format" = "Formatar";
 "Formatting" = "Formatação";
+"Forward Delete" = "Apagar à Direita";
 "General" = "Geral";
 "Get Started" = "Começar";
 "Global" = "Globais";
@@ -164,6 +173,7 @@
 "Language" = "Idioma";
 "Launch at login" = "Abrir ao iniciar sessão";
 "Left" = "Esquerda";
+"Left Arrow" = "Seta para a Esquerda";
 "Library" = "Biblioteca";
 "Lilac" = "Lilás";
 "Link" = "Link";
@@ -213,6 +223,7 @@
 "Opens KeepNote when you log in, so the deck is always there." = "Abre o KeepNote quando você inicia a sessão, para a pilha estar sempre lá.";
 "Opens KeepNote's issues on GitHub in your browser" = "Abre as issues do KeepNote no GitHub, no navegador";
 "Opens the KeepNote site in your browser" = "Abre o site do KeepNote no navegador";
+"Option" = "Option";
 "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note." = "Outras tags não podem ser renomeadas para ela nem mescladas nela. Adicione a tag a uma nota para torná-la uma nota daily.";
 "Outdent item" = "Diminuir recuo do item";
 "Paste" = "Colar";
@@ -223,6 +234,8 @@
 "Pinned and kept notes" = "Notas fixadas e mantidas";
 "Pinned to center" = "Fixada no centro";
 "Plain text — one file per note" = "Texto simples — um arquivo por nota";
+"Press the new shortcut for %@. Escape cancels, Delete leaves it without one." = "Pressione o novo atalho para %@. Esc cancela, Delete deixa sem atalho.";
+"Press to record a new shortcut." = "Pressione para gravar um novo atalho.";
 "Previous color" = "Cor anterior";
 "Previous match" = "Resultado anterior";
 "Quit" = "Encerrar";
@@ -230,6 +243,7 @@
 "Quote" = "Citação";
 "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set." = "Coloca a pilha acima das janelas em tela cheia. O Stage Manager não mexe nela de qualquer forma, porque um painel flutuante não faz parte do conjunto de janelas de um app.";
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Lê notas, ou um arquivo do KeepNote, de arquivos deste Mac.";
+"Recording" = "Gravando";
 "Redo" = "Refazer";
 "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registrados pela API de atalhos do sistema, que entrega ao KeepNote só estas combinações. Nenhuma permissão de Acessibilidade ou de Monitoramento de Entrada é necessária.";
 "Relaunch Now" = "Reabrir agora";
@@ -242,8 +256,10 @@
 "Reopen" = "Reabrir";
 "Report a problem" = "Relatar um problema";
 "Restore Defaults" = "Restaurar Padrões";
+"Return" = "Return";
 "Return to Deck" = "Voltar à Pilha";
 "Right" = "Direita";
+"Right Arrow" = "Seta para a Direita";
 "Saving…" = "Salvando…";
 "Screen edge" = "Borda da tela";
 "Search %@" = "Buscar em %@";
@@ -253,6 +269,8 @@
 "Services" = "Serviços";
 "Settings" = "Ajustes";
 "Settings…" = "Ajustes…";
+"Shift" = "Shift";
+"Shortcut for %@" = "Atalho para %@";
 "Shortcuts" = "Atalhos";
 "Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here." = "Os atalhos ficam guardados neste Mac. Os menus, as dicas e a janela de boas-vindas mostram sempre os definidos aqui.";
 "Show All" = "Mostrar Tudo";
@@ -272,6 +290,7 @@
 "Sync notes through a folder" = "Sincronizar notas por uma pasta";
 "Syncing" = "Sincronizando";
 "System" = "Sistema";
+"Tab" = "Tab";
 "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste." = "Tab funciona em qualquer ponto de um item, ou em vários itens selecionados. Os itens numerados se renumeram quando você insere, remove, recua ou cola.";
 "Table" = "Tabela";
 "Tags" = "Tags";
@@ -308,6 +327,7 @@
 "Unpin from Center" = "Desafixar do Centro";
 "Untagged" = "Sem Tag";
 "Untitled" = "Sem Título";
+"Up Arrow" = "Seta para Cima";
 "Up to %d pinned notes" = "Até %d notas fixadas";
 "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule." = "Até cinco notas podem ser fixadas. Elas ficam no meio da altura da pilha, sempre inteiras e nunca sobrepostas: a primeira fixada no meio, a segunda acima dela, a terceira abaixo, a quarta acima e a quinta abaixo. Fixar também liga Manter na Pilha; desafixar o deixa ligado. Uma nota mantida ou fixada nunca é arquivada pela regra de tempo.";
 "Use This Folder" = "Usar Esta Pasta";

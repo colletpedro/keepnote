@@ -33,6 +33,8 @@ final class ShortcutRecorderField: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
         wantsLayer = true
         layer?.cornerRadius = 6
         layer?.borderWidth = 1
@@ -72,6 +74,7 @@ final class ShortcutRecorderField: NSView {
         onRecordingChanged?(true)
         label.stringValue = L("Type a shortcut")
         updateLook()
+        announce(L("Press the new shortcut for %@. Escape cancels, Delete leaves it without one.", actionTitle))
     }
 
     @MainActor func stopRecording() {
@@ -80,6 +83,7 @@ final class ShortcutRecorderField: NSView {
         Self.isRecordingAny = false
         onRecordingChanged?(false)
         showCurrent()
+        announce(L("%@ unchanged: %@", actionTitle, spokenCurrent))
     }
 
     override func resignFirstResponder() -> Bool {
@@ -136,9 +140,52 @@ final class ShortcutRecorderField: NSView {
         case .accepted:
             self.combo = combo
             showCurrent()
+            announce(combo == nil ? L("%@ now has no shortcut", actionTitle) : L("%@ set to %@", actionTitle, spokenCurrent))
         case .refused(let reason):
             show(reason)
+            announce(L("%@. %@ keeps %@", reason, actionTitle, spokenCurrent))
         }
+    }
+
+    // MARK: - VoiceOver
+
+    /// The shortcut as it would be read: "Option Command N", or "None".
+    private var spokenCurrent: String { combo?.spokenString ?? L("None") }
+
+    override func accessibilityLabel() -> String? { L("Shortcut for %@", actionTitle) }
+
+    override func accessibilityValue() -> Any? {
+        if isRecording { return L("Recording") }
+        return message ?? spokenCurrent
+    }
+
+    override func accessibilityHelp() -> String? { L("Press to record a new shortcut.") }
+
+    override func accessibilityPerformPress() -> Bool {
+        MainActor.assumeIsolated {
+            window?.makeFirstResponder(self)
+            startRecording()
+        }
+        return true
+    }
+
+    /// What VoiceOver was last asked to say, for the tests.
+    @MainActor static private(set) var lastAnnouncement: String?
+
+    @MainActor private func announce(_ text: String) {
+        Self.lastAnnouncement = text
+        NSAccessibility.post(
+            element: window ?? self,
+            notification: .announcementRequested,
+            userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue]
+        )
+        NSAccessibility.post(element: self, notification: .valueChanged)
+    }
+
+    /// Drives the field as a press of `event` would, for the tests.
+    @MainActor func recordForTesting(_ event: NSEvent) {
+        if !isRecording { startRecording() }
+        record(event)
     }
 
     // MARK: - Showing

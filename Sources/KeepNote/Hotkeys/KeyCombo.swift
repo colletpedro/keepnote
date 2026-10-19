@@ -50,6 +50,28 @@ struct KeyCombo: Equatable, Codable, Sendable {
         return result
     }
 
+    /// The combination as VoiceOver should say it: "Option Command N".
+    var spokenString: String {
+        var words: [String] = []
+        if carbonModifiers & UInt32(controlKey) != 0 { words.append(L("Control")) }
+        if carbonModifiers & UInt32(optionKey) != 0 { words.append(L("Option")) }
+        if carbonModifiers & UInt32(shiftKey) != 0 { words.append(L("Shift")) }
+        if carbonModifiers & UInt32(cmdKey) != 0 { words.append(L("Command")) }
+        switch Int(keyCode) {
+        case kVK_Delete: words.append(L("Delete"))
+        case kVK_ForwardDelete: words.append(L("Forward Delete"))
+        case kVK_Return: words.append(L("Return"))
+        case kVK_Tab: words.append(L("Tab"))
+        case kVK_Escape: words.append(L("Escape"))
+        case kVK_LeftArrow: words.append(L("Left Arrow"))
+        case kVK_RightArrow: words.append(L("Right Arrow"))
+        case kVK_UpArrow: words.append(L("Up Arrow"))
+        case kVK_DownArrow: words.append(L("Down Arrow"))
+        default: words.append(KeyCombo.keyName(for: keyCode))
+        }
+        return words.joined(separator: " ")
+    }
+
     /// The character a menu item needs for its key equivalent.
     var menuKeyEquivalent: String {
         if let special = KeyCombo.menuSpecials[Int(keyCode)] { return special }

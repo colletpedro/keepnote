@@ -9,6 +9,10 @@
 "%@ changes color" = "%@ changes color";
 "%@ deletes with ten seconds to undo" = "%@ deletes with ten seconds to undo";
 "%@ finds" = "%@ finds";
+"%@ now has no shortcut" = "%@ now has no shortcut";
+"%@ set to %@" = "%@ set to %@";
+"%@ unchanged: %@" = "%@ unchanged: %@";
+"%@. %@ keeps %@" = "%@. %@ keeps %@";
 "%d archived" = "%d archived";
 "%d days" = "%d days";
 "%d days ago" = "%d days ago";
@@ -74,7 +78,9 @@
 "Close (esc)" = "Close (esc)";
 "Code block" = "Code block";
 "Colors, states and dates came across unchanged." = "Colors, states and dates came across unchanged.";
+"Command" = "Command";
 "Continue" = "Continue";
+"Control" = "Control";
 "Copy" = "Copy";
 "Coral" = "Coral";
 "Could not apply a change from the folder: %@" = "Could not apply a change from the folder: %@";
@@ -99,6 +105,7 @@
 "Delete Tag…" = "Delete Tag…";
 "Delete the tag “#%@”?" = "Delete the tag “#%@”?";
 "Divider" = "Divider";
+"Down Arrow" = "Down Arrow";
 "Earlier dailies" = "Earlier dailies";
 "Edit" = "Edit";
 "Edit Daily Template…" = "Edit Daily Template…";
@@ -107,6 +114,7 @@
 "Edit the text new daily notes start from" = "Edit the text new daily notes start from";
 "Edited %@" = "Edited %@";
 "End the list, or outdent when nested" = "End the list, or outdent when nested";
+"Escape" = "Escape";
 "Every note with this tag gets the new name." = "Every note with this tag gets the new name.";
 "Export %d Notes…" = "Export %d Notes…";
 "Export All Notes…" = "Export All Notes…";
@@ -126,6 +134,7 @@
 "Forget Folder" = "Forget Folder";
 "Format" = "Format";
 "Formatting" = "Formatting";
+"Forward Delete" = "Forward Delete";
 "General" = "General";
 "Get Started" = "Get Started";
 "Global" = "Global";
@@ -164,6 +173,7 @@
 "Language" = "Language";
 "Launch at login" = "Launch at login";
 "Left" = "Left";
+"Left Arrow" = "Left Arrow";
 "Library" = "Library";
 "Lilac" = "Lilac";
 "Link" = "Link";
@@ -213,6 +223,7 @@
 "Opens KeepNote when you log in, so the deck is always there." = "Opens KeepNote when you log in, so the deck is always there.";
 "Opens KeepNote's issues on GitHub in your browser" = "Opens KeepNote's issues on GitHub in your browser";
 "Opens the KeepNote site in your browser" = "Opens the KeepNote site in your browser";
+"Option" = "Option";
 "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note." = "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note.";
 "Outdent item" = "Outdent item";
 "Paste" = "Paste";
@@ -223,6 +234,8 @@
 "Pinned and kept notes" = "Pinned and kept notes";
 "Pinned to center" = "Pinned to center";
 "Plain text — one file per note" = "Plain text — one file per note";
+"Press the new shortcut for %@. Escape cancels, Delete leaves it without one." = "Press the new shortcut for %@. Escape cancels, Delete leaves it without one.";
+"Press to record a new shortcut." = "Press to record a new shortcut.";
 "Previous color" = "Previous color";
 "Previous match" = "Previous match";
 "Quit" = "Quit";
@@ -230,6 +243,7 @@
 "Quote" = "Quote";
 "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set." = "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.";
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Reads notes, or a KeepNote archive, from files on this Mac.";
+"Recording" = "Recording";
 "Redo" = "Redo";
 "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.";
 "Relaunch Now" = "Relaunch Now";
@@ -242,8 +256,10 @@
 "Reopen" = "Reopen";
 "Report a problem" = "Report a problem";
 "Restore Defaults" = "Restore Defaults";
+"Return" = "Return";
 "Return to Deck" = "Return to Deck";
 "Right" = "Right";
+"Right Arrow" = "Right Arrow";
 "Saving…" = "Saving…";
 "Screen edge" = "Screen edge";
 "Search %@" = "Search %@";
@@ -253,6 +269,8 @@
 "Services" = "Services";
 "Settings" = "Settings";
 "Settings…" = "Settings…";
+"Shift" = "Shift";
+"Shortcut for %@" = "Shortcut for %@";
 "Shortcuts" = "Shortcuts";
 "Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here." = "Shortcuts are kept on this Mac. Menus, tooltips and the welcome window always show the ones set here.";
 "Show All" = "Show All";
@@ -272,6 +290,7 @@
 "Sync notes through a folder" = "Sync notes through a folder";
 "Syncing" = "Syncing";
 "System" = "System";
+"Tab" = "Tab";
 "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste." = "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste.";
 "Table" = "Table";
 "Tags" = "Tags";
@@ -308,6 +327,7 @@
 "Unpin from Center" = "Unpin from Center";
 "Untagged" = "Untagged";
 "Untitled" = "Untitled";
+"Up Arrow" = "Up Arrow";
 "Up to %d pinned notes" = "Up to %d pinned notes";
 "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule." = "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule.";
 "Use This Folder" = "Use This Folder";
