@@ -130,12 +130,27 @@
     </ol>
   </div>
 </section>
+<section id="uninstall">
+  <div class="wrap why">
+    <h2>Uninstall</h2>
+    <p>Quit KeepNote first (menu bar icon → Quit KeepNote). If <b>Launch at login</b> is on, turn it off in Settings → General before you delete the app. Then remove each of these:</p>
+    <ol class="promises">
+      <li><div><b>The app.</b> <code>/Applications/KeepNote.app</code>. Move it to the Trash.</div></li>
+      <li><div><b>The database, your notes.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite</code>, with <code>notes.sqlite-wal</code> and <code>notes.sqlite-shm</code> beside it. Delete the whole container, <code>~/Library/Containers/com.keepnote.KeepNote</code>: in the Finder choose Go → Go to Folder…, type <code>~/Library/Containers</code>, and move the folder named <b>KeepNote</b> to the Trash.</div></li>
+      <li><div><b>The preferences.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist</code>. It goes with the container.</div></li>
+      <li><div><b>The encryption key.</b> A password item in the login keychain, service <code>com.keepnote.KeepNote.bodykey</code>, account <code>default</code>. In Keychain Access, search for it and delete it, or run <code>security delete-generic-password -s com.keepnote.KeepNote.bodykey</code> in Terminal.</div></li>
+      <li><div><b>The login item.</b> KeepNote itself, registered with macOS while Launch at login is on. Turn that off before deleting the app. If the app is already gone: System Settings → General → Login Items (Login Items &amp; Extensions on macOS 15 and later), select KeepNote under Open at Login and click −.</div></li>
+    </ol>
+    <p>The key only decrypts that database, so remove the two together. Once the container is gone your notes are gone with it: export them first (Settings → About → Export All Notes…) if you want to keep them.</p>
+    <p><b>Your sync folder is yours.</b> KeepNote never deletes it, and uninstalling leaves it and its <code>.hmnote</code> and <code>.hmtemplate</code> files exactly where they are. Delete it yourself if you no longer want it.</p>
+  </div>
+</section>
 </main>
 
 <footer class="site">
   <div class="wrap">
     <span>MIT license · Free and open source</span>
-    <span><a href="https://github.com/colletpedro/keepnote">Source code</a> · <a href="https://github.com/colletpedro/keepnote/releases">Releases</a> · <a href="https://github.com/colletpedro/keepnote/blob/main/LICENSE">License</a></span>
+    <span><a href="https://github.com/colletpedro/keepnote">Source code</a> · <a href="https://github.com/colletpedro/keepnote/releases">Releases</a> · <a href="#uninstall">Uninstall</a> · <a href="https://github.com/colletpedro/keepnote/blob/main/LICENSE">License</a></span>
   </div>
 </footer>
 <script>

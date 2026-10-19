@@ -130,12 +130,27 @@
     </ol>
   </div>
 </section>
+<section id="uninstall">
+  <div class="wrap why">
+    <h2>Desinstalar</h2>
+    <p>Primeiro saia do KeepNote (ícone da barra de menus → Quit KeepNote). Se <b>Launch at login</b> estiver ligado, desligue em Settings → General antes de apagar o app. Depois remova cada item:</p>
+    <ol class="promises">
+      <li><div><b>O app.</b> <code>/Applications/KeepNote.app</code>. Mova para o Lixo.</div></li>
+      <li><div><b>O banco, suas notas.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite</code>, com <code>notes.sqlite-wal</code> e <code>notes.sqlite-shm</code> ao lado. Apague o container inteiro, <code>~/Library/Containers/com.keepnote.KeepNote</code>: no Finder escolha Ir → Ir para a Pasta…, digite <code>~/Library/Containers</code> e mova a pasta chamada <b>KeepNote</b> para o Lixo.</div></li>
+      <li><div><b>As preferências.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist</code>. Vão junto com o container.</div></li>
+      <li><div><b>A chave de criptografia.</b> Um item de senha no keychain de login, serviço <code>com.keepnote.KeepNote.bodykey</code>, conta <code>default</code>. No Acesso às Chaves, busque e apague, ou rode <code>security delete-generic-password -s com.keepnote.KeepNote.bodykey</code> no Terminal.</div></li>
+      <li><div><b>O item de login.</b> O próprio KeepNote, registrado no macOS enquanto Launch at login está ligado. Desligue antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −.</div></li>
+    </ol>
+    <p>A chave só serve para abrir aquele banco, então remova os dois juntos. Sem o container, suas notas vão embora com ele: exporte antes (Settings → About → Export All Notes…) se quiser guardá-las.</p>
+    <p><b>A pasta de sync é sua.</b> O KeepNote nunca a apaga, e desinstalar deixa a pasta e os arquivos <code>.hmnote</code> e <code>.hmtemplate</code> exatamente onde estão. Apague você mesmo se não quiser mais.</p>
+  </div>
+</section>
 </main>
 
 <footer class="site">
   <div class="wrap">
     <span>Licença MIT · Gratuito e de código aberto</span>
-    <span><a href="https://github.com/colletpedro/keepnote">Código-fonte</a> · <a href="https://github.com/colletpedro/keepnote/releases">Versões</a> · <a href="https://github.com/colletpedro/keepnote/blob/main/LICENSE">Licença</a></span>
+    <span><a href="https://github.com/colletpedro/keepnote">Código-fonte</a> · <a href="https://github.com/colletpedro/keepnote/releases">Versões</a> · <a href="#uninstall">Desinstalar</a> · <a href="https://github.com/colletpedro/keepnote/blob/main/LICENSE">Licença</a></span>
   </div>
 </footer>
 <script>

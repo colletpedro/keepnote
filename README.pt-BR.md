@@ -111,6 +111,22 @@ O texto das suas notas é cifrado no banco local (AES-GCM) com uma chave guardad
 
 O banco fica em `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`.
 
+## Desinstalar
+
+Primeiro saia do KeepNote (ícone da barra de menus → Quit KeepNote). Se **Launch at login** estiver ligado, desligue em Settings → General antes de apagar o app. Depois remova cada item:
+
+| O quê | Onde | Como remover |
+|---|---|---|
+| O app | `/Applications/KeepNote.app` | Mova para o Lixo. |
+| Banco (suas notas) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, com `notes.sqlite-wal` e `notes.sqlite-shm` ao lado | Apague o container inteiro, `~/Library/Containers/com.keepnote.KeepNote`. No Finder: Ir → Ir para a Pasta…, digite `~/Library/Containers` e mova a pasta chamada **KeepNote** para o Lixo. |
+| Preferências | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist` | Vai junto com o container acima. |
+| Chave de criptografia | Keychain de login, item de senha com serviço `com.keepnote.KeepNote.bodykey`, conta `default` | Acesso às Chaves: busque `com.keepnote.KeepNote.bodykey` e apague. Ou no Terminal: `security delete-generic-password -s com.keepnote.KeepNote.bodykey` |
+| Item de login | O próprio KeepNote, registrado no macOS (`SMAppService`) quando Launch at login está ligado | Desligue Launch at login antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −. |
+
+A chave só serve para abrir aquele banco; remova os dois juntos. Sem o container, suas notas vão embora com ele, então exporte antes (Settings → About → Export All Notes…) se quiser guardá-las.
+
+**A pasta de sync é sua.** O KeepNote nunca a apaga, e desinstalar deixa a pasta e os arquivos `.hmnote` e `.hmtemplate` exatamente onde estão. Apague você mesmo se não quiser mais.
+
 ## Licença
 
 MIT. Veja [LICENSE](LICENSE).

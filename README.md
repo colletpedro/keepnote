@@ -111,6 +111,22 @@ The text of your notes is encrypted in the local database (AES-GCM) with a key k
 
 The database lives at `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`.
 
+## Uninstall
+
+Quit KeepNote first (menu bar icon → Quit KeepNote). If **Launch at login** is on, turn it off in Settings → General before you delete the app. Then remove each of these:
+
+| What | Where | How to remove it |
+|---|---|---|
+| The app | `/Applications/KeepNote.app` | Move it to the Trash. |
+| Database (your notes) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, with `notes.sqlite-wal` and `notes.sqlite-shm` beside it | Delete the whole container, `~/Library/Containers/com.keepnote.KeepNote`. In the Finder: Go → Go to Folder…, type `~/Library/Containers`, and move the folder named **KeepNote** to the Trash. |
+| Preferences | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist` | Goes with the container above. |
+| Encryption key | Login keychain, password item with service `com.keepnote.KeepNote.bodykey`, account `default` | Keychain Access: search for `com.keepnote.KeepNote.bodykey` and delete it. Or in Terminal: `security delete-generic-password -s com.keepnote.KeepNote.bodykey` |
+| Login item | KeepNote itself, registered with macOS (`SMAppService`) when Launch at login is on | Turn off Launch at login before deleting the app. If the app is already gone: System Settings → General → Login Items (Login Items & Extensions on macOS 15 and later), select KeepNote under Open at Login and click −. |
+
+The key only decrypts that database; remove the two together. Once the container is gone, your notes are gone with it, so export them first (Settings → About → Export All Notes…) if you want to keep them.
+
+**Your sync folder is yours.** KeepNote never deletes it, and uninstalling leaves it and its `.hmnote` and `.hmtemplate` files exactly where they are. Delete it yourself if you no longer want it.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
