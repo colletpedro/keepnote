@@ -57,6 +57,21 @@ final class AppSettings: ObservableObject {
         defaultNoteColor = storedColor == 0 ? nil : NoteColor.resolve(rawValue: storedColor)
     }
 
+    /// Settings > General > Language. Takes effect when the app is reopened:
+    /// the choice is also written as this app's `AppleLanguages`, so AppKit's
+    /// own panels and menus switch along with KeepNote's text.
+    @Published var language: AppLanguage = UserDefaults.standard.string(forKey: Localization.preferenceKey)
+        .flatMap(AppLanguage.init(rawValue:)) ?? .system {
+        didSet {
+            defaults.set(language.rawValue, forKey: Localization.preferenceKey)
+            if language == .system {
+                defaults.removeObject(forKey: "AppleLanguages")
+            } else {
+                defaults.set([language.rawValue], forKey: "AppleLanguages")
+            }
+        }
+    }
+
     /// Raises the panel level to `.popUpMenu` and keeps `.fullScreenAuxiliary`
     /// honest, so the stack is reachable from a full-screen app.
     @Published var showOverFullScreen: Bool = UserDefaults.standard.bool(forKey: Key.showOverFullScreen) {

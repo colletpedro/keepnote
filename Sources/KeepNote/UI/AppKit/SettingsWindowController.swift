@@ -21,7 +21,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         for tab in SettingsTab.allCases {
             let root: AnyView
             switch tab {
-            case .general: root = AnyView(GeneralSettingsPane(settings: settings))
+            case .general: root = AnyView(GeneralSettingsPane(settings: settings, actions: actions))
             case .notes: root = AnyView(NotesSettingsPane(settings: settings))
             case .deck: root = AnyView(DeckSettingsPane(settings: settings))
             case .daily: root = AnyView(DailySettingsPane(actions: actions))
@@ -30,7 +30,9 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             case .about: root = AnyView(AboutSettingsPane(actions: actions))
             }
             let size = NSSize(width: Self.paneWidth, height: tab.paneHeight)
-            let host = NSHostingController(rootView: root.frame(width: size.width, height: size.height))
+            let host = NSHostingController(rootView: root
+                .environment(\.locale, Localization.locale)
+                .frame(width: size.width, height: size.height))
             host.preferredContentSize = size
             host.title = tab.title
 

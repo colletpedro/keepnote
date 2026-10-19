@@ -28,6 +28,15 @@ enum Localization {
     /// The choice made in Settings > General: an `AppLanguage` raw value.
     static let preferenceKey = "appLanguage"
 
+    /// The choice in effect for this run, as it was when the app started.
+    static let launchChoice: AppLanguage = UserDefaults.standard.string(forKey: preferenceKey)
+        .flatMap(AppLanguage.init(rawValue:)) ?? .system
+
+    /// What a choice means: `system` resolved to the Mac's language.
+    static func resolved(_ choice: AppLanguage) -> String {
+        choice == .system ? systemLanguage() : choice.rawValue
+    }
+
     /// The language of this run: "en" or "pt-BR".
     static let language: String = resolveLanguage()
 
@@ -37,10 +46,8 @@ enum Localization {
 
     fileprivate static let table: [String: String] = loadTable(for: language)
 
-    /// The translation of `key` in a language other than the running one —
-    /// for the one prompt that speaks the language just chosen.
-    static func string(_ key: String, in language: String) -> String {
-        language == self.language ? L(key) : (loadTable(for: language)[key] ?? key)
+    fileprivate static func string(_ key: String, in language: String) -> String {
+        language == self.language ? (table[key] ?? key) : (loadTable(for: language)[key] ?? key)
     }
 
     static func normalized(_ identifier: String) -> String {
@@ -49,7 +56,12 @@ enum Localization {
 
     /// `system` resolved: the first of the Mac's preferred languages KeepNote has.
     static func systemLanguage() -> String {
-        for preferred in Locale.preferredLanguages {
+        // The Mac's own list, not this app's: once a language has been picked
+        // here, `Locale.preferredLanguages` reports that pick instead.
+        let global = CFPreferencesCopyValue(
+            "AppleLanguages" as CFString, kCFPreferencesAnyApplication,
+            kCFPreferencesCurrentUser, kCFPreferencesAnyHost) as? [String]
+        for preferred in global ?? Locale.preferredLanguages {
             let code = preferred.lowercased()
             if code.hasPrefix("pt") { return AppLanguage.portuguese.rawValue }
             if code.hasPrefix("en") { return AppLanguage.english.rawValue }
@@ -70,8 +82,7 @@ enum Localization {
         if let forced = ProcessInfo.processInfo.environment["KEEPNOTE_LANGUAGE"], !forced.isEmpty {
             return normalized(forced)
         }
-        let stored = UserDefaults.standard.string(forKey: preferenceKey).flatMap(AppLanguage.init(rawValue:)) ?? .system
-        return stored == .system ? systemLanguage() : stored.rawValue
+        return resolved(launchChoice)
     }
 
     private static func loadTable(for language: String) -> [String: String] {
@@ -89,6 +100,12 @@ enum Localization {
 /// The interface text for `key`, its English original.
 func L(_ key: String) -> String {
     Localization.table[key] ?? key
+}
+
+/// `key` in a language other than the running one — for the one prompt that
+/// speaks the language just chosen in Settings.
+func L(_ key: String, in language: String) -> String {
+    Localization.string(key, in: language)
 }
 
 /// The same, with `String(format:)` arguments: `%@` for text, `%d` for a count.

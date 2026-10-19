@@ -10,7 +10,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A second copy of the app (the ./build one, say, found by Spotlight)
         // would start a second instance with its own deck. Hand the request
         // to the one already running, as a reopen, and leave.
-        if handOffToRunningInstance() { return }
+        // A relaunch (a new language) starts while the old instance is still
+        // quitting: wait for it instead of handing over to it.
+        if CommandLine.arguments.contains(AppRelaunch.argument) {
+            AppRelaunch.waitForEarlierInstances()
+        } else if handOffToRunningInstance() {
+            return
+        }
 
         // No Dock icon to start with; `LSUIElement` in Info.plist says the
         // same. The coordinator adds it while a standard window is open.

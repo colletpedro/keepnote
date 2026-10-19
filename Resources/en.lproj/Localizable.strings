@@ -152,9 +152,11 @@
 "KeepNote archive — colors, states and dates" = "KeepNote archive — colors, states and dates";
 "KeepNote could not start" = "KeepNote could not start";
 "KeepNote is in the Dock, with its full menu bar, while one of its windows is open — All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay." = "KeepNote is in the Dock, with its full menu bar, while one of its windows is open — All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.";
+"KeepNote switches language when it opens again." = "KeepNote switches language when it opens again.";
 "Kept on deck" = "Kept on deck";
 "Keyboard Shortcuts" = "Keyboard Shortcuts";
 "Keychain error %d: %@" = "Keychain error %d: %@";
+"Language" = "Language";
 "Launch at login" = "Launch at login";
 "Library" = "Library";
 "Lilac" = "Lilac";
@@ -220,6 +222,7 @@
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Reads notes, or a KeepNote archive, from files on this Mac.";
 "Redo" = "Redo";
 "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.";
+"Relaunch Now" = "Relaunch Now";
 "Remove Tag" = "Remove Tag";
 "Remove Tag…" = "Remove Tag…";
 "Remove a tag from %@" = "Remove a tag from %@";
@@ -264,6 +267,7 @@
 "That note was deleted." = "That note was deleted.";
 "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes." = "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes.";
 "The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note." = "The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note.";
+"The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac." = "The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac.";
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.";
 "The notes themselves are kept." = "The notes themselves are kept.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "The pause between one card sliding out and the next. Zero opens them all at once.";

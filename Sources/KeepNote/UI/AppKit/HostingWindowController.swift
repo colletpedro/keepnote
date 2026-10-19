@@ -32,7 +32,7 @@ final class HostingWindowController<Content: View>: NSObject, NSWindowDelegate {
         window.titlebarAppearsTransparent = false
         window.isReleasedWhenClosed = false
         window.minSize = minSize
-        window.contentView = NSHostingView(rootView: rootView)
+        window.contentView = NSHostingView(rootView: rootView.environment(\.locale, Localization.locale))
         _ = window.setFrameAutosaveName(autosaveName)
         window.delegate = self
         if window.frame.origin == .zero {

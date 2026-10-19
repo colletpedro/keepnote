@@ -771,7 +771,11 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                     importNotes: { [weak self] in self?.runImport() },
                     exportAll: { [weak self] in self?.menuExportAll() },
                     showWelcome: { [weak self] in self?.showWelcome() },
-                    editDailyTemplate: { [weak self] in self?.showDailyTemplate() }
+                    editDailyTemplate: { [weak self] in self?.showDailyTemplate() },
+                    relaunch: { [weak self] in
+                        self?.flushEverything()
+                        AppRelaunch.relaunch()
+                    }
                 )
             )
             controller.onClose = { [weak self] in

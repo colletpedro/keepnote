@@ -152,9 +152,11 @@
 "KeepNote archive — colors, states and dates" = "Arquivo do KeepNote — cores, estados e datas";
 "KeepNote could not start" = "Não foi possível iniciar o KeepNote";
 "KeepNote is in the Dock, with its full menu bar, while one of its windows is open — All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay." = "O KeepNote fica no Dock, com a barra de menus completa, enquanto uma das janelas dele está aberta — Todas as Notas, Arquivadas, Ajustes, Sobre ou Boas-vindas. Quando a última fecha, ele sai do Dock; a pilha, suas notas e o ícone da barra de menus ficam.";
+"KeepNote switches language when it opens again." = "O KeepNote muda de idioma quando abre de novo.";
 "Kept on deck" = "Mantida na pilha";
 "Keyboard Shortcuts" = "Atalhos de Teclado";
 "Keychain error %d: %@" = "Erro do Keychain %d: %@";
+"Language" = "Idioma";
 "Launch at login" = "Abrir ao iniciar sessão";
 "Library" = "Biblioteca";
 "Lilac" = "Lilás";
@@ -220,6 +222,7 @@
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Lê notas, ou um arquivo do KeepNote, de arquivos deste Mac.";
 "Redo" = "Refazer";
 "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registrados pela API de atalhos do sistema, que entrega ao KeepNote só estas combinações. Nenhuma permissão de Acessibilidade ou de Monitoramento de Entrada é necessária.";
+"Relaunch Now" = "Reabrir agora";
 "Remove Tag" = "Remover Tag";
 "Remove Tag…" = "Remover Tag…";
 "Remove a tag from %@" = "Remover uma tag de %@";
@@ -264,6 +267,7 @@
 "That note was deleted." = "Essa nota foi apagada.";
 "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes." = "O botão de calendário ao lado do + abre a daily de hoje. Dê a tag daily a qualquer nota para torná-la uma daily: os dois últimos dias ficam na pilha, os mais antigos vão para Daily em Todas as Notas.";
 "The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note." = "A cor com que uma nova nota começa. Automática usa a cor seguinte à da nota anterior. Você ainda pode mudá-la dentro da nota.";
+"The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac." = "O idioma dos menus e janelas do KeepNote e do que ele escreve nas notas, como datas e dias da semana. Sistema segue o idioma deste Mac.";
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "O ícone de nota à direita da barra de menus, com Nova Nota, Todas as Notas, Ajustes e Encerrar.";
 "The notes themselves are kept." = "As notas em si são mantidas.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "A pausa entre um cartão deslizar para fora e o seguinte. Zero abre todos de uma vez.";

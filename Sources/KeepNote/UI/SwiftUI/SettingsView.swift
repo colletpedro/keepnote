@@ -35,7 +35,7 @@ enum SettingsTab: Int, CaseIterable {
     /// Each pane is a fixed size; the window animates between them.
     var paneHeight: CGFloat {
         switch self {
-        case .general: return 350
+        case .general: return 450
         case .notes: return 270
         case .deck: return 340
         case .daily: return 230
@@ -55,6 +55,8 @@ struct SettingsActions {
     var exportAll: () -> Void
     var showWelcome: () -> Void
     var editDailyTemplate: () -> Void = {}
+    /// Quits and starts KeepNote again, for a new language.
+    var relaunch: () -> Void = {}
 }
 
 /// An option with its explanation underneath, the way System Settings does it.
@@ -88,6 +90,7 @@ private struct HelpNote: View {
 
 struct GeneralSettingsPane: View {
     @ObservedObject var settings: AppSettings
+    var actions: SettingsActions
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var loginError: String?
 
@@ -106,6 +109,19 @@ struct GeneralSettingsPane: View {
             }
 
             Section {
+                Option(help: L("The language of KeepNote\u{2019}s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac.")) {
+                    Picker(L("Language"), selection: $settings.language) {
+                        ForEach(AppLanguage.allCases, id: \.self) { language in
+                            Text(language.nativeName).tag(language)
+                        }
+                    }
+                }
+                if settings.language != Localization.launchChoice {
+                    relaunchRow
+                }
+            }
+
+            Section {
                 Option(help: L("The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.")) {
                     Toggle(L("Show in menu bar"), isOn: $settings.showInMenuBar)
                 }
@@ -117,6 +133,19 @@ struct GeneralSettingsPane: View {
         }
         .formStyle(.grouped)
         .onAppear { launchAtLogin = LaunchAtLogin.isEnabled }
+    }
+
+    /// Said in the language just chosen, since that is the one being asked for.
+    private var relaunchRow: some View {
+        let target = Localization.resolved(settings.language)
+        return HStack(spacing: 10) {
+            Text(L("KeepNote switches language when it opens again.", in: target))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button(L("Relaunch Now", in: target), action: actions.relaunch)
+        }
     }
 
     private var loginHelp: String {
