@@ -151,14 +151,79 @@ extension Notification.Name {
 /// What happens when a combination is recorded in Settings > Shortcuts.
 @MainActor
 enum ShortcutEditing {
+    /// Why a combination cannot be had.
+    enum Refusal: Equatable {
+        case needsModifier
+        /// Another KeepNote action has it: a changeable one or a fixed one
+        /// (formatting, ⌘Q, ⌘W, the Edit menu…), named by its title.
+        case usedBy(String)
+        /// The system refused it: another app has it as a global shortcut.
+        case inUseByAnotherApp
+
+        var message: String {
+            switch self {
+            case .needsModifier: return L("Needs \u{2318}, \u{2325} or \u{2303}")
+            case .usedBy(let title): return L("Used by %@", title)
+            case .inUseByAnotherApp: return GlobalCommand.unavailableMessage
+            }
+        }
+    }
+
+    /// `nil` when `combo` can be given to `action`. `isAvailable` asks the
+    /// system whether another app holds it; the global shortcuts are taken
+    /// away while recording, so KeepNote's own never answer for it.
+    static func refusal(of combo: KeyCombo, for action: ShortcutAction, store: ShortcutStore,
+                        isAvailable: (KeyCombo) -> Bool) -> Refusal? {
+        guard combo.hasRequiredModifier else { return .needsModifier }
+        if let other = ShortcutAction.all.first(where: { $0 != action && store.combo(for: $0) == combo }) {
+            return .usedBy(other.title)
+        }
+        if let fixed = fixedShortcuts.first(where: { $0.combo == combo }) {
+            return .usedBy(fixed.title)
+        }
+        return isAvailable(combo) ? nil : .inUseByAnotherApp
+    }
+
     static func record(_ combo: KeyCombo?, for action: ShortcutAction, store: ShortcutStore,
                        hotkeys: HotkeyService) -> ShortcutRecorderField.Outcome {
         guard let combo else {
             store.set(nil, for: action)
             return .accepted
         }
-        guard combo.hasRequiredModifier else { return .refused(L("Needs \u{2318}, \u{2325} or \u{2303}")) }
+        if let refusal = refusal(of: combo, for: action, store: store, isAvailable: hotkeys.isAvailable) {
+            return .refused(refusal.message)   // the field keeps the shortcut it had
+        }
         store.set(combo, for: action)
         return .accepted
+    }
+
+    /// The shortcuts that cannot be changed, so cannot be taken either: the
+    /// Format menu's, closing a note, and the app's menus.
+    static var fixedShortcuts: [(combo: KeyCombo, title: String)] {
+        let command = UInt32(cmdKey), option = UInt32(optionKey), shift = UInt32(shiftKey)
+        func key(_ code: Int, _ modifiers: UInt32) -> KeyCombo { KeyCombo(keyCode: UInt32(code), carbonModifiers: modifiers) }
+        var fixed: [(KeyCombo, String)] = FormatCommand.allCases.compactMap { format in
+            KeyCombo.keyCode(forCharacter: format.key).map {
+                (KeyCombo(keyCode: $0, carbonModifiers: KeyCombo.carbonFlags(from: format.modifiers)), format.title)
+            }
+        }
+        fixed += [
+            (key(kVK_ANSI_W, command), L("Close")),
+            (key(kVK_ANSI_Q, command), L("Quit KeepNote")),
+            (key(kVK_ANSI_Comma, command), L("Settings\u{2026}")),
+            (key(kVK_ANSI_H, command), L("Hide KeepNote")),
+            (key(kVK_ANSI_H, command | option), L("Hide Others")),
+            (key(kVK_ANSI_M, command), L("Minimize")),
+            (key(kVK_ANSI_N, command), L("New Note")),
+            (key(kVK_ANSI_I, command), L("Import\u{2026}")),
+            (key(kVK_ANSI_E, command), L("Export All\u{2026}")),
+            (key(kVK_ANSI_Z, command), L("Undo")),
+            (key(kVK_ANSI_Z, command | shift), L("Redo")),
+            (key(kVK_ANSI_X, command), L("Cut")),
+            (key(kVK_ANSI_C, command), L("Copy")),
+            (key(kVK_ANSI_V, command), L("Paste")),
+            (key(kVK_ANSI_A, command), L("Select All")),
+        ]
+        return fixed.map { (combo: $0.0, title: $0.1) }
     }
 }

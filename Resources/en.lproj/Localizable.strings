@@ -307,6 +307,7 @@
 "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule." = "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule.";
 "Use This Folder" = "Use This Folder";
 "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color." = "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color.";
+"Used by %@" = "Used by %@";
 "Version %@ (%@)" = "Version %@ (%@)";
 "Waiting for your approval in System Settings > General > Login Items." = "Waiting for your approval in System Settings > General > Login Items.";
 "Welcome to KeepNote" = "Welcome to KeepNote";

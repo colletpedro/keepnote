@@ -307,6 +307,7 @@
 "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule." = "Até cinco notas podem ser fixadas. Elas ficam no meio da altura da pilha, sempre inteiras e nunca sobrepostas: a primeira fixada no meio, a segunda acima dela, a terceira abaixo, a quarta acima e a quinta abaixo. Fixar também liga Manter na Pilha; desafixar o deixa ligado. Uma nota mantida ou fixada nunca é arquivada pela regra de tempo.";
 "Use This Folder" = "Usar Esta Pasta";
 "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color." = "Use {date} para a data de hoje e {weekday} para o dia da semana. Eles são preenchidos quando uma nova nota daily é criada. As novas notas daily usam esta cor.";
+"Used by %@" = "Usado por %@";
 "Version %@ (%@)" = "Versão %@ (%@)";
 "Waiting for your approval in System Settings > General > Login Items." = "Aguardando sua aprovação em Ajustes do Sistema > Geral > Itens de Início.";
 "Welcome to KeepNote" = "Boas-vindas ao KeepNote";
