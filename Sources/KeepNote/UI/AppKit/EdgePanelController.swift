@@ -84,7 +84,8 @@ final class EdgePanelController: NSObject {
     }
 
     /// `visibleFrame` rather than `frame`: it already excludes the menu bar and
-    /// a right-hand Dock, so the deck never lands underneath either.
+    /// the Dock, left or right, so the deck never lands underneath either.
+    /// See `DeckPlacement`.
     private var anchor: NSRect {
         screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
     }
@@ -92,7 +93,7 @@ final class EdgePanelController: NSObject {
     /// The height this screen leaves for the deck, a margin above and below.
     /// Everything about the deck's shape follows from it — see `DeckGeometry`.
     private var usableHeight: CGFloat {
-        anchor.height - 24
+        DeckPlacement.usableHeight(in: anchor)
     }
 
     /// The side the deck is on, from Settings > Deck > Screen edge.
@@ -105,30 +106,16 @@ final class EdgePanelController: NSObject {
     }
 
     private func pillFrame() -> NSRect {
-        let area = anchor
-        let height = pillHeight
-        return NSRect(
-            x: edge.flushX(width: EdgeMetrics.pillWidth, in: area),
-            y: area.midY - height / 2,
-            width: EdgeMetrics.pillWidth,
-            height: height
-        )
+        DeckPlacement.pillFrame(height: pillHeight, in: anchor, edge: edge)
     }
 
+    /// The panel is wider than a tab: the extra strip on the inner side is
+    /// where a hovered card grows into, so lifting one never clips it.
     private func deckFrame() -> NSRect {
-        let area = anchor
-        // The panel is wider than a tab: the extra strip on the left is where a
-        // hovered card grows into, so lifting one never clips it.
         let width = EdgeMetrics.tabWidth + EdgeMetrics.hoverGutter
         let geometry = DeckGeometry.layout(
-            count: notes.count, usableHeight: usableHeight, columnWidth: width, pinned: pinnedBlock)
-        let clamped = min(geometry.deckHeight, area.height)
-        return NSRect(
-            x: edge.flushX(width: width, in: area),
-            y: area.midY - clamped / 2,
-            width: width,
-            height: clamped
-        )
+            count: notes.count, usableHeight: usableHeight, columnWidth: width, pinned: pinnedBlock, edge: edge)
+        return DeckPlacement.deckFrame(deckHeight: geometry.deckHeight, in: anchor, edge: edge)
     }
 
     // MARK: - State
