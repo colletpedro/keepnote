@@ -7,8 +7,24 @@ final class StatusItemController {
     private var item: NSStatusItem?
     private let makeMenu: () -> NSMenu
 
+    private var hotkeysObserver: NSObjectProtocol?
+
     init(makeMenu: @escaping () -> NSMenu) {
         self.makeMenu = makeMenu
+        // The menu shows the global shortcuts that are registered; when that
+        // changes, it is built again.
+        hotkeysObserver = NotificationCenter.default.addObserver(
+            forName: .keepNoteHotkeysChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.rebuildMenu() }
+        }
+    }
+
+    /// For Tests/Integration.
+    var menuForTesting: NSMenu? { item?.menu }
+
+    func rebuildMenu() {
+        item?.menu = makeMenu()
     }
 
     var isShown: Bool { item != nil }

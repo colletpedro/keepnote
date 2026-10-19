@@ -10,8 +10,18 @@ import Carbon.HIToolbox
 /// asks the window server to deliver one specific combination to us and
 /// nothing else, so it needs no permission at all.
 @MainActor
-final class HotkeyService {
+final class HotkeyService: ObservableObject {
     static let shared = HotkeyService()
+
+    /// Claims one combination from the window server; `nil` when another app
+    /// already holds it. Replaced in the tests to make a registration fail.
+    typealias Registrar = (_ combo: KeyCombo, _ id: EventHotKeyID) -> EventHotKeyRef?
+
+    static let carbonRegistrar: Registrar = { combo, id in
+        var ref: EventHotKeyRef?
+        let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers, id, GetApplicationEventTarget(), 0, &ref)
+        return status == noErr ? ref : nil
+    }
 
     private struct Registration {
         let command: GlobalCommand
@@ -26,7 +36,37 @@ final class HotkeyService {
     /// Four-char code identifying our hotkeys in the Carbon event stream.
     private let signature: OSType = 0x484D_4E54 // 'HMNT'
 
-    private init() {}
+    private let registrar: Registrar
+    private let defaults: UserDefaults
+
+    /// The commands whose combination could not be registered, because another
+    /// app holds it. Settings marks them and the menus show them without it.
+    @Published private(set) var unavailable: Set<GlobalCommand> = []
+
+    init(registrar: Registrar? = nil, defaults: UserDefaults = .standard) {
+        self.registrar = registrar ?? Self.carbonRegistrar
+        self.defaults = defaults
+    }
+
+    func isUnavailable(_ command: GlobalCommand) -> Bool { unavailable.contains(command) }
+
+    /// The combination to show beside the command in a menu: none when it is
+    /// not actually registered, so the menu never promises a shortcut that
+    /// another app will receive.
+    func menuCombo(for command: GlobalCommand) -> KeyCombo? {
+        isUnavailable(command) ? nil : combo(for: command)
+    }
+
+    /// A menu item for a global command, its shortcut shown when it works.
+    func applyShortcut(for command: GlobalCommand, to item: NSMenuItem) {
+        if let combo = menuCombo(for: command) {
+            item.keyEquivalent = combo.menuKeyEquivalent
+            item.keyEquivalentModifierMask = combo.modifierFlags
+        } else {
+            item.keyEquivalent = ""
+            item.keyEquivalentModifierMask = []
+        }
+    }
 
     deinit {
         for registration in registrations.values {
@@ -40,7 +80,6 @@ final class HotkeyService {
     // MARK: - Stored combos
 
     func combo(for command: GlobalCommand) -> KeyCombo {
-        let defaults = UserDefaults.standard
         guard
             let data = defaults.data(forKey: Self.defaultsKey(command)),
             let combo = try? JSONDecoder().decode(KeyCombo.self, from: data)
@@ -51,7 +90,6 @@ final class HotkeyService {
     }
 
     func setCombo(_ combo: KeyCombo?, for command: GlobalCommand) {
-        let defaults = UserDefaults.standard
         if let combo, let data = try? JSONEncoder().encode(combo) {
             defaults.set(data, forKey: Self.defaultsKey(command))
         } else {
@@ -81,11 +119,14 @@ final class HotkeyService {
         }
         registrations.removeAll()
 
+        var failed: Set<GlobalCommand> = []
         for command in GlobalCommand.allCases {
             guard let handler = actions[command] else { continue }
             let combo = combo(for: command)
-            register(combo, command: command, handler: handler)
+            if !register(combo, command: command, handler: handler) { failed.insert(command) }
         }
+        unavailable = failed
+        NotificationCenter.default.post(name: .keepNoteHotkeysChanged, object: self)
     }
 
     @discardableResult
@@ -94,19 +135,10 @@ final class HotkeyService {
         nextIdentifier += 1
 
         let hotKeyID = EventHotKeyID(signature: signature, id: identifier)
-        var ref: EventHotKeyRef?
-        let status = RegisterEventHotKey(
-            combo.keyCode,
-            combo.carbonModifiers,
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &ref
-        )
         // A combination another app already owns comes back as an error. That
-        // is not fatal: the other two shortcuts still work and Settings shows
-        // the conflict.
-        guard status == noErr, let ref else { return false }
+        // is not fatal: the other shortcuts still work, Settings shows the
+        // conflict and the menus leave that shortcut off.
+        guard let ref = registrar(combo, hotKeyID) else { return false }
         registrations[identifier] = Registration(command: command, ref: ref, handler: handler)
         return true
     }
@@ -115,16 +147,7 @@ final class HotkeyService {
     /// about a conflict before storing it.
     func isAvailable(_ combo: KeyCombo) -> Bool {
         let hotKeyID = EventHotKeyID(signature: signature, id: 0xFFFF)
-        var ref: EventHotKeyRef?
-        let status = RegisterEventHotKey(
-            combo.keyCode,
-            combo.carbonModifiers,
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &ref
-        )
-        guard status == noErr, let ref else { return false }
+        guard let ref = registrar(combo, hotKeyID) else { return false }
         UnregisterEventHotKey(ref)
         return true
     }
@@ -169,4 +192,9 @@ final class HotkeyService {
     fileprivate func handle(identifier: UInt32) {
         registrations[identifier]?.handler()
     }
+}
+
+extension Notification.Name {
+    /// The global shortcuts were registered again; `unavailable` may differ.
+    static let keepNoteHotkeysChanged = Notification.Name("keepNote.hotkeysChanged")
 }

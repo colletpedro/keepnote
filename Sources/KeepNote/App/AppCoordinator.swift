@@ -928,17 +928,18 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     func makeAppMenu() -> NSMenu {
         let menu = NSMenu()
 
-        func add(_ title: String, _ action: Selector, _ key: String = "") {
+        func add(_ title: String, _ action: Selector, _ key: String = "", global: GlobalCommand? = nil) {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
             item.target = self
+            if let global { HotkeyService.shared.applyShortcut(for: global, to: item) }
             menu.addItem(item)
         }
 
-        add("New Note", #selector(menuNewNote))
-        add("Today\u{2019}s Daily", #selector(menuTodaysDaily))
+        add("New Note", #selector(menuNewNote), global: .newNote)
+        add("Today\u{2019}s Daily", #selector(menuTodaysDaily), global: .todaysDaily)
         add("Edit Daily Template\u{2026}", #selector(menuEditDailyTemplate))
-        add("All Notes\u{2026}", #selector(menuAllNotes))
-        add("Archive\u{2026}", #selector(menuArchive))
+        add("All Notes\u{2026}", #selector(menuAllNotes), global: .allNotes)
+        add("Archive\u{2026}", #selector(menuArchive), global: .archive)
         menu.addItem(.separator())
         add("Import\u{2026}", #selector(menuImport))
         add("Settings\u{2026}", #selector(menuSettings), ",")

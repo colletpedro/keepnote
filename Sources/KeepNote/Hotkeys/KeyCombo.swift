@@ -111,6 +111,9 @@ enum GlobalCommand: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    /// Beside a shortcut that could not be registered.
+    static let unavailableMessage = "In use by another app"
+
     var title: String {
         switch self {
         case .newNote: return "New Note"

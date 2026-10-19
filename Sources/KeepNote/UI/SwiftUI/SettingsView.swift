@@ -315,11 +315,13 @@ struct SyncSettingsPane: View {
 // MARK: - Shortcuts
 
 struct ShortcutsSettingsPane: View {
+    @ObservedObject var hotkeys: HotkeyService = .shared
+
     var body: some View {
         Form {
             Section("Global") {
                 ForEach(GlobalCommand.allCases) { command in
-                    row(command.title, HotkeyService.shared.combo(for: command).displayString)
+                    globalRow(command)
                 }
                 HelpNote(text: "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.")
             }
@@ -363,6 +365,25 @@ struct ShortcutsSettingsPane: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// A global shortcut another app already holds is marked, so its absence
+    /// is explained rather than silent.
+    private func globalRow(_ command: GlobalCommand) -> some View {
+        LabeledContent(command.title) {
+            HStack(spacing: 6) {
+                if hotkeys.isUnavailable(command) {
+                    Label(GlobalCommand.unavailableMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .help("Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu.")
+                }
+                Text(hotkeys.combo(for: command).displayString)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .strikethrough(hotkeys.isUnavailable(command))
+            }
+        }
     }
 
     private func row(_ title: String, _ keys: String) -> some View {
