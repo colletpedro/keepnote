@@ -192,7 +192,8 @@ final class EdgeStackView: NSView {
             scrollOffset: scrollOffset ?? self.scrollOffset,
             lowerScrollOffset: lowerScrollOffset ?? self.lowerScrollOffset,
             pinned: pinnedBlock,
-            hover: hover
+            hover: hover,
+            edge: edge
         )
     }
 
@@ -315,11 +316,12 @@ final class EdgeStackView: NSView {
         self.usableHeight = usableHeight
         pinnedBlock = pinned
         let tabHeight = EdgeMetrics.tabHeight
-        geometry = DeckGeometry.layout(count: notes.count, usableHeight: usableHeight, columnWidth: bounds.width, pinned: pinned)
+        geometry = DeckGeometry.layout(count: notes.count, usableHeight: usableHeight, columnWidth: bounds.width,
+                                       pinned: pinned, edge: edge)
 
         layoutChrome(showsOverflow: geometry.showsOverflow)
 
-        let offscreenX = bounds.width
+        let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + EdgeMetrics.hoverLift, in: bounds.width)
         for (index, note) in notes.enumerated() {
             let card = makeCard(for: note)
             side(forIndex: index).addSubview(card)
@@ -360,7 +362,7 @@ final class EdgeStackView: NSView {
     }
 
     private func makeCard(for note: Note) -> NoteCardView {
-        let card = NoteCardView(note: note, height: EdgeMetrics.tabHeight)
+        let card = NoteCardView(note: note, height: EdgeMetrics.tabHeight, edge: edge)
         card.isFloating = controller?.floatingNoteIDs.contains(note.id) ?? false
         card.onActivate = { [weak self] id in self?.controller?.activate(noteID: id) }
         card.onContextAction = { [weak self] id, action in
@@ -427,7 +429,7 @@ final class EdgeStackView: NSView {
         func local(_ rect: NSRect, in view: NSView) -> NSRect {
             view.convert(window.convertFromScreen(rect), from: nil)
         }
-        let offscreenX = clip.bounds.width
+        let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + EdgeMetrics.hoverLift, in: clip.bounds.width)
         for (index, card) in cards.enumerated() {
             let target = geometry.frames[index]
             if let was = snapshot.cards[card.noteID] {
@@ -444,7 +446,8 @@ final class EdgeStackView: NSView {
             if let was {
                 view.place(frame: local(was, in: self))
             } else {
-                view.place(frame: NSRect(origin: NSPoint(x: bounds.width, y: origin.y), size: view.frame.size), alpha: 0)
+                view.place(frame: NSRect(origin: NSPoint(x: edge.offscreenX(itemWidth: view.frame.width, in: bounds.width), y: origin.y),
+                                         size: view.frame.size), alpha: 0)
             }
             view.move(to: NSRect(origin: origin, size: view.frame.size), alpha: 1, config: .deck)
         }
@@ -486,21 +489,24 @@ final class EdgeStackView: NSView {
         layoutSides()
     }
 
-    /// The "+" in the corner, Today's Daily just to its left.
+    /// The "+" in the corner by the edge, Today's Daily just inside it.
     private func placeRoundButtons() {
-        let plusX = bounds.width - EdgeMetrics.plusDiameter - 6
+        let diameter = EdgeMetrics.plusDiameter
+        let plusX = bounds.width - diameter - 6
         let y = geometry.chromeBottom + 2
-        plusButton?.baseOrigin = NSPoint(x: plusX, y: y)
-        dailyButton?.baseOrigin = NSPoint(x: plusX - EdgeMetrics.plusDiameter - EdgeMetrics.dailyButtonGap, y: y)
+        plusButton?.baseOrigin = NSPoint(x: edge.mirroredX(plusX, itemWidth: diameter, in: bounds.width), y: y)
+        let dailyX = plusX - diameter - EdgeMetrics.dailyButtonGap
+        dailyButton?.baseOrigin = NSPoint(x: edge.mirroredX(dailyX, itemWidth: diameter, in: bounds.width), y: y)
     }
 
     private var chipOrigin: NSPoint {
-        NSPoint(x: bounds.width - EdgeMetrics.tabWidth,
+        NSPoint(x: edge.mirroredX(bounds.width - EdgeMetrics.tabWidth, itemWidth: EdgeMetrics.tabWidth, in: bounds.width),
                 y: geometry.chromeBottom + EdgeMetrics.plusDiameter + EdgeMetrics.plusTopMargin)
     }
 
     private func makeChip() {
         let chip = OverflowCardView(remaining: 0)
+        chip.edge = edge
         chip.baseOrigin = chipOrigin
         chip.frame = NSRect(origin: chip.baseOrigin, size: chip.frame.size)
         chip.onActivate = { [weak self] in self?.controller?.showAllNotes() }
@@ -521,7 +527,7 @@ final class EdgeStackView: NSView {
             guard let self, let daily, let window = self.window else { return }
             if hovered {
                 let frame = window.convertToScreen(daily.convert(daily.bounds, to: nil))
-                self.hoverLabel.show(L("add daily"), besides: frame, above: window.level)
+                self.hoverLabel.show(L("add daily"), besides: frame, towards: self.edge.inward, above: window.level)
             } else {
                 self.hoverLabel.hide()
             }
@@ -595,7 +601,7 @@ final class EdgeStackView: NSView {
         fanInToken &+= 1
         let token = fanInToken
 
-        let offscreenX = bounds.width
+        let offscreen = { (view: NSView) in self.edge.offscreenX(itemWidth: view.frame.width, in: self.bounds.width) }
         var leaving: [SpringView] = []
         leaving.append(contentsOf: roundButtons)
         hoverLabel.hide()
@@ -612,7 +618,7 @@ final class EdgeStackView: NSView {
         let step = 0.018
         for (index, view) in leaving.enumerated() {
             view.move(
-                to: NSRect(origin: NSPoint(x: offscreenX, y: view.frame.origin.y), size: view.frame.size),
+                to: NSRect(origin: NSPoint(x: offscreen(view), y: view.frame.origin.y), size: view.frame.size),
                 alpha: 0,
                 config: .deck,
                 delay: Double(index) * step
@@ -634,7 +640,7 @@ final class EdgeStackView: NSView {
         hover = nil
         leavingCards.forEach { $0.stopMotion(); $0.removeFromSuperview() }
         leavingCards.removeAll()
-        geometry = DeckGeometry.layout(count: 0, usableHeight: usableHeight, columnWidth: bounds.width)
+        geometry = DeckGeometry.layout(count: 0, usableHeight: usableHeight, columnWidth: bounds.width, edge: edge)
         pinnedBlock = nil
         cards.forEach { $0.stopMotion(); $0.removeFromSuperview() }
         cards.removeAll()

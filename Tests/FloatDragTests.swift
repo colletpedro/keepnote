@@ -13,7 +13,7 @@ func runFloatDragTests() {
 
     let screenMaxX: CGFloat = 1440
     func snaps(_ maxX: CGFloat) -> String {
-        yes(FloatDrag.isInSnapZone(noteFrame: CGRect(x: maxX - 400, y: 100, width: 400, height: 300), screenMaxX: screenMaxX))
+        yes(FloatDrag.isInSnapZone(noteFrame: CGRect(x: maxX - 400, y: 100, width: 400, height: 300), screen: CGRect(x: 0, y: 0, width: screenMaxX, height: 900)))
     }
     expect("25 pt from the edge: no snap", snaps(1415), "no")
     expect("24 pt from the edge: snap", snaps(1416), "yes")

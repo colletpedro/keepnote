@@ -1,9 +1,12 @@
 import AppKit
 
 /// One note's tab in the fanned deck: the left edge of its card, flush against
-/// the screen edge, carrying the colour and the rotated label.
+/// the screen edge, carrying the colour and the rotated label. On the left
+/// edge everything is drawn mirrored except the label and the markers' glyphs.
 final class NoteCardView: SpringView {
     let noteID: UUID
+    /// The side of the screen the deck is on.
+    let edge: ScreenEdge
     private var label: String
     private var color: NoteColor
     private var isArchivedHint: Bool
@@ -63,7 +66,7 @@ final class NoteCardView: SpringView {
     /// Lifted, the card casts a deeper shadow — that is most of what makes it
     /// read as having come forward out of the stack.
     private func applyShadow() {
-        NoteCardShape.applyShadow(to: self, strength: isHovered ? 1.7 : 1)
+        NoteCardShape.applyShadow(to: self, strength: isHovered ? 1.7 : 1, edge: edge)
     }
 
     /// Set by the deck. Once tabs overlap, a tab's own bounds are mostly under
@@ -77,8 +80,9 @@ final class NoteCardView: SpringView {
         }
     }
 
-    init(note: Note, height: CGFloat) {
+    init(note: Note, height: CGFloat, edge: ScreenEdge = .right) {
         self.noteID = note.id
+        self.edge = edge
         self.label = note.spineLabel
         self.color = note.color
         self.isArchivedHint = note.state == .archived
@@ -88,8 +92,11 @@ final class NoteCardView: SpringView {
         self.isDaily = note.isDaily
         super.init(frame: NSRect(x: 0, y: 0, width: EdgeMetrics.tabWidth, height: height))
         place(frame: frame)
-        NoteCardShape.applyShadow(to: self)
+        NoteCardShape.applyShadow(to: self, edge: edge)
     }
+
+    /// A rect laid out for the right edge, where it goes on this card.
+    fileprivate func mirrored(_ rect: NSRect) -> NSRect { edge.mirrored(rect, in: bounds.width) }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -145,13 +152,13 @@ final class NoteCardView: SpringView {
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
-        let body = NoteCardShape.path(in: bounds)
+        let body = NoteCardShape.path(in: bounds, edge: edge)
         // The tab is the note's paper; the spine colour belongs to the open note.
         color.surface.setFill()
         body.fill()
 
         NoteCardShape.drawPerforation(
-            at: bounds.maxX - 9,
+            at: edge == .right ? bounds.maxX - 9 : bounds.minX + 9,
             in: bounds,
             color: color.ink.withAlphaComponent(0.20)
         )
@@ -161,7 +168,7 @@ final class NoteCardView: SpringView {
         let markerZone: CGFloat = (isFloating ? 16 : 0) + (isDaily ? 14 : 0) + (isPinned ? 14 : 0)
         NoteCardShape.drawTabLabel(
             label,
-            in: NSRect(x: 0, y: 0, width: bounds.width - 12, height: bounds.height),
+            in: mirrored(NSRect(x: 0, y: 0, width: bounds.width - 12, height: bounds.height)),
             slice: visibleSlice,
             markerZone: markerZone,
             color: isArchivedHint ? color.secondaryInk.withAlphaComponent(0.6) : color.secondaryInk,
@@ -189,8 +196,8 @@ extension NoteCardView {
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12
-        glyph.draw(in: NSRect(x: (tabWidth - size.width) / 2, y: bounds.maxY - 8 - size.height,
-                              width: size.width, height: size.height))
+        glyph.draw(in: mirrored(NSRect(x: (tabWidth - size.width) / 2, y: bounds.maxY - 8 - size.height,
+                                       width: size.width, height: size.height)))
     }
 }
 
@@ -205,8 +212,8 @@ extension NoteCardView {
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12
-        glyph.draw(in: NSRect(x: tabWidth - size.width - 2, y: bounds.maxY - 6 - size.height,
-                              width: size.width, height: size.height))
+        glyph.draw(in: mirrored(NSRect(x: tabWidth - size.width - 2, y: bounds.maxY - 6 - size.height,
+                                       width: size.width, height: size.height)))
     }
 }
 
@@ -219,8 +226,8 @@ extension NoteCardView {
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12
-        glyph.draw(in: NSRect(x: (tabWidth - size.width) / 2, y: bounds.maxY - 8 - offset - size.height,
-                              width: size.width, height: size.height))
+        glyph.draw(in: mirrored(NSRect(x: (tabWidth - size.width) / 2, y: bounds.maxY - 8 - offset - size.height,
+                                       width: size.width, height: size.height)))
     }
 }
 
@@ -232,7 +239,7 @@ extension NoteCardView {
         let tabWidth = bounds.width - 12
         color.secondaryInk.withAlphaComponent(0.8).setStroke()
         CalendarGlyph.draw(
-            in: NSRect(x: (tabWidth - size) / 2, y: bounds.maxY - 8 - offset - size, width: size, height: size),
+            in: mirrored(NSRect(x: (tabWidth - size) / 2, y: bounds.maxY - 8 - offset - size, width: size, height: size)),
             lineWidth: 1
         )
     }
@@ -244,6 +251,9 @@ final class OverflowCardView: SpringView {
     private var remaining: Int
     var onActivate: (() -> Void)?
     var baseOrigin: NSPoint = .zero
+    var edge: ScreenEdge = .right {
+        didSet { needsDisplay = true }
+    }
 
     init(remaining: Int) {
         self.remaining = remaining
@@ -262,7 +272,7 @@ final class OverflowCardView: SpringView {
     override func mouseDown(with event: NSEvent) { onActivate?() }
 
     override func draw(_ dirtyRect: NSRect) {
-        let body = NoteCardShape.path(in: bounds, radius: 8)
+        let body = NoteCardShape.path(in: bounds, radius: 8, edge: edge)
         let fill = effectiveAppearance.isDark
             ? NSColor(white: 0.24, alpha: 0.92)
             : NSColor(white: 0.90, alpha: 0.95)
@@ -275,7 +285,8 @@ final class OverflowCardView: SpringView {
         ]
         let text = NSAttributedString(string: "+\(remaining)", attributes: attributes)
         let size = text.size()
-        text.draw(at: NSPoint(x: (bounds.width - size.width) / 2 - 3, y: (bounds.height - size.height) / 2))
+        // Nudged away from the edge, where the square side is.
+        text.draw(at: NSPoint(x: (bounds.width - size.width) / 2 + 3 * edge.inward, y: (bounds.height - size.height) / 2))
     }
 }
 

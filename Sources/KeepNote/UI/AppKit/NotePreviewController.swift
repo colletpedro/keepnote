@@ -79,7 +79,7 @@ final class NotePreviewController {
         content.layer?.cornerCurve = .continuous
         content.layer?.cornerRadius = EdgeMetrics.cardCornerRadius
         // Square against the screen edge, like every other card here.
-        content.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+        content.layer?.maskedCorners = Self.roundCorners(for: AppSettings.shared.screenEdge)
         container = content
         panel.contentView = content
         motion = WindowMotion(window: panel)
@@ -127,7 +127,10 @@ final class NotePreviewController {
             hosting = hostingView
         }
 
-        let target = frame(for: tabFrame, deckWidth: deckWidth, screen: screen)
+        let edge = AppSettings.shared.screenEdge
+        container.layer?.maskedCorners = Self.roundCorners(for: edge)
+        let target = Self.frame(for: tabFrame, deckWidth: deckWidth,
+                                area: screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero, edge: edge)
         // Already up (or on its way out), same note or another: spring to the
         // new place from wherever it is. This is what lets the peek be instant
         // without a sweep down the deck turning into a strobe, and what makes
@@ -140,7 +143,7 @@ final class NotePreviewController {
             return
         }
 
-        motion.place(frame: Self.start(for: target), alpha: 0)
+        motion.place(frame: Self.start(for: target, edge: edge), alpha: 0)
         panel.ignoresMouseEvents = false
         panel.orderFrontRegardless()
         motion.move(to: target, alpha: 1, config: .peek) { [weak panel] in
@@ -148,29 +151,35 @@ final class NotePreviewController {
         }
     }
 
+    /// The side towards the middle of the screen is round, the deck's square.
+    private static func roundCorners(for edge: ScreenEdge) -> CACornerMask {
+        edge == .right ? [.layerMinXMinYCorner, .layerMinXMaxYCorner] : [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+    }
+
     /// Where a peek begins and ends: just the tab's width, tucked under the deck.
-    private static func start(for target: NSRect) -> NSRect {
+    static func start(for target: NSRect, edge: ScreenEdge) -> NSRect {
         NSRect(
-            x: target.maxX - EdgeMetrics.tabWidth,
+            x: edge == .right ? target.maxX - EdgeMetrics.tabWidth : target.minX,
             y: target.origin.y,
             width: EdgeMetrics.tabWidth,
             height: target.height
         )
     }
 
-    private func frame(for tabFrame: NSRect, deckWidth: CGFloat, screen: NSScreen?) -> NSRect {
-        let area = screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+    /// The peek beside the tab, coming out towards the middle of the screen.
+    static func frame(for tabFrame: NSRect, deckWidth: CGFloat, area: NSRect, edge: ScreenEdge) -> NSRect {
         let size = EdgeMetrics.previewSize
         let centerY = tabFrame.isEmpty ? area.midY : tabFrame.midY
         let y = min(
             max(area.minY + 8, centerY - size.height / 2),
             area.maxY - size.height - 8
         )
-        // The right end stays tucked under the deck, so the preview reads as
-        // the same card pulled part of the way out.
+        // The end by the edge stays tucked under the deck, so the preview reads
+        // as the same card pulled part of the way out.
         let tuck = min(deckWidth, EdgeMetrics.previewTuck)
+        let outside = max(0, deckWidth - tuck)
         return NSRect(
-            x: area.maxX - size.width - max(0, deckWidth - tuck),
+            x: edge == .right ? area.maxX - size.width - outside : area.minX + outside,
             y: y,
             width: size.width,
             height: size.height
@@ -190,7 +199,7 @@ final class NotePreviewController {
         // Folds back under the deck while fading; showing again before it has
         // finished takes over from here.
         panel.ignoresMouseEvents = true
-        motion.move(to: Self.start(for: panel.frame), alpha: 0, config: .peek) { [weak panel] in
+        motion.move(to: Self.start(for: panel.frame, edge: AppSettings.shared.screenEdge), alpha: 0, config: .peek) { [weak panel] in
             panel?.orderOut(nil)
             panel?.alphaValue = 1
         }

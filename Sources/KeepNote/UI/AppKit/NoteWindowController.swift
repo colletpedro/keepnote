@@ -11,8 +11,9 @@ final class NoteWindow: NSPanel {
     override var canBecomeMain: Bool { true }
 }
 
-/// Clips the hosted SwiftUI to the card's shape. Anchored against the screen
-/// edge only the left corners are round; lifted off, all four are.
+/// Clips the hosted SwiftUI to the card's shape. Anchored to the deck, the
+/// side towards the middle of the screen is round and the deck's side square;
+/// lifted off, all four corners are round.
 final class NoteCardContainerView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -25,9 +26,12 @@ final class NoteCardContainerView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
-    func apply(presentation: NotePresentation) {
-        layer?.maskedCorners = presentation == .anchored
+    func apply(presentation: NotePresentation, edge: ScreenEdge = .right) {
+        let inner: CACornerMask = edge == .right
             ? [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+            : [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+        layer?.maskedCorners = presentation == .anchored
+            ? inner
             : [.layerMinXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner]
     }
 }
@@ -50,13 +54,16 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     private var saveFrameTask: DispatchWorkItem?
 
     private(set) var presentation: NotePresentation = .anchored
+    /// The edge the deck was on when this note was last anchored to it.
+    private var anchoredEdge = AppSettings.shared.screenEdge
     /// When the window was last put on screen. Losing key focus in the first
     /// moments is the app settling, not the user clicking away.
     private var shownAt = Date.distantPast
     private var isClosing = false
     var isClosingForChecks: Bool { isClosing }
-    /// The tab this note came out of, so it can fold back into it.
-    private let originFrame: NSRect?
+    /// The tab this note came out of, so it can fold back into it. Forgotten
+    /// when the deck moves to the other edge: that tab is not there any more.
+    private var originFrame: NSRect?
 
     /// Where the caret goes in the body when the note opens (UTF-16 offset),
     /// for a note that is born with text in it. `nil`: the end.
@@ -101,7 +108,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         hosting.autoresizingMask = [.width, .height]
         hosting.frame = container.bounds
         container.addSubview(hosting)
-        container.apply(presentation: .anchored)
+        container.apply(presentation: .anchored, edge: anchoredEdge)
 
         window.contentView = container
         window.isOpaque = false
@@ -309,23 +316,27 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         frames.firstIndex { $0.contains(point) }
     }
 
-    /// Flush against the right edge, vertically centred on the tab it came
-    /// from — "open one where it sits". Its right end runs under the deck,
-    /// which is what makes the note look like it slid out of the stack.
+    /// Beside the deck, vertically centred on the tab it came from — "open one
+    /// where it sits" — always coming out towards the middle of the screen.
     private func anchoredFrame(cascadeIndex: Int) -> NSRect {
         let area = screen?.visibleFrame ?? .zero
-        let size = EdgeMetrics.anchoredSize
         let centerY = originFrame?.midY ?? area.midY
+        return Self.anchoredFrame(in: area, centerY: centerY, edge: anchoredEdge)
+    }
+
+    /// On the right edge the note is flush with the screen and its right end
+    /// runs under the deck, which is what makes it look like it slid out of the
+    /// stack. On the left edge the spine — still on the note's left, with
+    /// Close and Float Note — would be under the deck, so the note starts
+    /// where the tabs end instead.
+    static func anchoredFrame(in area: NSRect, centerY: CGFloat, edge: ScreenEdge) -> NSRect {
+        let size = EdgeMetrics.anchoredSize
         let y = min(
             max(area.minY + 8, centerY - size.height / 2),
             area.maxY - size.height - 8
         )
-        return NSRect(
-            x: area.maxX - size.width + CGFloat(cascadeIndex % 3) * 0,
-            y: y,
-            width: size.width,
-            height: size.height
-        )
+        let x = edge == .right ? area.maxX - size.width : area.minX + EdgeMetrics.tabWidth
+        return NSRect(x: x, y: y, width: size.width, height: size.height)
     }
 
     /// Where a lifted-off note goes: where this note was last left, fitted to
@@ -354,6 +365,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     /// belongs to the deck; floating, it is a card on the desk that stays put
     /// and carries its own controls.
     func togglePresentation() {
+        if presentation == .detached { anchoredEdge = AppSettings.shared.screenEdge }
         setPresentation(presentation == .anchored ? .detached : .anchored)
         let target = presentation == .detached ? detachedFrame() : anchoredFrame(cascadeIndex: 0)
         // Aimed from wherever the window is, so floating or returning in the
@@ -369,7 +381,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         guard new != presentation else { return }
         presentation = new
         onPresentationChange?(noteID, new)
-        container.apply(presentation: presentation)
+        container.apply(presentation: presentation, edge: anchoredEdge)
         hosting.rootView = makeRootView()
         applyBehavior()
         // Rebuilding the root view drops the first responder.
@@ -406,7 +418,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             }
             guard var drag = currentDrag else { return }
             if !drag.floating {
-                guard FloatDrag.shouldFloat(start: drag.startMouse, current: mouse) else { return }
+                guard FloatDrag.shouldFloat(start: drag.startMouse, current: mouse, edge: anchoredEdge) else { return }
                 let size = AppSettings.shared.detachedFrame(for: noteID)?.size ?? EdgeMetrics.detachedSize
                 drag.startFrame = FloatDrag.floated(from: window.frame, size: size, cursor: mouse)
                 drag.startMouse = mouse
@@ -416,10 +428,11 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             }
             let frame = FloatDrag.followed(drag.startFrame, from: drag.startMouse, to: mouse)
             motion.place(frame: frame, alpha: 1)
-            if let edge = screen(containing: mouse), FloatDrag.isInSnapZone(noteFrame: frame, screenMaxX: edge.maxX) {
+            let edge = AppSettings.shared.screenEdge
+            if let area = screen(containing: mouse), FloatDrag.isInSnapZone(noteFrame: frame, screen: area, edge: edge) {
                 isShowingSnap = true
                 if showsSnapIndicator {
-                    snapIndicator.show(at: edge, height: frame.height, centerY: frame.midY, level: window.level)
+                    snapIndicator.show(at: area, edge: edge, height: frame.height, centerY: frame.midY, level: window.level)
                 }
             } else {
                 isShowingSnap = false
@@ -431,9 +444,9 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             isShowingSnap = false
             snapIndicator.hide()
             guard drag.floating else { return }
-            if let edge = screen(containing: mouse),
-               FloatDrag.isInSnapZone(noteFrame: window.frame, screenMaxX: edge.maxX) {
-                togglePresentation()   // Return to Deck
+            if let area = screen(containing: mouse),
+               FloatDrag.isInSnapZone(noteFrame: window.frame, screen: area, edge: AppSettings.shared.screenEdge) {
+                togglePresentation()   // Return to Deck, on the edge it is set to
             } else {
                 window.invalidateShadow()
                 saveDetachedFrameNow()
@@ -490,6 +503,16 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             window.styleMask.remove(.resizable)
         }
         window.level = AppSettings.shared.showOverFullScreen ? .popUpMenu : .floating
+        // The deck went to the other edge: an anchored note goes with it.
+        let edge = AppSettings.shared.screenEdge
+        if presentation == .anchored, edge != anchoredEdge, !isClosing {
+            anchoredEdge = edge
+            originFrame = nil
+            container.apply(presentation: .anchored, edge: edge)
+            motion.move(to: anchoredFrame(cascadeIndex: 0), alpha: 1, config: .pin) { [weak self] in
+                self?.window.invalidateShadow()
+            }
+        }
     }
 
     /// On screen without taking focus: a floating note restored at launch
@@ -766,7 +789,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     }
 }
 
-/// The bar at the right edge that says "let go and this note goes back into
+/// The bar at the deck's edge that says "let go and this note goes back into
 /// the deck": the note's height, in the accent colour, flush to the edge.
 @MainActor
 final class SnapIndicator {
@@ -789,10 +812,11 @@ final class SnapIndicator {
 
     static let width: CGFloat = 6
 
-    func show(at area: NSRect, height: CGFloat, centerY: CGFloat, level: NSWindow.Level) {
+    func show(at area: NSRect, edge: ScreenEdge = .right, height: CGFloat, centerY: CGFloat, level: NSWindow.Level) {
         let height = min(height, area.height)
         let y = min(max(area.minY, centerY - height / 2), area.maxY - height)
-        panel.setFrame(NSRect(x: area.maxX - Self.width - 2, y: y, width: Self.width, height: height), display: true)
+        let x = edge == .right ? area.maxX - Self.width - 2 : area.minX + 2
+        panel.setFrame(NSRect(x: x, y: y, width: Self.width, height: height), display: true)
         panel.level = NSWindow.Level(rawValue: level.rawValue + 1)
         if !panel.isVisible { panel.orderFrontRegardless() }
     }

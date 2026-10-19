@@ -7,9 +7,10 @@ import AppKit
 final class HoverLabel {
     private var panel: NSPanel?
 
-    /// Shows `text` to the left of `anchor` (screen coordinates), centred on it,
-    /// above `level`.
-    func show(_ text: String, besides anchor: NSRect, above level: NSWindow.Level) {
+    /// Shows `text` beside `anchor` (screen coordinates), centred on it, on the
+    /// side `towards` points to (-1 left, +1 right, away from the deck's
+    /// edge), above `level`.
+    func show(_ text: String, besides anchor: NSRect, towards direction: CGFloat = -1, above level: NSWindow.Level) {
         hide()
         let field = NSTextField(labelWithString: text)
         field.font = .systemFont(ofSize: 11.5, weight: .medium)
@@ -37,7 +38,8 @@ final class HoverLabel {
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
         panel.contentView = box
-        panel.setFrameOrigin(NSPoint(x: anchor.minX - size.width - 8, y: anchor.midY - size.height / 2))
+        let x = direction < 0 ? anchor.minX - size.width - 8 : anchor.maxX + 8
+        panel.setFrameOrigin(NSPoint(x: x, y: anchor.midY - size.height / 2))
         panel.orderFrontRegardless()
         self.panel = panel
     }

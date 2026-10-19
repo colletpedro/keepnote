@@ -91,15 +91,16 @@ enum NoteCardShape {
     /// few points apart, so a vertical shadow has nowhere to fade out: its
     /// gradient gets squeezed into a gap narrower than its own radius, and the
     /// shadows of adjacent cards pile up there into a hard dark bar. Throwing
-    /// it left, into open space, gives it room.
+    /// it away from the edge, into open space, gives it room.
     ///
     /// And the radius stays under the gap between cards, for the same reason.
-    static func applyShadow(to view: NSView, strength: CGFloat = 1) {
+    static func applyShadow(to view: NSView, strength: CGFloat = 1, edge: ScreenEdge = .right) {
         view.wantsLayer = true
         view.layer?.shadowColor = NSColor(srgbRed: 0.09, green: 0.09, blue: 0.13, alpha: 1).cgColor
         view.layer?.shadowOpacity = Float(0.13 * strength)
         view.layer?.shadowRadius = 4
-        view.layer?.shadowOffset = CGSize(width: -3, height: 0)
+        // Away from the screen edge, into open space.
+        view.layer?.shadowOffset = CGSize(width: 3 * edge.inward, height: 0)
         updateShadowPath(on: view)
     }
 

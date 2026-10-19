@@ -30,6 +30,10 @@ import CoreGraphics
 ///
 /// Coordinates are the column's: origin at its bottom left, y up, tab 0 at
 /// the top. Nothing here knows about views, so all of it is tested directly.
+///
+/// The tabs are flush with the column's right side, and a hovered one grows
+/// leftwards; with the deck on the left edge (`edge`), the same layout is
+/// mirrored, flush with the left side and growing rightwards.
 struct DeckGeometry: Equatable {
     enum Mode: Equatable {
         case spaced
@@ -156,6 +160,25 @@ struct DeckGeometry: Equatable {
         return Int(((column - metrics.tabHeight) / metrics.minimumSlice).rounded(.down)) + 1
     }
 
+    static func layout(
+        count: Int,
+        usableHeight: CGFloat,
+        columnWidth: CGFloat,
+        scrollOffset: CGFloat = 0,
+        lowerScrollOffset: CGFloat = 0,
+        pinned: PinnedBlock? = nil,
+        hover: Hover? = nil,
+        edge: ScreenEdge,
+        metrics: Metrics = Metrics()
+    ) -> DeckGeometry {
+        var geometry = layout(
+            count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
+            lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, metrics: metrics)
+        geometry.frames = geometry.frames.map { edge.mirrored($0, in: columnWidth) }
+        return geometry
+    }
+
+    /// The layout for the right edge.
     static func layout(
         count: Int,
         usableHeight: CGFloat,
