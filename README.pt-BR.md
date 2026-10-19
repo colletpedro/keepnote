@@ -35,8 +35,8 @@ O KeepNote não é notarizado pela Apple. A notarização exige uma assinatura p
 
 ## O que ele faz
 
-- **Um deck na borda da tela.** As notas são abas na borda direita. Passar o cursor pela borda abre as abas em leque, cada uma com sua cor e seu rótulo; o deck rola quando há muitas. Tocar numa aba mostra uma espiada da nota sem tirar o foco do app em que você está; clicar abre a nota para edição.
-- **Ancorada ou solta.** Uma nota aberta fica ancorada ao deck e fecha quando você clica em outro lugar. **Float Note** (⌥⌘P) a descola da borda para ela ficar na tela, redimensionável, e lembra a posição; arrastar uma nota solta de volta até a borda a devolve ao deck.
+- **Um deck na borda da tela.** As notas são abas na borda direita, ou na esquerda (Settings → Deck → Screen edge): o deck inteiro, as espiadas e as notas ancoradas se espelham para sair em direção ao meio da tela, e um Dock de qualquer lado fica livre. Passar o cursor pela borda abre as abas em leque, cada uma com sua cor e seu rótulo; o deck rola quando há muitas. Tocar numa aba mostra uma espiada da nota sem tirar o foco do app em que você está; clicar abre a nota para edição.
+- **Ancorada ou solta.** Uma nota aberta fica ancorada ao deck e fecha quando você clica em outro lugar. **Float Note** (⌥⌘P) a descola da borda para ela ficar na tela, redimensionável, e lembra a posição; arrastar uma nota solta de volta até a borda do deck a devolve.
 - **Markdown enquanto você escreve.** Negrito, itálico, tachado, destaque, links, títulos, listas com marcador, numeradas e checklists (com recuo e renumeração automática), citações, código, tabelas e divisores, tudo com atalho e num menu Tools dentro da nota.
 - **Cores e tags.** Cinco cores de papel, trocáveis a qualquer momento, e `#tags` com sugestões enquanto você digita. O All Notes filtra por tag e busca no título, nas tags e no texto.
 - **Notas daily.** Dê a uma nota a tag `daily`, ou use **Today's Daily** (⌥⌘Y, ou o botão de calendário no deck). O deck mantém as dailies dos seus dois dias mais recentes; as mais antigas são arquivadas e ficam em **Daily** no All Notes, agrupadas por dia. Você pode definir um modelo para as novas notas daily.
@@ -72,6 +72,8 @@ Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Ace
 
 ## Atalhos
 
+Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocados em Settings → Shortcuts: clique no atalho e pressione a nova combinação, que precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho, e **Restore Defaults** traz estes de volta. Uma combinação que outro comando do KeepNote já usa, ou que o sistema recusa porque outro app a tem, não é aceita; o campo diz o motivo. Seus atalhos ficam guardados neste Mac, e os menus, as dicas e a janela de boas-vindas mostram sempre os atuais. Os atalhos de formatação são fixos.
+
 | Globais, de qualquer app | O que faz |
 |---|---|
 | `⌥⌘N` | Nova nota |
@@ -81,10 +83,10 @@ Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Ace
 
 | Numa nota | O que faz |
 |---|---|
-| `esc` | Fechar |
+| `esc` / `⌘W` | Fechar |
 | `⌘F` | Buscar na nota |
 | `⌘G` / `⇧⌘G` | Próxima / anterior ocorrência |
-| `⌥⌘C` | Próxima cor |
+| `⌥⌘C` / `⇧⌥⌘C` | Próxima / anterior cor |
 | `⌥⌘P` | Float Note / Return to Deck |
 | `⇧⌘E` | Arquivar / trazer de volta |
 | `⇧⌘⌫` | Apagar (com desfazer) |

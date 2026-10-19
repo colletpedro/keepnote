@@ -35,8 +35,8 @@ KeepNote is not notarized by Apple. Notarization needs a paid Apple Developer me
 
 ## What it does
 
-- **A deck on the screen edge.** Notes are tabs on the right edge. Hovering the edge fans them out, each with its own color and label; the deck scrolls when there are many. Touching a tab shows a quick look at the note without taking focus from the app you are in; clicking opens it for editing.
-- **Anchored or floating.** An open note is anchored to the deck and closes when you click elsewhere. **Float Note** (⌥⌘P) lifts it off the edge so it stays on screen, resizable, and remembers its place; dragging a floating note back to the edge returns it.
+- **A deck on the screen edge.** Notes are tabs on the right edge, or on the left one (Settings → Deck → Screen edge): the whole deck, its peeks and anchored notes mirror to come out towards the middle of the screen, and a Dock on either side is left clear. Hovering the edge fans them out, each with its own color and label; the deck scrolls when there are many. Touching a tab shows a quick look at the note without taking focus from the app you are in; clicking opens it for editing.
+- **Anchored or floating.** An open note is anchored to the deck and closes when you click elsewhere. **Float Note** (⌥⌘P) lifts it off the edge so it stays on screen, resizable, and remembers its place; dragging a floating note back to the deck's edge returns it.
 - **Markdown as you type.** Bold, italic, strikethrough, highlight, links, headings, bulleted, numbered and checklist items (with indent and automatic renumbering), quotes, code, tables and dividers, all with shortcuts and in a Tools menu in the note.
 - **Colors and tags.** Five paper colors, changeable at any moment, and `#tags` with suggestions while you type. All Notes filters by tag and searches title, tags and text.
 - **Daily notes.** Give a note the `daily` tag, or use **Today's Daily** (⌥⌘Y, or the calendar button on the deck). The deck keeps the dailies of your two most recent days; older ones are archived and stay under **Daily** in All Notes, grouped by day. You can set a template for new daily notes.
@@ -72,6 +72,8 @@ To stop those prompts, create a signing certificate once: in Keychain Access, **
 
 ## Shortcuts
 
+These are the defaults. Every shortcut below except Close can be changed in Settings → Shortcuts: click it and press the new combination, which needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without a shortcut, and **Restore Defaults** brings these back. A combination another KeepNote command already uses, or one the system refuses because another app holds it, is not taken; the field says why. Your shortcuts are kept on this Mac, and the menus, tooltips and the welcome window always show the current ones. The formatting shortcuts are fixed.
+
 | Global, from any app | What it does |
 |---|---|
 | `⌥⌘N` | New note |
@@ -81,10 +83,10 @@ To stop those prompts, create a signing certificate once: in Keychain Access, **
 
 | In a note | What it does |
 |---|---|
-| `esc` | Close |
+| `esc` / `⌘W` | Close |
 | `⌘F` | Find in the note |
 | `⌘G` / `⇧⌘G` | Next / previous match |
-| `⌥⌘C` | Next color |
+| `⌥⌘C` / `⇧⌥⌘C` | Next / previous color |
 | `⌥⌘P` | Float Note / Return to Deck |
 | `⇧⌘E` | Archive / bring back |
 | `⇧⌘⌫` | Delete (undoable) |
