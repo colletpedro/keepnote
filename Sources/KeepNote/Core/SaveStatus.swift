@@ -8,29 +8,29 @@ enum SaveStatus {
         editedAt: Date,
         now: Date,
         calendar: Calendar = .current,
-        locale: Locale = .current
+        locale: Locale = Localization.locale
     ) -> String {
-        if isSaving { return "Saving\u{2026}" }
-        return "Edited " + age(of: editedAt, now: now, calendar: calendar, locale: locale)
+        if isSaving { return L("Saving\u{2026}") }
+        return L("Edited %@", age(of: editedAt, now: now, calendar: calendar, locale: locale))
     }
 
     /// "just now", "5 min ago", "3 h ago", "yesterday", "4 days ago", then a
     /// short date. Clock skew (an edit "in the future") reads as "just now".
-    static func age(of date: Date, now: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+    static func age(of date: Date, now: Date, calendar: Calendar = .current, locale: Locale = Localization.locale) -> String {
         let seconds = max(0, now.timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
+        if seconds < 60 { return L("just now") }
         let minutes = Int(seconds / 60)
-        if minutes < 60 { return "\(minutes) min ago" }
+        if minutes < 60 { return L("%d min ago", minutes) }
         let hours = minutes / 60
-        if hours < 24 { return "\(hours) h ago" }
+        if hours < 24 { return L("%d h ago", hours) }
 
         let days = calendar.dateComponents(
             [.day],
             from: calendar.startOfDay(for: date),
             to: calendar.startOfDay(for: now)
         ).day ?? hours / 24
-        if days <= 1 { return "yesterday" }
-        if days < 7 { return "\(days) days ago" }
+        if days <= 1 { return L("yesterday") }
+        if days < 7 { return L("%d days ago", days) }
 
         let formatter = DateFormatter()
         formatter.locale = locale

@@ -517,7 +517,7 @@ final class EdgeStackView: NSView {
             guard let self, let daily, let window = self.window else { return }
             if hovered {
                 let frame = window.convertToScreen(daily.convert(daily.bounds, to: nil))
-                self.hoverLabel.show("adicionar daily", besides: frame, above: window.level)
+                self.hoverLabel.show(L("add daily"), besides: frame, above: window.level)
             } else {
                 self.hoverLabel.hide()
             }

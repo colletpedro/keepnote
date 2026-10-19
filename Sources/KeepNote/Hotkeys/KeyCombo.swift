@@ -93,7 +93,7 @@ struct KeyCombo: Equatable, Codable, Sendable {
         case kVK_ANSI_7: return "7"
         case kVK_ANSI_8: return "8"
         case kVK_ANSI_9: return "9"
-        case kVK_Space: return "Space"
+        case kVK_Space: return L("Space")
         case kVK_Return: return "\u{21A9}"
         case kVK_Escape: return "\u{238B}"
         default: return "?"
@@ -112,14 +112,14 @@ enum GlobalCommand: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 
     /// Beside a shortcut that could not be registered.
-    static let unavailableMessage = "In use by another app"
+    static var unavailableMessage: String { L("In use by another app") }
 
     var title: String {
         switch self {
-        case .newNote: return "New Note"
-        case .allNotes: return "All Notes"
-        case .archive: return "Archive"
-        case .todaysDaily: return "Today\u{2019}s Daily"
+        case .newNote: return L("New Note")
+        case .allNotes: return L("All Notes")
+        case .archive: return L("Archive")
+        case .todaysDaily: return L("Today\u{2019}s Daily")
         }
     }
 

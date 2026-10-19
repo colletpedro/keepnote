@@ -148,7 +148,7 @@ enum BlockEditing {
     /// Today's date in the system's short format for the current locale
     /// (`06/10/2026`, `10/6/26`). It replaces the selection, like typing it would.
     static func insertDate(
-        _ edit: TextEdit, date: Date = Date(), timeZone: TimeZone = .current, locale: Locale = .current
+        _ edit: TextEdit, date: Date = Date(), timeZone: TimeZone = .current, locale: Locale = Localization.locale
     ) -> TextEdit {
         let formatter = DateFormatter()
         formatter.locale = locale

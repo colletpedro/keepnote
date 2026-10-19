@@ -35,9 +35,9 @@ final class FolderSyncService: NSObject, ObservableObject {
 
         var summary: String {
             switch self {
-            case .off: return "Off"
-            case .active: return "Syncing"
-            case .needsFolder: return "Choose a folder"
+            case .off: return L("Off")
+            case .active: return L("Syncing")
+            case .needsFolder: return L("Choose a folder")
             case .failed(let message): return message
             }
         }
@@ -156,8 +156,8 @@ final class FolderSyncService: NSObject, ObservableObject {
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Use This Folder"
-        panel.message = "Pick a folder for your notes. iCloud Drive keeps them in sync between Macs."
+        panel.prompt = L("Use This Folder")
+        panel.message = L("Pick a folder for your notes. iCloud Drive keeps them in sync between Macs.")
         panel.directoryURL = FileManager.default
             .url(forUbiquityContainerIdentifier: nil)?
             .deletingLastPathComponent()
@@ -174,7 +174,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             AppSettings.shared.syncEnabled = true
             reconfigure()
         } catch {
-            status = .failed("Could not keep access to that folder: \(error.localizedDescription)")
+            status = .failed(L("Could not keep access to that folder: %@", error.localizedDescription))
         }
     }
 
@@ -203,7 +203,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             isAccessingScope = url.startAccessingSecurityScopedResource()
             return url
         } catch {
-            status = .failed("The sync folder could not be reopened: \(error.localizedDescription)")
+            status = .failed(L("The sync folder could not be reopened: %@", error.localizedDescription))
             return nil
         }
     }
@@ -456,7 +456,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             }
             try store.applyIncoming(fresh.filter { !$0.isTombstone }.map(\.note))
         } catch {
-            status = .failed("Could not apply a change from the folder: \(error.localizedDescription)")
+            status = .failed(L("Could not apply a change from the folder: %@", error.localizedDescription))
         }
     }
 
@@ -596,7 +596,7 @@ final class FolderSyncService: NSObject, ObservableObject {
                 stamps.dates[url.lastPathComponent] = modified
             }
             guard let error = failure ?? coordinationError else { return }
-            let message = "Could not write \(url.lastPathComponent): \(error.localizedDescription)"
+            let message = L("Could not write %@: %@", url.lastPathComponent, error.localizedDescription)
             Task { @MainActor in self?.status = .failed(message) }
         }
     }

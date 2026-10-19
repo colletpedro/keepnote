@@ -10,10 +10,10 @@ enum KeychainError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unexpectedStatus(let status):
-            let message = SecCopyErrorMessageString(status, nil) as String? ?? "unknown error"
-            return "Keychain error \(status): \(message)"
+            let message = SecCopyErrorMessageString(status, nil) as String? ?? L("unknown error")
+            return L("Keychain error %d: %@", Int(status), message)
         case .malformedKey:
-            return "The stored encryption key is not a valid 256-bit key."
+            return L("The stored encryption key is not a valid 256-bit key.")
         }
     }
 }

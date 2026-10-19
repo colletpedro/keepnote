@@ -157,35 +157,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         _ = try? store.create(
             color: .mint,
-            title: "Welcome to KeepNote",
-            body: """
-            Your notes live on the right edge of the screen.
-
-            • Move the cursor to the pill and the stack fans out.
-            • Click a card to open it. Typing saves on its own.
-            • Right-click the pill for the menu.
-
-            Shortcuts
-            \(newNote)  new note
-            \(allNotes)  all notes
-            \(archive)  archive
-            \(daily)  today's daily
-
-            Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,
-            > quotes. The syntax hides itself except on the line you edit.
-
-            Inside a note: esc closes, ⌘F finds, ⌥⌘C changes color,
-            ⇧⌘⌫ deletes with ten seconds to undo.
-            """,
+            title: L("Welcome to KeepNote"),
+            body: [
+                L("Your notes live on the right edge of the screen."),
+                "",
+                L("• Move the cursor to the pill and the stack fans out."),
+                L("• Click a card to open it. Typing saves on its own."),
+                L("• Right-click the pill for the menu."),
+                "",
+                L("Shortcuts"),
+                L("%@  new note", newNote),
+                L("%@  all notes", allNotes),
+                L("%@  archive", archive),
+                L("%@  today\u{2019}s daily", daily),
+                "",
+                L("Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,"),
+                L("> quotes. The syntax hides itself except on the line you edit."),
+                "",
+                L("Inside a note: esc closes, \u{2318}F finds, \u{2325}\u{2318}C changes color,"),
+                L("\u{21E7}\u{2318}\u{232B} deletes with ten seconds to undo."),
+            ].joined(separator: "\n"),
             tags: ["welcome"]
         )
     }
 
     private func presentFatal(_ error: Error) {
         let alert = NSAlert(error: error)
-        alert.messageText = "KeepNote could not start"
+        alert.messageText = L("KeepNote could not start")
         alert.informativeText = error.localizedDescription
-        alert.addButton(withTitle: "Quit")
+        alert.addButton(withTitle: L("Quit"))
         alert.runModal()
         NSApp.terminate(nil)
     }

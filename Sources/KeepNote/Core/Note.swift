@@ -221,7 +221,7 @@ private final class DerivedText: @unchecked Sendable {
             if !trimmed.isEmpty { return trimmed }
             let firstLine = MarkdownText.firstPlainLine(body)?.trimmingCharacters(in: .whitespacesAndNewlines)
             if let firstLine, !firstLine.isEmpty { return firstLine }
-            return "Untitled"
+            return L("Untitled")
         }
     }
 

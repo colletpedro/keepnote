@@ -32,11 +32,11 @@ struct ArchiveView: View {
                         }
                         .tag(note.id)
                         .contextMenu {
-                            Button("Open") { actions.open(note.id) }
-                            Button("Move to Stack") { actions.unarchive([note.id]) }
-                            Button("Export\u{2026}") { actions.export([note.id]) }
+                            Button(L("Open")) { actions.open(note.id) }
+                            Button(L("Move to Stack")) { actions.unarchive([note.id]) }
+                            Button(L("Export\u{2026}")) { actions.export([note.id]) }
                             Divider()
-                            Button("Delete", role: .destructive) { actions.delete([note.id]) }
+                            Button(L("Delete"), role: .destructive) { actions.delete([note.id]) }
                         }
                     }
                 }
@@ -52,7 +52,7 @@ struct ArchiveView: View {
         HStack(spacing: 8) {
             Image(systemName: "archivebox")
                 .foregroundStyle(.secondary)
-            TextField("Search the archive", text: $query)
+            TextField(L("Search the archive"), text: $query)
                 .textFieldStyle(.roundedBorder)
         }
         .padding(12)
@@ -63,7 +63,7 @@ struct ArchiveView: View {
             Image(systemName: "archivebox")
                 .font(.system(size: 30))
                 .foregroundStyle(.tertiary)
-            Text(query.isEmpty ? "Nothing archived yet" : "No archived note matches that")
+            Text(query.isEmpty ? L("Nothing archived yet") : L("No archived note matches that"))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
         }
@@ -72,15 +72,15 @@ struct ArchiveView: View {
 
     private var footer: some View {
         HStack {
-            Text("\(results.count) archived")
+            Text(L("%d archived", results.count))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             Spacer()
-            Button("Move to Stack") { actions.unarchive(Array(selection)) }
+            Button(L("Move to Stack")) { actions.unarchive(Array(selection)) }
                 .disabled(selection.isEmpty)
-            Button("Export\u{2026}") { actions.export(Array(selection)) }
+            Button(L("Export\u{2026}")) { actions.export(Array(selection)) }
                 .disabled(selection.isEmpty)
-            Button("Delete", role: .destructive) {
+            Button(L("Delete"), role: .destructive) {
                 actions.delete(Array(selection))
                 selection.removeAll()
             }
@@ -125,16 +125,17 @@ private struct ArchiveRow: View {
 
             Button(action: onOpen) { Image(systemName: "doc.text") }
                 .buttonStyle(.borderless)
-                .help("Open")
+                .help(L("Open"))
             Button(action: onRestore) { Image(systemName: "tray.and.arrow.up") }
                 .buttonStyle(.borderless)
-                .help("Move back to the stack")
+                .help(L("Move back to the stack"))
         }
         .padding(.vertical, 3)
     }
 
     private static let formatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .short
         formatter.timeStyle = .none
         return formatter

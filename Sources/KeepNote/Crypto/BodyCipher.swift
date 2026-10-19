@@ -7,8 +7,8 @@ enum CipherError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .badCiphertext: return "A note body could not be decrypted."
-        case .notUTF8: return "A decrypted note body was not valid UTF-8."
+        case .badCiphertext: return L("A note body could not be decrypted.")
+        case .notUTF8: return L("A decrypted note body was not valid UTF-8.")
         }
     }
 }

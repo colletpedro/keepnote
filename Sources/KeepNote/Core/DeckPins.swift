@@ -15,7 +15,7 @@ enum PinnedDeck {
     static let limit = 5
 
     /// The message shown when a sixth pin is refused.
-    static let limitMessage = "Up to \(limit) pinned notes"
+    static var limitMessage: String { L("Up to %d pinned notes", limit) }
 
     /// Whether one more note can be pinned when `pinned` already are.
     static func canPin(pinned: Int) -> Bool {

@@ -21,10 +21,10 @@ enum NoteLibrary: String, CaseIterable, Sendable {
 
     var title: String {
         switch self {
-        case .all: return "All Notes"
-        case .deck: return "On the Deck"
-        case .archived: return "Archived"
-        case .daily: return "Daily"
+        case .all: return L("All Notes")
+        case .deck: return L("On the Deck")
+        case .archived: return L("Archived")
+        case .daily: return L("Daily")
         }
     }
 
@@ -50,7 +50,7 @@ enum NoteSelection: Hashable, Sendable {
         switch self {
         case .library(let library): return library.title
         case .tag(let name): return "#" + name
-        case .untagged: return "Untagged"
+        case .untagged: return L("Untagged")
         }
     }
 
@@ -278,19 +278,21 @@ enum TagLibrary {
     // MARK: - What the confirmations say
 
     static func notesPhrase(_ count: Int) -> String {
-        "\(count) note\(count == 1 ? "" : "s")"
+        Lplural(count, L("1 note"), L("%d notes"))
     }
 
     /// Delete Tag…: how many notes lose it, and that they stay.
     static func deleteMessage(_ name: String, count: Int) -> (title: String, detail: String) {
-        ("Delete the tag \u{201C}#\(name)\u{201D}?",
-         "\(notesPhrase(count)) will lose this tag. The notes themselves are kept.")
+        (L("Delete the tag \u{201C}#%@\u{201D}?", name),
+         Lplural(count, L("1 note will lose this tag. The notes themselves are kept."),
+                 L("%d notes will lose this tag. The notes themselves are kept.")))
     }
 
     /// Rename Tag… onto a name that already exists.
     static func mergeMessage(_ old: String, into target: String, count: Int) -> (title: String, detail: String) {
-        ("Merge \u{201C}#\(old)\u{201D} into \u{201C}#\(target)\u{201D}?",
-         "\u{201C}#\(target)\u{201D} already exists. \(notesPhrase(count)) tagged #\(old) will be tagged #\(target) instead, and #\(old) will be gone.")
+        (L("Merge \u{201C}#%@\u{201D} into \u{201C}#%@\u{201D}?", old, target),
+         L("\u{201C}#%1$@\u{201D} already exists. %2$@ tagged #%3$@ will be tagged #%1$@ instead, and #%3$@ will be gone.",
+           target, notesPhrase(count), old))
     }
 }
 

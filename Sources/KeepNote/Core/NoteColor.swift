@@ -30,11 +30,11 @@ enum NoteColor: Int, CaseIterable, Codable, Sendable {
 
     var displayName: String {
         switch self {
-        case .butter: return "Butter"
-        case .coral: return "Coral"
-        case .mint: return "Mint"
-        case .sky: return "Sky"
-        case .lilac: return "Lilac"
+        case .butter: return L("Butter")
+        case .coral: return L("Coral")
+        case .mint: return L("Mint")
+        case .sky: return L("Sky")
+        case .lilac: return L("Lilac")
         }
     }
 

@@ -115,7 +115,7 @@ private struct UndoToastView: View {
             Spacer(minLength: 4)
 
             if let onUndo {
-                Button("Undo", action: onUndo)
+                Button(L("Undo"), action: onUndo)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             }

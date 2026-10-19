@@ -125,12 +125,12 @@ enum DailyNotes {
     /// is, merged) into it.
     static func renameBlock(_ old: String, to new: String) -> (title: String, detail: String)? {
         if isReserved(old) {
-            return ("\u{201C}#\(tag)\u{201D} cannot be renamed",
-                    "It is the tag daily notes are made with, so it keeps its name.")
+            return (L("\u{201C}#%@\u{201D} cannot be renamed", tag),
+                    L("It is the tag daily notes are made with, so it keeps its name."))
         }
         if isReserved(new) {
-            return ("\u{201C}#\(tag)\u{201D} is reserved",
-                    "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note.")
+            return (L("\u{201C}#%@\u{201D} is reserved", tag),
+                    L("Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note."))
         }
         return nil
     }
@@ -175,7 +175,7 @@ enum DailyNotes {
 
     /// The title of a new daily: "Daily" and the day and month in the
     /// system's short format and order (`Daily 08/10`, `Daily 10/8`).
-    static func title(for date: Date, locale: Locale = .current, calendar: Calendar = .current) -> String {
+    static func title(for date: Date, locale: Locale = Localization.locale, calendar: Calendar = .current) -> String {
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.calendar = calendar

@@ -15,10 +15,10 @@ enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .markdownPerNote: return "Markdown — one file per note"
-        case .plainTextPerNote: return "Plain text — one file per note"
-        case .singleDocument: return "Single document — all selected notes"
-        case .archivePackage: return "KeepNote archive — colors, states and dates"
+        case .markdownPerNote: return L("Markdown \u{2014} one file per note")
+        case .plainTextPerNote: return L("Plain text \u{2014} one file per note")
+        case .singleDocument: return L("Single document \u{2014} all selected notes")
+        case .archivePackage: return L("KeepNote archive \u{2014} colors, states and dates")
         }
     }
 
@@ -67,8 +67,8 @@ enum ExportService {
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Export Here"
-        panel.message = "Choose a folder for the exported notes."
+        panel.prompt = L("Export Here")
+        panel.message = L("Choose a folder for the exported notes.")
         return panel.runModal() == .OK ? panel.url : nil
     }
 
@@ -128,7 +128,8 @@ enum ExportService {
         lines.append("")
         lines.append("---")
         lines.append("")
-        lines.append("*Created \(dateFormatter.string(from: note.createdAt)) · Edited \(dateFormatter.string(from: note.editedAt))\(note.state == .archived ? " · Archived" : "")*")
+        let dates = L("Created %@ \u{00B7} Edited %@", dateFormatter.string(from: note.createdAt), dateFormatter.string(from: note.editedAt))
+        lines.append("*" + dates + (note.state == .archived ? " \u{00B7} " + L("Archived") : "") + "*")
         return lines.joined(separator: "\n")
     }
 
@@ -137,7 +138,7 @@ enum ExportService {
         lines.append(note.body)
         if !note.tags.isEmpty {
             lines.append("")
-            lines.append("Tags: \(note.tags.joined(separator: ", "))")
+            lines.append(L("Tags: %@", note.tags.joined(separator: ", ")))
         }
         return lines.joined(separator: "\n")
     }
@@ -150,7 +151,7 @@ enum ExportService {
             .components(separatedBy: illegal)
             .joined(separator: "-")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        if base.isEmpty { base = "Untitled" }
+        if base.isEmpty { base = L("Untitled") }
         if base.count > 60 { base = String(base.prefix(60)) }
 
         var candidate = base
@@ -165,6 +166,7 @@ enum ExportService {
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
@@ -297,9 +299,9 @@ enum ImportError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unrecognizedFormat: return "That file is not a KeepNote archive."
-        case .unreadableNote: return "That file is not a KeepNote note."
-        case .deletedNote: return "That note was deleted."
+        case .unrecognizedFormat: return L("That file is not a KeepNote archive.")
+        case .unreadableNote: return L("That file is not a KeepNote note.")
+        case .deletedNote: return L("That note was deleted.")
         }
     }
 }
@@ -314,8 +316,8 @@ enum NoteImporter {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Import"
-        panel.message = "Choose a KeepNote archive, or a folder of .hmnote files."
+        panel.prompt = L("Import")
+        panel.message = L("Choose a KeepNote archive, or a folder of .hmnote files.")
         guard panel.runModal() == .OK, let url = panel.url else { return 0 }
         return try importContents(of: url, into: store).applied
     }

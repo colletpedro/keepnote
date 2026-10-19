@@ -120,18 +120,18 @@ final class NoteCardView: SpringView {
 
     override func rightMouseDown(with event: NSEvent) {
         let menu = NSMenu()
-        menu.addItem(withTitle: "Open", action: #selector(menuOpen), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Open"), action: #selector(menuOpen), keyEquivalent: "").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Next Color", action: #selector(menuColor), keyEquivalent: "").target = self
-        let pin = menu.addItem(withTitle: "Pin to Center", action: #selector(menuPin), keyEquivalent: "")
+        menu.addItem(withTitle: L("Next Color"), action: #selector(menuColor), keyEquivalent: "").target = self
+        let pin = menu.addItem(withTitle: L("Pin to Center"), action: #selector(menuPin), keyEquivalent: "")
         pin.target = self
         pin.state = isPinned ? .on : .off
-        let keep = menu.addItem(withTitle: "Keep on Deck", action: #selector(menuKeep), keyEquivalent: "")
+        let keep = menu.addItem(withTitle: L("Keep on Deck"), action: #selector(menuKeep), keyEquivalent: "")
         keep.target = self
         keep.state = keepOnDeck ? .on : .off
-        menu.addItem(withTitle: "Mark Complete", action: #selector(menuComplete), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Mark Complete"), action: #selector(menuComplete), keyEquivalent: "").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Delete", action: #selector(menuDelete), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Delete"), action: #selector(menuDelete), keyEquivalent: "").target = self
         NSMenu.popUpContextMenu(menu, with: event, for: self)
     }
 
@@ -185,7 +185,7 @@ extension NoteCardView {
     fileprivate func drawFloatingMarker() {
         let configuration = NSImage.SymbolConfiguration(pointSize: 7.5, weight: .bold)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color.secondaryInk.withAlphaComponent(0.8)]))
-        guard let glyph = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: "Floating")?
+        guard let glyph = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right", accessibilityDescription: L("Floating"))?
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12
@@ -201,7 +201,7 @@ extension NoteCardView {
     fileprivate func drawExpiringMarker() {
         let configuration = NSImage.SymbolConfiguration(pointSize: 7.5, weight: .semibold)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color.secondaryInk.withAlphaComponent(0.75)]))
-        guard let glyph = NSImage(systemSymbolName: "clock", accessibilityDescription: "Archives soon")?
+        guard let glyph = NSImage(systemSymbolName: "clock", accessibilityDescription: L("Archives soon"))?
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12
@@ -215,7 +215,7 @@ extension NoteCardView {
     fileprivate func drawPinMarker(below offset: CGFloat) {
         let configuration = NSImage.SymbolConfiguration(pointSize: 8, weight: .bold)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color.secondaryInk.withAlphaComponent(0.8)]))
-        guard let glyph = NSImage(systemSymbolName: "pin.fill", accessibilityDescription: "Pinned")?
+        guard let glyph = NSImage(systemSymbolName: "pin.fill", accessibilityDescription: L("Pinned"))?
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12

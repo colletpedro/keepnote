@@ -104,22 +104,22 @@ enum AutoArchive {
 
     /// "Archives in 2 days" or "Archives tomorrow".
     static func warning(daysLeft: Int) -> String {
-        daysLeft == 1 ? "Archives tomorrow" : "Archives in \(daysLeft) days"
+        Lplural(daysLeft, L("Archives tomorrow"), L("Archives in %d days"))
     }
 
     /// What a note's footer says about its place on the deck: that it is kept
     /// or pinned, or that it is about to be archived. Nothing otherwise.
     static func footerLine(_ item: some AutoArchiveItem, today: DailyDay, days: Int) -> String? {
         if item.isArchived { return nil }
-        if item.keepOnDeck { return "Kept on deck" }
-        if item.isPinned { return "Pinned to center" }
+        if item.keepOnDeck { return L("Kept on deck") }
+        if item.isPinned { return L("Pinned to center") }
         return daysLeft(item, today: today, days: days).map(warning(daysLeft:))
     }
 
     // MARK: - In the Archive
 
     /// The note says it was archived by the rule, and when.
-    static let archivedLabel = "Archived automatically"
+    static var archivedLabel: String { L("Archived automatically") }
 
     static func archivedLine(day: DailyDay, formatted: String) -> String {
         "\(archivedLabel) \u{00B7} \(formatted)"

@@ -442,7 +442,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         if refused {
             undoToast.notice(PinnedDeck.limitMessage)
         } else if archived {
-            undoToast.notice("Only notes on the deck can be pinned")
+            undoToast.notice(L("Only notes on the deck can be pinned"))
         }
     }
 
@@ -468,9 +468,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         guard !deleted.isEmpty else { return }
 
-        let message = deleted.count == 1
-            ? "Note deleted"
-            : "\(deleted.count) notes deleted"
+        let message = Lplural(deleted.count, L("Note deleted"), L("%d notes deleted"))
         undoToast.show(message: message, duration: settings.undoWindow) { [weak self] in
             guard let self else { return }
             for id in deleted {
@@ -488,13 +486,13 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             let skipped = try ExportService.run(
                 notes: notes,
                 format: format,
-                suggestedName: notes.count == 1 ? notes[0].displayTitle : "KeepNote Export",
+                suggestedName: notes.count == 1 ? notes[0].displayTitle : L("KeepNote Export"),
                 dailyTemplate: store.dailyTemplate
             )
             if let skipped, skipped > 0 {
                 let alert = NSAlert()
-                alert.messageText = "\(skipped) locked note\(skipped == 1 ? " was" : "s were") not exported"
-                alert.informativeText = "Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format."
+                alert.messageText = Lplural(skipped, L("1 locked note was not exported"), L("%d locked notes were not exported"))
+                alert.informativeText = L("Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format.")
                 alert.runModal()
             }
         } catch {
@@ -508,8 +506,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             let count = try NoteImporter.run(into: store)
             guard count > 0 else { return }
             let alert = NSAlert()
-            alert.messageText = "Imported \(count) note\(count == 1 ? "" : "s")"
-            alert.informativeText = "Colors, states and dates came across unchanged."
+            alert.messageText = Lplural(count, L("Imported 1 note"), L("Imported %d notes"))
+            alert.informativeText = L("Colors, states and dates came across unchanged.")
             alert.runModal()
         } catch {
             present(error)
@@ -539,8 +537,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         guard total > 0 else { return }
         let alert = NSAlert()
-        alert.messageText = "Imported \(total) note\(total == 1 ? "" : "s")"
-        alert.informativeText = "Colors, states and dates came across unchanged."
+        alert.messageText = Lplural(total, L("Imported 1 note"), L("Imported %d notes"))
+        alert.informativeText = L("Colors, states and dates came across unchanged.")
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
@@ -557,8 +555,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         guard plan.skippedLocked > 0 else { return }
         let count = plan.skippedLocked
         let alert = NSAlert()
-        alert.messageText = "\(count) locked note\(count == 1 ? " was" : "s were") skipped"
-        alert.informativeText = "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are."
+        alert.messageText = Lplural(count, L("1 locked note was skipped"), L("%d locked notes were skipped"))
+        alert.informativeText = L("Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are.")
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
@@ -576,13 +574,13 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     func promptRenameTag(_ name: String) -> String? {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "Rename \u{201C}#\(name)\u{201D}"
-        alert.informativeText = "Every note with this tag gets the new name."
+        alert.messageText = L("Rename \u{201C}#%@\u{201D}", name)
+        alert.informativeText = L("Every note with this tag gets the new name.")
         let field = NSTextField(string: name)
         field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
         alert.accessoryView = field
-        alert.addButton(withTitle: "Rename")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("Rename"))
+        alert.addButton(withTitle: L("Cancel"))
         alert.window.initialFirstResponder = field
         guard alert.runModal() == .alertFirstButtonReturn else { return nil }
         if let block = DailyNotes.renameBlock(name, to: field.stringValue) {
@@ -599,8 +597,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             let confirm = NSAlert()
             confirm.messageText = message.title
             confirm.informativeText = message.detail
-            confirm.addButton(withTitle: "Merge")
-            confirm.addButton(withTitle: "Cancel")
+            confirm.addButton(withTitle: L("Merge"))
+            confirm.addButton(withTitle: L("Cancel"))
             guard confirm.runModal() == .alertFirstButtonReturn else { return nil }
         }
         renameTag(name, to: rename.target)
@@ -616,8 +614,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         let alert = NSAlert()
         alert.messageText = message.title
         alert.informativeText = message.detail
-        alert.addButton(withTitle: "Delete Tag")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("Delete Tag"))
+        alert.addButton(withTitle: L("Cancel"))
         alert.buttons.first?.hasDestructiveAction = true
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         deleteTag(name)
@@ -627,14 +625,14 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     func promptAddTag(to ids: [UUID]) {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "Add a tag to \(TagLibrary.notesPhrase(ids.count))"
-        alert.informativeText = "Type a new tag or pick an existing one."
+        alert.messageText = L("Add a tag to %@", TagLibrary.notesPhrase(ids.count))
+        alert.informativeText = L("Type a new tag or pick an existing one.")
         let box = NSComboBox(frame: NSRect(x: 0, y: 0, width: 260, height: 26))
         box.addItems(withObjectValues: TagLibrary.index(store.notes).tags.map(\.name))
         box.completes = true
         alert.accessoryView = box
-        alert.addButton(withTitle: "Add Tag")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("Add Tag"))
+        alert.addButton(withTitle: L("Cancel"))
         alert.window.initialFirstResponder = box
         guard alert.runModal() == .alertFirstButtonReturn,
               let typed = TagText.normalize([box.stringValue]).first else { return }
@@ -649,13 +647,13 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         guard !tags.isEmpty else { return }
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "Remove a tag from \(TagLibrary.notesPhrase(ids.count))"
-        alert.informativeText = "The notes themselves are kept."
+        alert.messageText = L("Remove a tag from %@", TagLibrary.notesPhrase(ids.count))
+        alert.informativeText = L("The notes themselves are kept.")
         let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 260, height: 25), pullsDown: false)
         popup.addItems(withTitles: tags.map { "#" + $0 })
         alert.accessoryView = popup
-        alert.addButton(withTitle: "Remove Tag")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("Remove Tag"))
+        alert.addButton(withTitle: L("Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn, tags.indices.contains(popup.indexOfSelectedItem) else { return }
         removeTag(tags[popup.indexOfSelectedItem], from: ids)
     }
@@ -672,15 +670,15 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     private func promptForFormat() -> ExportFormat? {
         let alert = NSAlert()
-        alert.messageText = "Export Notes"
-        alert.informativeText = "Choose a format."
+        alert.messageText = L("Export Notes")
+        alert.informativeText = L("Choose a format.")
         let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 340, height: 25), pullsDown: false)
         for format in ExportFormat.allCases {
             popup.addItem(withTitle: format.title)
         }
         alert.accessoryView = popup
-        alert.addButton(withTitle: "Continue")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("Continue"))
+        alert.addButton(withTitle: L("Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return nil }
         let index = popup.indexOfSelectedItem
         guard index >= 0, index < ExportFormat.allCases.count else { return nil }
@@ -725,7 +723,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             return
         }
         let controller = HostingWindowController(
-            title: "All Notes",
+            title: L("All Notes"),
             size: NSSize(width: 1080, height: 640),
             autosaveName: "KeepNote.AllNotes",
             minSize: NSSize(width: 900, height: 480),
@@ -748,7 +746,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             return
         }
         let controller = HostingWindowController(
-            title: "Archive",
+            title: L("Archive"),
             size: NSSize(width: 560, height: 440),
             autosaveName: "KeepNote.Archive",
             rootView: ArchiveView(store: store, actions: listActions())
@@ -801,7 +799,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             return
         }
         let controller = HostingWindowController(
-            title: "Welcome to KeepNote",
+            title: L("Welcome to KeepNote"),
             size: NSSize(width: 440, height: 690),
             autosaveName: "KeepNote.Welcome",
             styleMask: [.titled, .closable],
@@ -830,7 +828,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         // The system panel: icon, name, "Version <short> (<build>)" and the
         // copyright all come from Info.plist; only the credits line is ours.
         let credits = NSAttributedString(
-            string: "Sticky notes on the edge of your screen.",
+            string: L("Sticky notes on the edge of your screen."),
             attributes: [
                 .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
                 .foregroundColor: NSColor.secondaryLabelColor,
@@ -935,17 +933,17 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             menu.addItem(item)
         }
 
-        add("New Note", #selector(menuNewNote), global: .newNote)
-        add("Today\u{2019}s Daily", #selector(menuTodaysDaily), global: .todaysDaily)
-        add("Edit Daily Template\u{2026}", #selector(menuEditDailyTemplate))
-        add("All Notes\u{2026}", #selector(menuAllNotes), global: .allNotes)
-        add("Archive\u{2026}", #selector(menuArchive), global: .archive)
+        add(L("New Note"), #selector(menuNewNote), global: .newNote)
+        add(L("Today\u{2019}s Daily"), #selector(menuTodaysDaily), global: .todaysDaily)
+        add(L("Edit Daily Template\u{2026}"), #selector(menuEditDailyTemplate))
+        add(L("All Notes\u{2026}"), #selector(menuAllNotes), global: .allNotes)
+        add(L("Archive\u{2026}"), #selector(menuArchive), global: .archive)
         menu.addItem(.separator())
-        add("Import\u{2026}", #selector(menuImport))
-        add("Settings\u{2026}", #selector(menuSettings), ",")
+        add(L("Import\u{2026}"), #selector(menuImport))
+        add(L("Settings\u{2026}"), #selector(menuSettings), ",")
         menu.addItem(.separator())
-        add("About KeepNote", #selector(menuAbout))
-        add("Quit KeepNote", #selector(menuQuit))
+        add(L("About KeepNote"), #selector(menuAbout))
+        add(L("Quit KeepNote"), #selector(menuQuit))
         return menu
     }
 

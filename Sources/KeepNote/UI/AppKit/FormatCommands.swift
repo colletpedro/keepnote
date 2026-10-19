@@ -26,23 +26,23 @@ enum FormatCommand: CaseIterable {
 
     var title: String {
         switch self {
-        case .bold: return "Bold"
-        case .italic: return "Italic"
-        case .strikethrough: return "Strikethrough"
-        case .highlight: return "Highlight"
-        case .inlineCode: return "Inline code"
-        case .link: return "Link"
-        case .heading1: return "Heading 1"
-        case .heading2: return "Heading 2"
-        case .heading3: return "Heading 3"
-        case .bulletList: return "Bulleted list"
-        case .numberedList: return "Numbered list"
-        case .checklist: return "Checklist"
-        case .quote: return "Quote"
-        case .codeBlock: return "Code block"
-        case .table: return "Table"
-        case .divider: return "Divider"
-        case .date: return "Today's date"
+        case .bold: return L("Bold")
+        case .italic: return L("Italic")
+        case .strikethrough: return L("Strikethrough")
+        case .highlight: return L("Highlight")
+        case .inlineCode: return L("Inline code")
+        case .link: return L("Link")
+        case .heading1: return L("Heading 1")
+        case .heading2: return L("Heading 2")
+        case .heading3: return L("Heading 3")
+        case .bulletList: return L("Bulleted list")
+        case .numberedList: return L("Numbered list")
+        case .checklist: return L("Checklist")
+        case .quote: return L("Quote")
+        case .codeBlock: return L("Code block")
+        case .table: return L("Table")
+        case .divider: return L("Divider")
+        case .date: return L("Today's date")
         }
     }
 
@@ -150,9 +150,9 @@ enum FormatCommand: CaseIterable {
 
     /// The three headings behind one "Heading" item.
     private static func headingItem() -> NSMenuItem {
-        let item = NSMenuItem(title: "Heading", action: nil, keyEquivalent: "")
+        let item = NSMenuItem(title: L("Heading"), action: nil, keyEquivalent: "")
         item.image = icon("textformat.size")
-        let submenu = NSMenu(title: "Heading")
+        let submenu = NSMenu(title: L("Heading"))
         for command in headings { submenu.addItem(command.menuItem()) }
         item.submenu = submenu
         return item
@@ -176,7 +176,7 @@ enum FormatCommand: CaseIterable {
 
     /// The menu behind the note's Tools button. Items are aimed at `target`.
     static func makeToolsMenu(target: AnyObject) -> NSMenu {
-        let menu = NSMenu(title: "Tools")
+        let menu = NSMenu(title: L("Tools"))
         for item in menuItems() {
             aim(item, at: target)
             menu.addItem(item)
@@ -193,7 +193,7 @@ enum FormatCommand: CaseIterable {
     /// The Format menu of the main menu. Never drawn — the app has no menu bar
     /// — but AppKit still reads its key equivalents while a note has focus.
     static func makeMenu() -> NSMenu {
-        let menu = NSMenu(title: "Format")
+        let menu = NSMenu(title: L("Format"))
         for item in menuItems() { menu.addItem(item) }
         return menu
     }

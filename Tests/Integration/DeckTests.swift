@@ -191,7 +191,7 @@ func runDeckButtonTests() {
         expectTrue("buttons (\(count)): apart", plus.frame.minX - daily.frame.maxX >= 4)
         expectTrue("buttons (\(count)): inside the deck", daily.frame.minX >= 0 && plus.frame.maxX <= deck.stack.bounds.width)
         daily.mouseEntered(with: deck.event(.mouseMoved, at: .zero))
-        expect("buttons (\(count)): hovering the calendar names it", deck.stack.hoverLabelForTesting.textForTesting, "adicionar daily")
+        expect("buttons (\(count)): hovering the calendar names it", deck.stack.hoverLabelForTesting.textForTesting, "add daily")
         daily.mouseExited(with: deck.event(.mouseMoved, at: .zero))
         expectTrue("buttons (\(count)): and leaving takes the label away", !deck.stack.hoverLabelForTesting.isShowing)
         plus.mouseEntered(with: deck.event(.mouseMoved, at: .zero))

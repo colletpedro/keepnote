@@ -175,11 +175,11 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         guard let textView = Self.findTextView(in: container) else { return }
         let menu = FormatCommand.makeToolsMenu(target: textView)
         menu.addItem(.separator())
-        let pin = NSMenuItem(title: "Pin to Center", action: #selector(toggleCenterPin), keyEquivalent: "")
+        let pin = NSMenuItem(title: L("Pin to Center"), action: #selector(toggleCenterPin), keyEquivalent: "")
         pin.target = self
         pin.state = store.note(id: noteID)?.isPinned == true ? .on : .off
         menu.addItem(pin)
-        let keep = NSMenuItem(title: "Keep on Deck", action: #selector(toggleKeepOnDeck), keyEquivalent: "")
+        let keep = NSMenuItem(title: L("Keep on Deck"), action: #selector(toggleKeepOnDeck), keyEquivalent: "")
         keep.target = self
         keep.state = store.note(id: noteID)?.keepOnDeck == true ? .on : .off
         menu.addItem(keep)
@@ -229,7 +229,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         let menu = NSMenu()
         let groups = DailyNotes.previous(before: day, in: store.notes, excluding: noteID)
         if groups.isEmpty {
-            let none = NSMenuItem(title: "No earlier dailies", action: nil, keyEquivalent: "")
+            let none = NSMenuItem(title: L("No earlier dailies"), action: nil, keyEquivalent: "")
             none.isEnabled = false
             menu.addItem(none)
         }
@@ -242,12 +242,12 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
                 item.target = self
                 item.representedObject = note.id
                 item.indentationLevel = 1
-                if note.state == .archived { item.image = NSImage(systemSymbolName: "archivebox", accessibilityDescription: "Archived") }
+                if note.state == .archived { item.image = NSImage(systemSymbolName: "archivebox", accessibilityDescription: L("Archived")) }
                 menu.addItem(item)
             }
         }
         menu.addItem(.separator())
-        let all = NSMenuItem(title: "Show All Dailies", action: #selector(showAllDailiesFromMenu), keyEquivalent: "")
+        let all = NSMenuItem(title: L("Show All Dailies"), action: #selector(showAllDailiesFromMenu), keyEquivalent: "")
         all.target = self
         menu.addItem(all)
 
@@ -276,6 +276,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
 
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
@@ -632,7 +633,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
 
     /// The title is a SwiftUI `TextField`, which AppKit sees as an
     /// `NSTextField` carrying the field's prompt as its placeholder.
-    private static let titlePlaceholder = "Title"
+    private static var titlePlaceholder: String { L("Title") }
 
     private static func findTitleField(in view: NSView) -> NSTextField? {
         if let field = view as? NSTextField, field.placeholderString == titlePlaceholder {

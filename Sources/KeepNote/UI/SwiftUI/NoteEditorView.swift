@@ -91,7 +91,7 @@ final class NoteEditorModel: ObservableObject {
 
     var displayTitle: String {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Untitled" : trimmed
+        return trimmed.isEmpty ? L("Untitled") : trimmed
     }
 
     var matchCount: Int {
@@ -397,8 +397,8 @@ struct NoteEditorView: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .help("Close (esc)")
-                .accessibilityLabel("Close")
+                .help(L("Close (esc)"))
+                .accessibilityLabel(L("Close"))
 
                 floatButton
             }
@@ -423,8 +423,8 @@ struct NoteEditorView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .help(floating ? "Return to Deck" : "Float Note")
-        .accessibilityLabel(floating ? "Return to Deck" : "Float Note")
+        .help(floating ? L("Return to Deck") : L("Float Note"))
+        .accessibilityLabel(floating ? L("Return to Deck") : L("Float Note"))
     }
 
     private static let closeDiameter: CGFloat = 22
@@ -485,7 +485,7 @@ struct NoteEditorView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            TextField("Title", text: $model.title)
+            TextField(L("Title"), text: $model.title)
                 .textFieldStyle(.plain)
                 .disabled(model.isLocked)
                 .font(.system(size: 15, weight: .semibold))
@@ -494,7 +494,7 @@ struct NoteEditorView: View {
             // Re-evaluated every 30 s, so "5 min ago" keeps counting while the
             // note sits open.
             TimelineView(.periodic(from: .now, by: 30)) { context in
-                Text(model.isLocked ? "Locked \u{00B7} read-only" : model.statusLabel(now: context.date))
+                Text(model.isLocked ? L("Locked \u{00B7} read-only") : model.statusLabel(now: context.date))
                     .font(.system(size: 12))
                     .foregroundStyle(model.color.secondaryInkSwiftUI)
                     .lineLimit(1)
@@ -507,8 +507,8 @@ struct NoteEditorView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(model.color.secondaryInkSwiftUI)
-            .help(model.isPinned ? "Unpin from Center" : "Pin to Center")
-            .accessibilityLabel(model.isPinned ? "Unpin from Center" : "Pin to Center")
+            .help(model.isPinned ? L("Unpin from Center") : L("Pin to Center"))
+            .accessibilityLabel(model.isPinned ? L("Unpin from Center") : L("Pin to Center"))
 
             Button(action: onShowTools) {
                 Image(systemName: "wrench.and.screwdriver")
@@ -516,7 +516,7 @@ struct NoteEditorView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(model.color.secondaryInkSwiftUI)
-            .help("Tools")
+            .help(L("Tools"))
 
         }
         .padding(.horizontal, 14)
@@ -533,14 +533,14 @@ struct NoteEditorView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 10.5))
                 .foregroundStyle(model.color.inkSwiftUI.opacity(0.45))
-            TextField("Find in note", text: $model.findQuery)
+            TextField(L("Find in note"), text: $model.findQuery)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11.5))
                 .focused($findFieldFocused)
                 .onSubmit { model.advanceFind(by: 1) }
 
             if !model.findQuery.isEmpty {
-                Text(model.matchCount == 0 ? "none" : "\(model.currentMatchNumber)/\(model.matchCount)")
+                Text(model.matchCount == 0 ? L("none") : "\(model.currentMatchNumber)/\(model.matchCount)")
                     .font(.system(size: 10.5).monospacedDigit())
                     .foregroundStyle(model.color.inkSwiftUI.opacity(0.5))
                 Button { model.advanceFind(by: -1) } label: { Image(systemName: "chevron.up") }
@@ -645,17 +645,17 @@ struct NoteEditorView: View {
             // Anchored, the footer carries the colours and the way out. Lifted
             // off the edge, the note has to carry everything.
             if presentation == .detached {
-                Button("Delete", action: onDelete)
+                Button(L("Delete"), action: onDelete)
                     .buttonStyle(.plain)
                     .fixedSize()
                     .foregroundStyle(Color(nsColor: NSColor(srgbRed: 0.80, green: 0.24, blue: 0.22, alpha: 1)))
 
-                Button(model.state == .archived ? "Reopen" : "Mark complete") {
+                Button(model.state == .archived ? L("Reopen") : L("Mark complete")) {
                     model.toggleComplete()
                 }
                 .buttonStyle(NoteFooterButtonStyle(color: model.color))
 
-                Button("Close", action: onClose)
+                Button(L("Close"), action: onClose)
                     .buttonStyle(NoteFooterButtonStyle(color: model.color))
             }
         }
@@ -703,7 +703,7 @@ private struct TagChips: View {
                     .background(Capsule().fill(color.spineSwiftUI))
                     .contentShape(Capsule())
                     .onTapGesture { onTag(tag) }
-                    .help(DailyNotes.isReserved(tag) ? "Earlier dailies" : "Edit tags")
+                    .help(DailyNotes.isReserved(tag) ? L("Earlier dailies") : L("Edit tags"))
             }
             Spacer(minLength: 0)
         }

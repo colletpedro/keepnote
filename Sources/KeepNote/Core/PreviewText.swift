@@ -2,7 +2,7 @@ import Foundation
 
 /// The one-line summary of a note's body, for list rows and the peek.
 enum PreviewText {
-    static let empty = "No additional text"
+    static var empty: String { L("No additional text") }
 
     /// `plainBody` with its first line dropped when that line is only the title
     /// said again: either the title is empty and the line stands in for it, or

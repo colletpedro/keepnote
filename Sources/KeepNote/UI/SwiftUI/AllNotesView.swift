@@ -99,7 +99,7 @@ struct AllNotesView: View {
         } detail: {
             detail
         }
-        .searchable(text: $query, placement: .toolbar, prompt: "Search \(sidebarSelection.title)")
+        .searchable(text: $query, placement: .toolbar, prompt: L("Search %@", sidebarSelection.title))
         .toolbar { toolbarContent }
         .frame(minWidth: 900, minHeight: 480)
         .onChange(of: sidebarSelection) { newValue in
@@ -210,9 +210,9 @@ struct AllNotesView: View {
                 .lineLimit(1)
             Spacer(minLength: 8)
             if isDailyList {
-                Button("Edit Template\u{2026}") { selection = [DailyTemplatePane.rowID] }
+                Button(L("Edit Template\u{2026}")) { selection = [DailyTemplatePane.rowID] }
                     .controlSize(.small)
-                    .help("Edit the text new daily notes start from")
+                    .help(L("Edit the text new daily notes start from"))
             }
             Text(countLabel)
                 .font(.system(size: 11.5).monospacedDigit())
@@ -224,8 +224,8 @@ struct AllNotesView: View {
 
     private var countLabel: String {
         let total = results.count
-        let notes = "\(total) note\(total == 1 ? "" : "s")"
-        return selectedNotes.count > 1 ? "\(selectedNotes.count) of \(notes)" : notes
+        let notes = TagLibrary.notesPhrase(total)
+        return selectedNotes.count > 1 ? L("%d of %@", selectedNotes.count, notes) : notes
     }
 
     @ViewBuilder
@@ -248,34 +248,34 @@ struct AllNotesView: View {
     private func contextMenu(for ids: Set<UUID>) -> some View {
         let notes = store.notes.filter { ids.contains($0.id) }
         if notes.count == 1, let note = notes.first {
-            Button("Open") { actions.open(note.id) }
+            Button(L("Open")) { actions.open(note.id) }
             Divider()
             pinToggle(for: [note])
             keepToggle(for: [note])
             if note.state == .archived {
-                Button("Move to Deck") { actions.unarchive([note.id]) }
+                Button(L("Move to Deck")) { actions.unarchive([note.id]) }
             } else {
-                Button("Archive") { actions.archive([note.id]) }
+                Button(L("Archive")) { actions.archive([note.id]) }
             }
-            Button("Export\u{2026}") { actions.export([note.id]) }
+            Button(L("Export\u{2026}")) { actions.export([note.id]) }
             Divider()
-            Button("Delete", role: .destructive) { actions.delete([note.id]) }
+            Button(L("Delete"), role: .destructive) { actions.delete([note.id]) }
         } else if notes.count > 1 {
             let idList = notes.map(\.id)
             pinToggle(for: notes)
             keepToggle(for: notes)
             if notes.allSatisfy({ $0.state == .archived }) {
-                Button("Move \(notes.count) Notes to Deck") { actions.unarchive(idList) }
+                Button(L("Move %d Notes to Deck", notes.count)) { actions.unarchive(idList) }
             } else {
-                Button("Archive \(notes.count) Notes") { actions.archive(idList) }
+                Button(L("Archive %d Notes", notes.count)) { actions.archive(idList) }
             }
-            Button("Export \(notes.count) Notes\u{2026}") { actions.export(idList) }
+            Button(L("Export %d Notes\u{2026}", notes.count)) { actions.export(idList) }
             Divider()
-            Button("Add Tag\u{2026}") { actions.addTagToNotes(idList) }
-            Button("Remove Tag\u{2026}") { actions.removeTagFromNotes(idList) }
+            Button(L("Add Tag\u{2026}")) { actions.addTagToNotes(idList) }
+            Button(L("Remove Tag\u{2026}")) { actions.removeTagFromNotes(idList) }
                 .disabled(notes.allSatisfy { $0.tags.isEmpty })
             Divider()
-            Button("Delete \(notes.count) Notes", role: .destructive) {
+            Button(L("Delete %d Notes", notes.count), role: .destructive) {
                 actions.delete(idList)
                 selection.subtract(ids)
             }
@@ -287,7 +287,7 @@ struct AllNotesView: View {
     private func pinToggle(for notes: [Note]) -> some View {
         let ids = notes.map(\.id)
         let all = notes.allSatisfy(\.isPinned)
-        return Toggle("Pin to Center", isOn: Binding(get: { all }, set: { actions.setPinned(ids, $0) }))
+        return Toggle(L("Pin to Center"), isOn: Binding(get: { all }, set: { actions.setPinned(ids, $0) }))
             .disabled(notes.contains { $0.state == .archived })
     }
 
@@ -295,7 +295,7 @@ struct AllNotesView: View {
     private func keepToggle(for notes: [Note]) -> some View {
         let ids = notes.map(\.id)
         let all = notes.allSatisfy(\.keepOnDeck)
-        return Toggle("Keep on Deck", isOn: Binding(get: { all }, set: { actions.setKeepOnDeck(ids, $0) }))
+        return Toggle(L("Keep on Deck"), isOn: Binding(get: { all }, set: { actions.setKeepOnDeck(ids, $0) }))
     }
 
     /// Search (inside the current selection), New Note and Settings. Archive,
@@ -305,14 +305,14 @@ struct AllNotesView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
             Button(action: actions.newNote) {
-                Label("New Note", systemImage: "square.and.pencil")
+                Label(L("New Note"), systemImage: "square.and.pencil")
             }
-            .help("New note")
+            .help(L("New note"))
 
             Button(action: actions.openSettings) {
-                Label("Settings", systemImage: "gearshape")
+                Label(L("Settings"), systemImage: "gearshape")
             }
-            .help("Settings")
+            .help(L("Settings"))
         }
     }
 }
@@ -335,7 +335,7 @@ struct AllNotesSidebar: View {
             get: { selection },
             set: { if let value = $0 { selection = value } }
         )) {
-            Section("Library") {
+            Section(L("Library")) {
                 ForEach(NoteLibrary.allCases, id: \.self) { library in
                     SidebarRow(count: index.count(of: library)) {
                         Label(library.title, systemImage: library.symbolName)
@@ -343,12 +343,12 @@ struct AllNotesSidebar: View {
                     .tag(NoteSelection.library(library))
                     .contextMenu {
                         if library == .daily {
-                            Button("Edit Daily Template\u{2026}", action: onEditDailyTemplate)
+                            Button(L("Edit Daily Template\u{2026}"), action: onEditDailyTemplate)
                         }
                     }
                 }
             }
-            Section("Tags") {
+            Section(L("Tags")) {
                 // The reserved tag has no row of its own here.
                 ForEach(index.tags.filter { !DailyNotes.isReserved($0.name) }, id: \.name) { entry in
                     SidebarRow(count: entry.count) {
@@ -373,14 +373,14 @@ struct AllNotesSidebar: View {
                         drop(providers, on: entry.name)
                     }
                     .contextMenu {
-                        Button("Rename Tag\u{2026}") { onRename(entry.name) }
-                        Button("New Note with Tag") { onNewNote(entry.name) }
+                        Button(L("Rename Tag\u{2026}")) { onRename(entry.name) }
+                        Button(L("New Note with Tag")) { onNewNote(entry.name) }
                         Divider()
-                        Button("Delete Tag\u{2026}", role: .destructive) { onDelete(entry.name) }
+                        Button(L("Delete Tag\u{2026}"), role: .destructive) { onDelete(entry.name) }
                     }
                 }
                 SidebarRow(count: index.untagged) {
-                    Label("Untagged", systemImage: "tag.slash")
+                    Label(L("Untagged"), systemImage: "tag.slash")
                 }
                 .tag(NoteSelection.untagged)
             }
@@ -412,7 +412,7 @@ private struct DailyTemplateRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(DailyTemplateText.title)
                     .font(.system(size: 13, weight: .medium))
-                Text("Where new daily notes start")
+                Text(L("Where new daily notes start"))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -436,6 +436,7 @@ private struct DayHeader: View {
 
     private static let formatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .full
         formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
@@ -445,7 +446,7 @@ private struct DayHeader: View {
 
 /// Shown above the Daily list until "Got it" is pressed, once.
 struct DailyIntro: View {
-    static let text = "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes."
+    static var text: String { L("Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes.") }
 
     var onDismiss: () -> Void
 
@@ -461,7 +462,7 @@ struct DailyIntro: View {
             }
             HStack {
                 Spacer(minLength: 0)
-                Button("Got it", action: onDismiss)
+                Button(L("Got it"), action: onDismiss)
                     .controlSize(.small)
             }
         }
@@ -478,10 +479,10 @@ private struct DailyEmptyState: View {
             Image(systemName: "calendar")
                 .font(.system(size: 30))
                 .foregroundStyle(.tertiary)
-            Text("No daily notes yet")
+            Text(L("No daily notes yet"))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
-            Text("Add the daily tag to a note, or use Today\u{2019}s Daily.")
+            Text(L("Add the daily tag to a note, or use Today\u{2019}s Daily."))
                 .font(.system(size: 11.5))
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -528,7 +529,7 @@ struct TagChipLinks: View {
                     .background(Capsule().fill(color.spineSwiftUI))
                     .contentShape(Capsule())
                     .onTapGesture { onTag(tag) }
-                    .help("Show notes tagged #\(tag)")
+                    .help(L("Show notes tagged #%@", tag))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -558,13 +559,13 @@ private struct NoteRow: View {
                         Image(systemName: "calendar")
                             .font(.system(size: 9.5))
                             .foregroundStyle(.secondary)
-                            .help("Daily note")
+                            .help(L("Daily note"))
                     }
                     if note.state == .archived {
                         Image(systemName: "archivebox.fill")
                             .font(.system(size: 9))
                             .foregroundStyle(.secondary)
-                            .help(DeckStatus.archivedLine(for: note) ?? "Archived")
+                            .help(DeckStatus.archivedLine(for: note) ?? L("Archived"))
                     }
                     Spacer(minLength: 4)
                     Text(Self.formatter.localizedString(for: note.editedAt, relativeTo: Date()))
@@ -588,6 +589,7 @@ private struct NoteRow: View {
 
     private static let formatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Localization.locale
         formatter.unitsStyle = .abbreviated
         return formatter
     }()
@@ -632,32 +634,33 @@ struct NoteReadingPane: View {
 
     private var infoBar: some View {
         HStack(spacing: 8) {
-            Text("Created \(Self.day.string(from: note.createdAt)) \u{00B7} Edited \(Self.day.string(from: note.editedAt))")
+            Text(L("Created %@ \u{00B7} Edited %@", Self.day.string(from: note.createdAt), Self.day.string(from: note.editedAt)))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .help("Created \(Self.formatter.string(from: note.createdAt))\nEdited \(Self.formatter.string(from: note.editedAt))")
+                .help(L("Created %@\nEdited %@", Self.formatter.string(from: note.createdAt), Self.formatter.string(from: note.editedAt)))
             Spacer(minLength: 8)
-            Button("Open") { actions.open(note.id) }
+            Button(L("Open")) { actions.open(note.id) }
                 .keyboardShortcut(.defaultAction)
-            Toggle("Pin to Center", isOn: Binding(get: { note.isPinned }, set: { actions.setPinned([note.id], $0) }))
+            Toggle(L("Pin to Center"), isOn: Binding(get: { note.isPinned }, set: { actions.setPinned([note.id], $0) }))
                 .toggleStyle(.checkbox)
                 .disabled(note.state == .archived)
-            Toggle("Keep on Deck", isOn: Binding(get: { note.keepOnDeck }, set: { actions.setKeepOnDeck([note.id], $0) }))
+            Toggle(L("Keep on Deck"), isOn: Binding(get: { note.keepOnDeck }, set: { actions.setKeepOnDeck([note.id], $0) }))
                 .toggleStyle(.checkbox)
             if note.state == .archived {
-                Button("Move to Deck") { actions.unarchive([note.id]) }
+                Button(L("Move to Deck")) { actions.unarchive([note.id]) }
             } else {
-                Button("Archive") { actions.archive([note.id]) }
+                Button(L("Archive")) { actions.archive([note.id]) }
             }
-            Button("Export\u{2026}") { actions.export([note.id]) }
+            Button(L("Export\u{2026}")) { actions.export([note.id]) }
         }
         .controlSize(.small)
     }
 
     private static let formatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
@@ -665,6 +668,7 @@ struct NoteReadingPane: View {
 
     private static let day: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
@@ -737,7 +741,7 @@ private struct NoteReadingCard: View {
                         }
                         if !note.isLocked {
                             Button(action: startAddingTag) {
-                                Label("Add tag", systemImage: "plus")
+                                Label(L("Add tag"), systemImage: "plus")
                                     .font(.system(size: 11.5, weight: .medium))
                             }
                             .buttonStyle(.plain)
@@ -816,16 +820,16 @@ private struct MultipleSelectionPane: View {
             Image(systemName: "square.stack")
                 .font(.system(size: 34))
                 .foregroundStyle(.tertiary)
-            Text("\(notes.count) notes selected")
+            Text(L("%d notes selected", notes.count))
                 .font(.system(size: 15, weight: .medium))
             HStack(spacing: 10) {
-                Button("Export\u{2026}") { actions.export(notes.map(\.id)) }
+                Button(L("Export\u{2026}")) { actions.export(notes.map(\.id)) }
                 if notes.allSatisfy({ $0.state == .archived }) {
-                    Button("Move to Stack") { actions.unarchive(notes.map(\.id)) }
+                    Button(L("Move to Stack")) { actions.unarchive(notes.map(\.id)) }
                 } else {
-                    Button("Archive") { actions.archive(notes.map(\.id)) }
+                    Button(L("Archive")) { actions.archive(notes.map(\.id)) }
                 }
-                Button("Delete", role: .destructive) {
+                Button(L("Delete"), role: .destructive) {
                     actions.delete(notes.map(\.id))
                     onClear()
                 }
@@ -841,7 +845,7 @@ private struct ContentUnavailablePlaceholder: View {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 34))
                 .foregroundStyle(.tertiary)
-            Text("Select a note to read it here")
+            Text(L("Select a note to read it here"))
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
         }

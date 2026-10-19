@@ -171,6 +171,12 @@ cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 for glyph in StatusGlyph.png StatusGlyph@2x.png StatusGlyph@3x.png; do
     cp "$ROOT/Resources/$glyph" "$APP/Contents/Resources/$glyph"
 done
+# The interface text, one plain-text Localizable.strings per language. Copied
+# as it is: Foundation reads the text format, so no Xcode step is needed.
+for lproj in "$ROOT"/Resources/*.lproj; do
+    rm -rf "$APP/Contents/Resources/$(basename "$lproj")"
+    cp -R "$lproj" "$APP/Contents/Resources/"
+done
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 # --- sign ------------------------------------------------------------------

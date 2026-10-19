@@ -46,71 +46,71 @@ enum MainMenu {
 
     private static func appMenu(_ target: AppCoordinator) -> NSMenu {
         let menu = NSMenu(title: "KeepNote")
-        add(to: menu, "About KeepNote", #selector(AppCoordinator.menuAbout), target: target)
+        add(to: menu, L("About KeepNote"), #selector(AppCoordinator.menuAbout), target: target)
         menu.addItem(.separator())
-        add(to: menu, "Settings\u{2026}", #selector(AppCoordinator.menuSettings), ",", target: target)
+        add(to: menu, L("Settings\u{2026}"), #selector(AppCoordinator.menuSettings), ",", target: target)
         menu.addItem(.separator())
 
-        let services = NSMenu(title: "Services")
-        let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
+        let services = NSMenu(title: L("Services"))
+        let servicesItem = NSMenuItem(title: L("Services"), action: nil, keyEquivalent: "")
         servicesItem.submenu = services
         menu.addItem(servicesItem)
         NSApp.servicesMenu = services
         menu.addItem(.separator())
 
-        add(to: menu, "Hide KeepNote", #selector(NSApplication.hide(_:)), "h")
-        add(to: menu, "Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", mask: [.command, .option])
-        add(to: menu, "Show All", #selector(NSApplication.unhideAllApplications(_:)))
+        add(to: menu, L("Hide KeepNote"), #selector(NSApplication.hide(_:)), "h")
+        add(to: menu, L("Hide Others"), #selector(NSApplication.hideOtherApplications(_:)), "h", mask: [.command, .option])
+        add(to: menu, L("Show All"), #selector(NSApplication.unhideAllApplications(_:)))
         menu.addItem(.separator())
-        add(to: menu, "Quit KeepNote", #selector(AppCoordinator.menuQuit), "q", target: target)
+        add(to: menu, L("Quit KeepNote"), #selector(AppCoordinator.menuQuit), "q", target: target)
         return menu
     }
 
     // MARK: - File
 
     private static func fileMenu(_ target: AppCoordinator) -> NSMenu {
-        let menu = NSMenu(title: "File")
-        add(to: menu, "New Note", #selector(AppCoordinator.menuNewNote), "n", target: target)
-        add(to: menu, "Today\u{2019}s Daily", #selector(AppCoordinator.menuTodaysDaily), target: target)
-        add(to: menu, "Edit Daily Template\u{2026}", #selector(AppCoordinator.menuEditDailyTemplate), target: target)
-        add(to: menu, "All Notes", #selector(AppCoordinator.menuAllNotes), target: target)
-        add(to: menu, "Archive", #selector(AppCoordinator.menuArchive), target: target)
+        let menu = NSMenu(title: L("File"))
+        add(to: menu, L("New Note"), #selector(AppCoordinator.menuNewNote), "n", target: target)
+        add(to: menu, L("Today\u{2019}s Daily"), #selector(AppCoordinator.menuTodaysDaily), target: target)
+        add(to: menu, L("Edit Daily Template\u{2026}"), #selector(AppCoordinator.menuEditDailyTemplate), target: target)
+        add(to: menu, L("All Notes"), #selector(AppCoordinator.menuAllNotes), target: target)
+        add(to: menu, L("Archive"), #selector(AppCoordinator.menuArchive), target: target)
         menu.addItem(.separator())
-        add(to: menu, "Import\u{2026}", #selector(AppCoordinator.menuImport), "i", target: target)
-        add(to: menu, "Export All\u{2026}", #selector(AppCoordinator.menuExportAll), "e", target: target)
+        add(to: menu, L("Import\u{2026}"), #selector(AppCoordinator.menuImport), "i", target: target)
+        add(to: menu, L("Export All\u{2026}"), #selector(AppCoordinator.menuExportAll), "e", target: target)
         menu.addItem(.separator())
-        add(to: menu, "Close", #selector(NSWindow.performClose(_:)), "w")
+        add(to: menu, L("Close"), #selector(NSWindow.performClose(_:)), "w")
         return menu
     }
 
     // MARK: - Edit
 
     private static func editMenu() -> NSMenu {
-        let menu = NSMenu(title: "Edit")
-        add(to: menu, "Undo", Selector(("undo:")), "z")
-        add(to: menu, "Redo", Selector(("redo:")), "z", mask: [.command, .shift])
+        let menu = NSMenu(title: L("Edit"))
+        add(to: menu, L("Undo"), Selector(("undo:")), "z")
+        add(to: menu, L("Redo"), Selector(("redo:")), "z", mask: [.command, .shift])
         menu.addItem(.separator())
-        add(to: menu, "Cut", #selector(NSText.cut(_:)), "x")
-        add(to: menu, "Copy", #selector(NSText.copy(_:)), "c")
-        add(to: menu, "Paste", #selector(NSText.paste(_:)), "v")
-        add(to: menu, "Select All", #selector(NSText.selectAll(_:)), "a")
+        add(to: menu, L("Cut"), #selector(NSText.cut(_:)), "x")
+        add(to: menu, L("Copy"), #selector(NSText.copy(_:)), "c")
+        add(to: menu, L("Paste"), #selector(NSText.paste(_:)), "v")
+        add(to: menu, L("Select All"), #selector(NSText.selectAll(_:)), "a")
         return menu
     }
 
     // MARK: - Window, Help
 
     private static func windowMenu() -> NSMenu {
-        let menu = NSMenu(title: "Window")
-        add(to: menu, "Minimize", #selector(NSWindow.performMiniaturize(_:)), "m")
-        add(to: menu, "Zoom", #selector(NSWindow.performZoom(_:)))
+        let menu = NSMenu(title: L("Window"))
+        add(to: menu, L("Minimize"), #selector(NSWindow.performMiniaturize(_:)), "m")
+        add(to: menu, L("Zoom"), #selector(NSWindow.performZoom(_:)))
         menu.addItem(.separator())
-        add(to: menu, "Bring All to Front", #selector(NSApplication.arrangeInFront(_:)))
+        add(to: menu, L("Bring All to Front"), #selector(NSApplication.arrangeInFront(_:)))
         return menu
     }
 
     private static func helpMenu(_ target: AppCoordinator) -> NSMenu {
-        let menu = NSMenu(title: "Help")
-        add(to: menu, "Keyboard Shortcuts", #selector(AppCoordinator.menuShortcuts), target: target)
+        let menu = NSMenu(title: L("Help"))
+        add(to: menu, L("Keyboard Shortcuts"), #selector(AppCoordinator.menuShortcuts), target: target)
         return menu
     }
 }

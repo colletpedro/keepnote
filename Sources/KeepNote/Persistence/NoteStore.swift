@@ -159,9 +159,9 @@ final class NoteStore: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .all: return "All"
-            case .active: return "Active"
-            case .archived: return "Archived"
+            case .all: return L("All")
+            case .active: return L("Active")
+            case .archived: return L("Archived")
             }
         }
     }
@@ -308,7 +308,7 @@ final class NoteStore: ObservableObject {
     /// place the template is ever applied: giving a note the tag never does.
     @discardableResult
     func createDaily(
-        color: NoteColor? = nil, locale: Locale = .current, calendar: Calendar = .current
+        color: NoteColor? = nil, locale: Locale = Localization.locale, calendar: Calendar = .current
     ) throws -> (note: Note, caret: Int) {
         let date = now()
         let applied = DailyTemplateApply.apply(dailyTemplate.body, on: date, locale: locale, calendar: calendar)
@@ -772,7 +772,7 @@ final class StoreWriter: @unchecked Sendable {
                     // never be sealed over the ciphertext we could not open,
                     // nor pushed to the sync folder as if it were the user's text.
                     isLocked = true
-                    body = "\u{26A0}\u{FE0F} This note could not be decrypted with the key on this Mac."
+                    body = "\u{26A0}\u{FE0F} " + L("This note could not be decrypted with the key on this Mac.")
                 }
                 return Note(
                     id: id,

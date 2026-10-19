@@ -32,7 +32,7 @@ struct TagField: NSViewRepresentable {
         field.drawsBackground = false
         field.focusRingType = .none
         field.font = .systemFont(ofSize: 11.5)
-        field.placeholderString = "Add tags"
+        field.placeholderString = L("Add tags")
         field.lineBreakMode = .byClipping
         field.cell?.isScrollable = true
         field.cell?.usesSingleLineMode = true

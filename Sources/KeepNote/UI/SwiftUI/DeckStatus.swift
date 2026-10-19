@@ -25,6 +25,7 @@ enum DeckStatus {
 
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Localization.locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter

@@ -74,9 +74,9 @@ final class DailyTemplateModel: ObservableObject {
 
 /// The words around the template.
 enum DailyTemplateText {
-    static let title = "Daily Template"
-    static let placeholder = "Write what a new daily note should start with."
-    static let help = "Use {date} for today\u{2019}s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color."
+    static var title: String { L("Daily Template") }
+    static var placeholder: String { L("Write what a new daily note should start with.") }
+    static var help: String { L("Use {date} for today\u{2019}s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color.") }
 }
 
 // MARK: - In All Notes
@@ -122,7 +122,7 @@ struct DailyTemplatePane: View {
 
     private var infoBar: some View {
         HStack(spacing: 8) {
-            Text("Starts every new daily note")
+            Text(L("Starts every new daily note"))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -170,7 +170,7 @@ struct DailyTemplateCard: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(color.secondaryInkSwiftUI)
-                    .help("Tools")
+                    .help(L("Tools"))
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)

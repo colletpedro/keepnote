@@ -24,7 +24,7 @@ OUT="$ROOT/build/tests"
 mkdir -p "$OUT"
 
 LOGIC=()
-for name in TextEdit ListEditing Formatting BlockEditing TagText TagLibrary DailyNotes DailyTemplateApply NotePalette SaveStatus PreviewText SearchText DeckGeometry TabLabel Spring FrameRestore DockPolicy FloatDrag LegacyDefaults DeckPins DeckIntent AutoArchive; do
+for name in TextEdit ListEditing Formatting BlockEditing TagText TagLibrary DailyNotes DailyTemplateApply NotePalette SaveStatus PreviewText SearchText DeckGeometry TabLabel Spring FrameRestore DockPolicy FloatDrag LegacyDefaults DeckPins DeckIntent AutoArchive Localization; do
     file="$ROOT/Sources/KeepNote/Core/$name.swift"
     [ -f "$file" ] && LOGIC+=("$file")
 done
@@ -68,7 +68,9 @@ swiftc \
     -o "$OUT/run-tests" \
     "${LOGIC[@]}" "${TESTS[@]}"
 
-"$OUT/run-tests"
+# The runners speak English, whatever this Mac's language: the expected
+# strings in the tests are the English ones.
+KEEPNOTE_LANGUAGE=en "$OUT/run-tests"
 
 APP_SOURCES=()
 while IFS= read -r file; do APP_SOURCES+=("$file"); done < <(
@@ -89,4 +91,4 @@ swiftc \
     -o "$OUT/run-integration-tests" \
     "${APP_SOURCES[@]}" "$ROOT/Tests/Harness.swift" "${INTEGRATION[@]}"
 
-"$OUT/run-integration-tests"
+KEEPNOTE_LANGUAGE=en "$OUT/run-integration-tests"

@@ -18,7 +18,7 @@ enum DailyTemplateApply {
     /// replaced, and the caret placed. Pure — the clock, the locale and the
     /// calendar are arguments, so the same inputs always give the same body.
     static func apply(
-        _ template: String, on date: Date, locale: Locale = .current, calendar: Calendar = .current
+        _ template: String, on date: Date, locale: Locale = Localization.locale, calendar: Calendar = .current
     ) -> Applied {
         let text = substituting(template, on: date, locale: locale, calendar: calendar)
         return Applied(text: text, caret: caret(in: text))
@@ -30,7 +30,7 @@ enum DailyTemplateApply {
     /// A single pass over the template, so what a variable becomes is never
     /// read as a variable itself.
     static func substituting(
-        _ template: String, on date: Date, locale: Locale = .current, calendar: Calendar = .current
+        _ template: String, on date: Date, locale: Locale = Localization.locale, calendar: Calendar = .current
     ) -> String {
         guard template.contains("{") else { return template }
         let values = [

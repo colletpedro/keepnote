@@ -10,13 +10,13 @@ enum SettingsTab: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .general: return "General"
-        case .notes: return "Notes"
-        case .deck: return "Deck"
-        case .daily: return "Daily"
-        case .sync: return "Sync"
-        case .shortcuts: return "Shortcuts"
-        case .about: return "About"
+        case .general: return L("General")
+        case .notes: return L("Notes")
+        case .deck: return L("Deck")
+        case .daily: return L("Daily")
+        case .sync: return L("Sync")
+        case .shortcuts: return L("Shortcuts")
+        case .about: return L("About")
         }
     }
 
@@ -95,24 +95,24 @@ struct GeneralSettingsPane: View {
         Form {
             Section {
                 Option(help: loginHelp) {
-                    Toggle("Launch at login", isOn: Binding(
+                    Toggle(L("Launch at login"), isOn: Binding(
                         get: { launchAtLogin },
                         set: { setLaunchAtLogin($0) }
                     ))
                 }
                 if LaunchAtLogin.needsApproval {
-                    Button("Open Login Items\u{2026}") { LaunchAtLogin.openLoginItemsSettings() }
+                    Button(L("Open Login Items\u{2026}")) { LaunchAtLogin.openLoginItemsSettings() }
                 }
             }
 
             Section {
-                Option(help: "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.") {
-                    Toggle("Show in menu bar", isOn: $settings.showInMenuBar)
+                Option(help: L("The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.")) {
+                    Toggle(L("Show in menu bar"), isOn: $settings.showInMenuBar)
                 }
-                Option(help: "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.") {
-                    Toggle("Show over full-screen apps", isOn: $settings.showOverFullScreen)
+                Option(help: L("Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.")) {
+                    Toggle(L("Show over full-screen apps"), isOn: $settings.showOverFullScreen)
                 }
-                HelpNote(text: "KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.")
+                HelpNote(text: L("KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay."))
             }
         }
         .formStyle(.grouped)
@@ -122,9 +122,9 @@ struct GeneralSettingsPane: View {
     private var loginHelp: String {
         if let loginError { return loginError }
         if LaunchAtLogin.needsApproval {
-            return "Waiting for your approval in System Settings > General > Login Items."
+            return L("Waiting for your approval in System Settings > General > Login Items.")
         }
-        return "Opens KeepNote when you log in, so the deck is always there."
+        return L("Opens KeepNote when you log in, so the deck is always there.")
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {
@@ -132,7 +132,7 @@ struct GeneralSettingsPane: View {
             try LaunchAtLogin.set(enabled)
             loginError = nil
         } catch {
-            loginError = "Could not change this: \(error.localizedDescription)"
+            loginError = L("Could not change this: %@", error.localizedDescription)
         }
         launchAtLogin = LaunchAtLogin.isEnabled
     }
@@ -146,9 +146,9 @@ struct NotesSettingsPane: View {
     var body: some View {
         Form {
             Section {
-                Option(help: "The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note.") {
-                    Picker("Default color", selection: $settings.defaultNoteColor) {
-                        Text("Automatic").tag(NoteColor?.none)
+                Option(help: L("The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note.")) {
+                    Picker(L("Default color"), selection: $settings.defaultNoteColor) {
+                        Text(L("Automatic")).tag(NoteColor?.none)
                         Divider()
                         ForEach(NoteColor.allCases, id: \.self) { color in
                             Text(color.displayName).tag(NoteColor?.some(color))
@@ -158,8 +158,8 @@ struct NotesSettingsPane: View {
             }
 
             Section {
-                Option(help: "How long to wait after you stop typing before the note is written. Applies to notes opened from now on.") {
-                    LabeledContent("Autosave after") {
+                Option(help: L("How long to wait after you stop typing before the note is written. Applies to notes opened from now on.")) {
+                    LabeledContent(L("Autosave after")) {
                         stepper(
                             "\(Int(settings.autosaveDelay * 1000)) ms",
                             value: Binding(
@@ -170,8 +170,8 @@ struct NotesSettingsPane: View {
                         )
                     }
                 }
-                Option(help: "A deleted note waits this long, with an Undo button, before it is gone for good.") {
-                    LabeledContent("Undo a delete for") {
+                Option(help: L("A deleted note waits this long, with an Undo button, before it is gone for good.")) {
+                    LabeledContent(L("Undo a delete for")) {
                         stepper(
                             "\(Int(settings.undoWindow)) s",
                             value: Binding(
@@ -203,11 +203,11 @@ struct DailySettingsPane: View {
     var body: some View {
         Form {
             Section {
-                Option(help: "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.") {
-                    Button("Edit Daily Template\u{2026}", action: actions.editDailyTemplate)
+                Option(help: L("New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.")) {
+                    Button(L("Edit Daily Template\u{2026}"), action: actions.editDailyTemplate)
                 }
                 HelpNote(text: DailyTemplateText.help)
-                HelpNote(text: "The template is used only when a new daily note is created: from the calendar button on the deck, \u{2325}\u{2318}Y or the menu. Adding the daily tag to a note you already have never changes its text.")
+                HelpNote(text: L("The template is used only when a new daily note is created: from the calendar button on the deck, \u{2325}\u{2318}Y or the menu. Adding the daily tag to a note you already have never changes its text."))
             }
         }
         .formStyle(.grouped)
@@ -222,8 +222,8 @@ struct DeckSettingsPane: View {
     var body: some View {
         Form {
             Section {
-                Option(help: "How long the cursor rests on the stripe before the deck opens. Arriving slowly opens it at once; crossing the edge quickly, on the way to another display, does not. Zero opens it on contact.") {
-                    LabeledContent("Open delay") {
+                Option(help: L("How long the cursor rests on the stripe before the deck opens. Arriving slowly opens it at once; crossing the edge quickly, on the way to another display, does not. Zero opens it on contact.")) {
+                    LabeledContent(L("Open delay")) {
                         stepper(
                             "\(Int((settings.openDelay * 1000).rounded())) ms",
                             value: Binding(
@@ -234,8 +234,8 @@ struct DeckSettingsPane: View {
                         )
                     }
                 }
-                Option(help: "The pause between one card sliding out and the next. Zero opens them all at once.") {
-                    LabeledContent("Cascade delay") {
+                Option(help: L("The pause between one card sliding out and the next. Zero opens them all at once.")) {
+                    LabeledContent(L("Cascade delay")) {
                         stepper(
                             "\(Int(settings.fanStagger * 1000)) ms",
                             value: Binding(
@@ -249,10 +249,10 @@ struct DeckSettingsPane: View {
             }
 
             Section {
-                Option(help: "A note you have not opened for this long is moved to the Archive, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. Notes kept on the deck, pinned notes, open notes and daily notes are never archived this way.") {
-                    Picker("Archive notes not opened for", selection: $settings.archiveAfterDays) {
+                Option(help: L("A note you have not opened for this long is moved to the Archive, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. Notes kept on the deck, pinned notes, open notes and daily notes are never archived this way.")) {
+                    Picker(L("Archive notes not opened for"), selection: $settings.archiveAfterDays) {
                         ForEach(AutoArchive.choices, id: \.self) { days in
-                            Text("\(days) days").tag(days)
+                            Text(L("%d days", days)).tag(days)
                         }
                     }
                 }
@@ -272,30 +272,30 @@ struct SyncSettingsPane: View {
     var body: some View {
         Form {
             Section {
-                Option(help: "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder.") {
-                    Toggle("Sync notes through a folder", isOn: $settings.syncEnabled)
+                Option(help: L("Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder.")) {
+                    Toggle(L("Sync notes through a folder"), isOn: $settings.syncEnabled)
                 }
-                LabeledContent("Status") {
+                LabeledContent(L("Status")) {
                     Text(sync.status.summary).foregroundStyle(statusColor)
                 }
-                LabeledContent("Folder") {
-                    Text(sync.folderDisplayName ?? "None chosen").foregroundStyle(.secondary)
+                LabeledContent(L("Folder")) {
+                    Text(sync.folderDisplayName ?? L("None chosen")).foregroundStyle(.secondary)
                 }
                 HStack {
-                    Button("Choose Folder\u{2026}", action: actions.chooseSyncFolder)
-                    Button("Forget Folder", action: actions.forgetSyncFolder)
+                    Button(L("Choose Folder\u{2026}"), action: actions.chooseSyncFolder)
+                    Button(L("Forget Folder"), action: actions.forgetSyncFolder)
                         .disabled(sync.folderDisplayName == nil)
                 }
             }
 
             Section {
-                HelpNote(text: "One plain-text file per note, written where you choose \u{2014} iCloud Drive by default. The folder's own provider moves the files between Macs; KeepNote has no server and uses no CloudKit.")
-                HelpNote(text: "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac \u{2014} which is why it cannot travel with the files.")
+                HelpNote(text: L("One plain-text file per note, written where you choose \u{2014} iCloud Drive by default. The folder's own provider moves the files between Macs; KeepNote has no server and uses no CloudKit."))
+                HelpNote(text: L("Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac \u{2014} which is why it cannot travel with the files."))
             }
 
             Section {
-                Option(help: "Reads notes, or a KeepNote archive, from files on this Mac.") {
-                    Button("Import Notes\u{2026}", action: actions.importNotes)
+                Option(help: L("Reads notes, or a KeepNote archive, from files on this Mac.")) {
+                    Button(L("Import Notes\u{2026}"), action: actions.importNotes)
                 }
             }
         }
@@ -319,49 +319,49 @@ struct ShortcutsSettingsPane: View {
 
     var body: some View {
         Form {
-            Section("Global") {
+            Section(L("Global")) {
                 ForEach(GlobalCommand.allCases) { command in
                     globalRow(command)
                 }
-                HelpNote(text: "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.")
+                HelpNote(text: L("Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved."))
             }
 
-            Section("Daily notes") {
-                row("Today\u{2019}s Daily, from the deck", "the calendar button beside +")
-                row("Earlier dailies", "click the daily chip in a note")
-                HelpNote(text: "Today\u{2019}s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there.")
+            Section(L("Daily notes")) {
+                row(L("Today\u{2019}s Daily, from the deck"), L("the calendar button beside +"))
+                row(L("Earlier dailies"), L("click the daily chip in a note"))
+                HelpNote(text: L("Today\u{2019}s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there."))
             }
 
-            Section("Pinned and kept notes") {
-                row("Pin to Center", "the pin in a note's header \u{00B7} Tools \u{00B7} right-click a tab \u{00B7} All Notes")
-                row("Keep on Deck", "Tools \u{00B7} right-click a tab \u{00B7} All Notes")
-                HelpNote(text: "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule.")
-                HelpNote(text: "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says \u{201C}Archives in 2 days\u{201D} or \u{201C}Archives tomorrow\u{201D}. Daily notes follow their own rule. In the Archive such notes say \u{201C}Archived automatically\u{201D} and the date.")
+            Section(L("Pinned and kept notes")) {
+                row(L("Pin to Center"), L("the pin in a note's header \u{00B7} Tools \u{00B7} right-click a tab \u{00B7} All Notes"))
+                row(L("Keep on Deck"), L("Tools \u{00B7} right-click a tab \u{00B7} All Notes"))
+                HelpNote(text: L("Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule."))
+                HelpNote(text: L("Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says \u{201C}Archives in 2 days\u{201D} or \u{201C}Archives tomorrow\u{201D}. Daily notes follow their own rule. In the Archive such notes say \u{201C}Archived automatically\u{201D} and the date."))
             }
 
-            Section("Inside a note") {
-                row("Close", "esc")
-                row("Find in note", "\u{2318}F")
-                row("Next / previous match", "\u{2318}G \u{00B7} \u{21E7}\u{2318}G")
-                row("Next color", "\u{2325}\u{2318}C")
-                row("Float Note \u{00B7} Return to Deck", "\u{2325}\u{2318}P")
-                row("Archive", "\u{21E7}\u{2318}E")
-                row("Delete (undoable)", "\u{21E7}\u{2318}\u{232B}")
-                HelpNote(text: "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the right edge returns it.")
+            Section(L("Inside a note")) {
+                row(L("Close"), L("esc"))
+                row(L("Find in note"), "\u{2318}F")
+                row(L("Next / previous match"), "\u{2318}G \u{00B7} \u{21E7}\u{2318}G")
+                row(L("Next color"), "\u{2325}\u{2318}C")
+                row(L("Float Note \u{00B7} Return to Deck"), "\u{2325}\u{2318}P")
+                row(L("Archive"), "\u{21E7}\u{2318}E")
+                row(L("Delete (undoable)"), "\u{21E7}\u{2318}\u{232B}")
+                HelpNote(text: L("Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the right edge returns it."))
             }
 
-            Section("Formatting") {
+            Section(L("Formatting")) {
                 ForEach(FormatCommand.allCases, id: \.title) { command in
                     row(command.title, command.shortcutLabel)
                 }
-                HelpNote(text: "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu.")
+                HelpNote(text: L("Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu."))
             }
 
-            Section("Lists") {
-                row("Indent item", "\u{21E5}")
-                row("Outdent item", "\u{21E7}\u{21E5}")
-                row("End the list, or outdent when nested", "\u{21A9} on an empty item")
-                HelpNote(text: "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste.")
+            Section(L("Lists")) {
+                row(L("Indent item"), "\u{21E5}")
+                row(L("Outdent item"), "\u{21E7}\u{21E5}")
+                row(L("End the list, or outdent when nested"), L("\u{21A9} on an empty item"))
+                HelpNote(text: L("Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste."))
             }
         }
         .formStyle(.grouped)
@@ -376,7 +376,7 @@ struct ShortcutsSettingsPane: View {
                     Label(GlobalCommand.unavailableMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.orange)
-                        .help("Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu.")
+                        .help(L("Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu."))
                 }
                 Text(hotkeys.combo(for: command).displayString)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -421,27 +421,27 @@ struct AboutSettingsPane: View {
                 .frame(width: 96, height: 96)
             Text("KeepNote")
                 .font(.system(size: 22, weight: .semibold))
-            Text("Version \(AppInfo.version) (\(AppInfo.build))")
+            Text(L("Version %@ (%@)", AppInfo.version, AppInfo.build))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Button("Check for Updates\u{2026}") { NSWorkspace.shared.open(AppInfo.siteURL) }
+            Button(L("Check for Updates\u{2026}")) { NSWorkspace.shared.open(AppInfo.siteURL) }
                 .controlSize(.small)
-                .help("Opens the KeepNote site in your browser")
-            Link("Report a problem", destination: AppInfo.issuesURL)
+                .help(L("Opens the KeepNote site in your browser"))
+            Link(L("Report a problem"), destination: AppInfo.issuesURL)
                 .font(.callout)
-                .help("Opens KeepNote's issues on GitHub in your browser")
-            Text("Sticky notes on the edge of your screen.")
+                .help(L("Opens KeepNote's issues on GitHub in your browser"))
+            Text(L("Sticky notes on the edge of your screen."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text("Open source, MIT License")
+            Text(L("Open source, MIT License"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 8)
             HStack(spacing: 10) {
-                Button("Export All Notes\u{2026}", action: actions.exportAll)
-                Button("Show Welcome\u{2026}", action: actions.showWelcome)
+                Button(L("Export All Notes\u{2026}"), action: actions.exportAll)
+                Button(L("Show Welcome\u{2026}"), action: actions.showWelcome)
             }
-            HelpNote(text: "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub.")
+            HelpNote(text: L("Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub."))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -63,7 +63,7 @@ struct TagSuggestionList: View {
                 Image(systemName: "plus")
                     .font(.system(size: 9.5, weight: .semibold))
                     .foregroundStyle(color.inkSwiftUI.opacity(0.55))
-                Text("Create \"#\(tag)\"")
+                Text(L("Create \"#%@\"", tag))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: 0)
