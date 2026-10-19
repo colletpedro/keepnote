@@ -33,6 +33,9 @@ final class EdgePanelController: NSObject {
     /// The pinned block the deck is laid out around, if any pinned notes.
     private var pinnedBlock: DeckGeometry.PinnedBlock?
     private var collapseTask: Task<Void, Never>?
+    /// The cursor on the resting stripe, and whether it means to open the deck.
+    private var intent = DeckIntent(delay: DeckIntent.defaultDelay)
+    private var intentTask: Task<Void, Never>?
 
     /// The middle state: hovering a tab peeks at the note without opening it.
     private let preview = NotePreviewController()
@@ -238,7 +241,47 @@ final class EdgePanelController: NSObject {
         expand()
     }
 
+    /// The cursor reached the resting stripe. The deck opens once `DeckIntent`
+    /// says it is meant to — after the open delay, or at once on a slow arrival.
+    func cursorDidArrive(at point: CGPoint, time: Double) {
+        collapseTask?.cancel()
+        collapseTask = nil
+        guard !isFanned else { return }
+        intent = DeckIntent(delay: AppSettings.shared.openDelay)
+        intent.enter(at: point, time: time)
+        evaluateIntent(now: time)
+    }
+
+    func cursorDidMoveOnStripe(to point: CGPoint, time: Double) {
+        guard !isFanned else { return }
+        intent.move(to: point, time: time)
+        evaluateIntent(now: time)
+    }
+
+    private func evaluateIntent(now: Double) {
+        intentTask?.cancel()
+        intentTask = nil
+        switch intent.decision(now: now) {
+        case .open:
+            intent.exit()
+            cursorDidEnter()
+        case .wait(let until):
+            // `NSEvent.timestamp` counts from the same origin as the uptime.
+            intentTask = Task { @MainActor [weak self] in
+                let wait = max(0, until - ProcessInfo.processInfo.systemUptime)
+                try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
+                guard !Task.isCancelled, let self else { return }
+                self.evaluateIntent(now: max(until, ProcessInfo.processInfo.systemUptime))
+            }
+        case .idle:
+            break
+        }
+    }
+
     func cursorDidExit() {
+        intentTask?.cancel()
+        intentTask = nil
+        intent.exit()
         guard isFanned, openNoteCount == 0 else { return }
         // Moving from a tab onto its own peek leaves the deck's tracking area,
         // but is not leaving the deck. `scheduleCollapse` re-checks that when

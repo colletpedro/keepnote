@@ -79,17 +79,28 @@ final class EdgeStackView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
-        controller?.cursorDidEnter()
+        if state == .resting {
+            controller?.cursorDidArrive(at: screenPoint(of: event), time: event.timestamp)
+        } else {
+            controller?.cursorDidEnter()
+        }
         updateHover(with: event)
     }
 
     override func mouseMoved(with event: NSEvent) {
+        if state == .resting {
+            controller?.cursorDidMoveOnStripe(to: screenPoint(of: event), time: event.timestamp)
+        }
         updateHover(with: event)
     }
 
     override func mouseExited(with event: NSEvent) {
         setHover(nil)
         controller?.cursorDidExit()
+    }
+
+    private func screenPoint(of event: NSEvent) -> CGPoint {
+        window?.convertPoint(toScreen: event.locationInWindow) ?? event.locationInWindow
     }
 
     var hoveredNoteID: UUID? {

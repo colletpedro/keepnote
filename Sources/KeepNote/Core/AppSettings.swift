@@ -14,6 +14,7 @@ final class AppSettings: ObservableObject {
         static let syncEnabled = "syncEnabled"
         static let syncFolderBookmark = "syncFolderBookmark"
         static let fanStagger = "fanStaggerMilliseconds"
+        static let openDelay = "openDelayMilliseconds"
         static let autosaveDelay = "autosaveDelayMilliseconds"
         static let undoWindow = "undoWindowSeconds"
         static let defaultNoteColor = "defaultNoteColor"
@@ -36,11 +37,13 @@ final class AppSettings: ObservableObject {
             Key.showInMenuBar: true,
             Key.syncEnabled: false,
             Key.fanStagger: 45,
+            Key.openDelay: Int(DeckIntent.defaultDelay * 1000),
             Key.autosaveDelay: 250,
             Key.undoWindow: 10,
             Key.archiveAfterDays: AutoArchive.defaultDays,
         ])
         fanStagger = Double(defaults.integer(forKey: Key.fanStagger)) / 1000.0
+        openDelay = DeckIntent(delay: Double(defaults.integer(forKey: Key.openDelay)) / 1000.0).delay
         autosaveDelay = Double(defaults.integer(forKey: Key.autosaveDelay)) / 1000.0
         undoWindow = Double(defaults.integer(forKey: Key.undoWindow))
         archiveAfterDays = AutoArchive.normalized(defaults.integer(forKey: Key.archiveAfterDays))
@@ -99,6 +102,12 @@ final class AppSettings: ObservableObject {
             defaults.set(Int((fanStagger * 1000).rounded()), forKey: Key.fanStagger)
             NotificationCenter.default.post(name: .keepNoteWindowBehaviorChanged, object: nil)
         }
+    }
+
+    /// How long the cursor has to stay on the resting stripe before the deck
+    /// opens, unless it arrives slowly. See `DeckIntent`.
+    @Published var openDelay: TimeInterval {
+        didSet { defaults.set(Int((openDelay * 1000).rounded()), forKey: Key.openDelay) }
     }
 
     /// Quiet period after the last keystroke before the body is sealed and written.
