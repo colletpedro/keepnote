@@ -29,6 +29,23 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="site.css">
+<script>
+/* The page's language. A choice made with the Português / English link is kept
+   in this browser (localStorage, nothing is sent anywhere) and wins on later
+   visits; without one, a browser whose first language is Portuguese is sent to /pt-br/. */
+(function () {
+  var key = 'keepnote-lang';
+  try {
+    var chosen = localStorage.getItem(key);
+    var browser = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+    if (chosen === 'pt-BR' || (!chosen && /^pt(-|$)/i.test(browser))) location.replace('pt-br/' + location.hash);
+    document.addEventListener('click', function (event) {
+      var link = event.target.closest && event.target.closest('a.lang');
+      if (link) localStorage.setItem(key, link.getAttribute('hreflang'));
+    });
+  } catch (e) { /* storage blocked: the page simply stays as it is */ }
+})();
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
