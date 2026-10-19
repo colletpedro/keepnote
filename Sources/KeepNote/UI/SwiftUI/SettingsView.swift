@@ -427,8 +427,12 @@ struct ShortcutsSettingsPane: View {
 
     /// A global shortcut another app already holds is marked, so its absence
     /// is explained rather than silent.
+    /// The name, then the field on the same line. A plain row rather than
+    /// `LabeledContent`, which puts a hosted AppKit view on a line of its own.
     private func globalRow(_ command: GlobalCommand) -> some View {
-        LabeledContent(command.title) {
+        HStack(spacing: 6) {
+            Text(command.title)
+            Spacer(minLength: 8)
             HStack(spacing: 6) {
                 if hotkeys.isUnavailable(command) {
                     Label(GlobalCommand.unavailableMessage, systemImage: "exclamationmark.triangle.fill")
@@ -442,7 +446,11 @@ struct ShortcutsSettingsPane: View {
     }
 
     private func recorderRow(_ action: ShortcutAction) -> some View {
-        LabeledContent(action.title) { recorder(action) }
+        HStack(spacing: 6) {
+            Text(action.title)
+            Spacer(minLength: 8)
+            recorder(action)
+        }
     }
 
     private func recorder(_ action: ShortcutAction) -> some View {

@@ -218,10 +218,20 @@ final class ShortcutRecorderField: NSView {
     var textForTesting: String { label.stringValue }
 
     private func updateLook() {
-        let accent = NSColor.controlAccentColor
-        layer?.borderColor = (isRecording ? accent : NSColor.separatorColor).cgColor
-        layer?.backgroundColor = (isRecording ? accent.withAlphaComponent(0.12) : NSColor.controlBackgroundColor).cgColor
         label.textColor = message != nil ? .systemRed : (combo == nil && !isRecording ? .secondaryLabelColor : .labelColor)
+        needsDisplay = true
+    }
+
+    override var wantsUpdateLayer: Bool { true }
+
+    /// The layer's colours, resolved in the view's own appearance — a CGColor
+    /// taken any earlier keeps whichever appearance was current then.
+    override func updateLayer() {
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            let accent = NSColor.controlAccentColor
+            layer?.borderColor = (isRecording ? accent : NSColor.separatorColor).cgColor
+            layer?.backgroundColor = (isRecording ? accent.withAlphaComponent(0.12) : NSColor.controlBackgroundColor).cgColor
+        }
     }
 
     override func viewDidChangeEffectiveAppearance() {
@@ -245,6 +255,12 @@ struct ShortcutRecorder: NSViewRepresentable {
 
     func updateNSView(_ field: ShortcutRecorderField, context: Context) {
         update(field)
+    }
+
+    /// One line, the same width for every row, so the field sits beside the
+    /// action's name.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: ShortcutRecorderField, context: Context) -> CGSize? {
+        nsView.intrinsicContentSize
     }
 
     private func update(_ field: ShortcutRecorderField) {
