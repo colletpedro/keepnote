@@ -12,6 +12,11 @@ final class PillView: NSView {
         didSet { needsDisplay = true }
     }
 
+    /// Square against this edge, round on the other side.
+    var edge: ScreenEdge = .right {
+        didSet { if edge != oldValue { needsDisplay = true } }
+    }
+
     /// Height the stripe needs for the dashes it has to show.
     static func height(forNoteCount count: Int) -> CGFloat {
         let clamped = max(1, min(count, EdgeMetrics.pillDashLimit))
@@ -21,7 +26,7 @@ final class PillView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let container = NoteCardShape.path(in: bounds, radius: EdgeMetrics.pillCornerRadius)
+        let container = NoteCardShape.path(in: bounds, radius: EdgeMetrics.pillCornerRadius, edge: edge)
 
         // Barely there: enough to hold the dashes together over a busy
         // wallpaper, not enough to read as a window.

@@ -158,6 +158,7 @@
 "Keychain error %d: %@" = "Erro do Keychain %d: %@";
 "Language" = "Idioma";
 "Launch at login" = "Abrir ao iniciar sessão";
+"Left" = "Esquerda";
 "Library" = "Biblioteca";
 "Lilac" = "Lilás";
 "Link" = "Link";
@@ -232,7 +233,9 @@
 "Reopen" = "Reabrir";
 "Report a problem" = "Relatar um problema";
 "Return to Deck" = "Voltar à Pilha";
+"Right" = "Direita";
 "Saving…" = "Salvando…";
+"Screen edge" = "Borda da tela";
 "Search %@" = "Buscar em %@";
 "Search the archive" = "Buscar nas arquivadas";
 "Select All" = "Selecionar Tudo";
@@ -271,6 +274,7 @@
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "O ícone de nota à direita da barra de menus, com Nova Nota, Todas as Notas, Ajustes e Encerrar.";
 "The notes themselves are kept." = "As notas em si são mantidas.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "A pausa entre um cartão deslizar para fora e o seguinte. Zero abre todos de uma vez.";
+"The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "O lado da tela em que a pilha fica, em todos os monitores. As notas, as espiadas e o arrasto de volta para a pilha acompanham.";
 "The stored encryption key is not a valid 256-bit key." = "A chave de criptografia guardada não é uma chave de 256 bits válida.";
 "The sync folder could not be reopened: %@" = "Não foi possível reabrir a pasta de sincronização: %@";
 "The template is used only when a new daily note is created: from the calendar button on the deck, ⌥⌘Y or the menu. Adding the daily tag to a note you already have never changes its text." = "O modelo só é usado quando uma nova nota daily é criada: pelo botão de calendário na pilha, por ⌥⌘Y ou pelo menu. Adicionar a tag daily a uma nota que você já tem nunca muda o texto dela.";

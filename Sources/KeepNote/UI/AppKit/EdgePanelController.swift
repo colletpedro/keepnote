@@ -55,6 +55,7 @@ final class EdgePanelController: NSObject {
         self.displayID = screen.displayID
         super.init()
         stackView.controller = self
+        stackView.edge = laidOutEdge
         panel.contentView = stackView
         panel.orderFrontRegardless()
         layoutForResting(animated: false)
@@ -94,6 +95,11 @@ final class EdgePanelController: NSObject {
         anchor.height - 24
     }
 
+    /// The side the deck is on, from Settings > Deck > Screen edge.
+    private var edge: ScreenEdge { AppSettings.shared.screenEdge }
+    /// The edge the deck was last laid out for; a change is applied at once.
+    private var laidOutEdge: ScreenEdge = AppSettings.shared.screenEdge
+
     private var pillHeight: CGFloat {
         PillView.height(forNoteCount: max(1, notes.count))
     }
@@ -102,7 +108,7 @@ final class EdgePanelController: NSObject {
         let area = anchor
         let height = pillHeight
         return NSRect(
-            x: area.maxX - EdgeMetrics.pillWidth,
+            x: edge.flushX(width: EdgeMetrics.pillWidth, in: area),
             y: area.midY - height / 2,
             width: EdgeMetrics.pillWidth,
             height: height
@@ -118,7 +124,7 @@ final class EdgePanelController: NSObject {
             count: notes.count, usableHeight: usableHeight, columnWidth: width, pinned: pinnedBlock)
         let clamped = min(geometry.deckHeight, area.height)
         return NSRect(
-            x: area.maxX - width,
+            x: edge.flushX(width: width, in: area),
             y: area.midY - clamped / 2,
             width: width,
             height: clamped
@@ -164,6 +170,20 @@ final class EdgePanelController: NSObject {
     func applySettings() {
         panel.applyBehavior()
         preview.applyBehavior()
+        if edge != laidOutEdge {
+            // The other side of the screen: the deck folds away at once and
+            // the stripe reappears on the new edge, on every display.
+            laidOutEdge = edge
+            stackView.edge = edge
+            preview.hide(animated: false)
+            if isFanned {
+                isFanned = false
+                stackView.clearDeck()
+                stackView.updatePill(colors: notes.map(\.color), highlighted: false)
+            }
+            layoutForResting(animated: false)
+            return
+        }
         if isFanned {
             rebuildDeck(stagger: AppSettings.shared.fanStagger)
         } else {

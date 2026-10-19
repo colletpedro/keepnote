@@ -14,6 +14,9 @@ final class EdgeStackView: NSView {
     }
 
     weak var controller: EdgePanelController?
+    /// The side of the screen the deck is on. Everything below is laid out for
+    /// the right edge and mirrored through `edge` for the left.
+    var edge: ScreenEdge = .right
 
     private(set) var state: State = .resting
 
@@ -263,8 +266,9 @@ final class EdgeStackView: NSView {
     }
 
     func layoutPill(height: CGFloat) {
+        pill.edge = edge
         pill.frame = NSRect(
-            x: bounds.width - EdgeMetrics.pillWidth,
+            x: edge.mirroredX(bounds.width - EdgeMetrics.pillWidth, itemWidth: EdgeMetrics.pillWidth, in: bounds.width),
             y: (bounds.height - height) / 2,
             width: EdgeMetrics.pillWidth,
             height: height

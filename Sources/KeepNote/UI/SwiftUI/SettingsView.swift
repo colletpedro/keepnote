@@ -37,7 +37,7 @@ enum SettingsTab: Int, CaseIterable {
         switch self {
         case .general: return 450
         case .notes: return 270
-        case .deck: return 340
+        case .deck: return 430
         case .daily: return 230
         case .sync: return 440
         case .shortcuts: return 740
@@ -250,6 +250,18 @@ struct DeckSettingsPane: View {
 
     var body: some View {
         Form {
+            Section {
+                Option(help: L("The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it.")) {
+                    Picker(L("Screen edge"), selection: $settings.screenEdge) {
+                        ForEach(ScreenEdge.allCases, id: \.self) { edge in
+                            Text(edge.title).tag(edge)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                }
+            }
+
             Section {
                 Option(help: L("How long the cursor rests on the stripe before the deck opens. Arriving slowly opens it at once; crossing the edge quickly, on the way to another display, does not. Zero opens it on contact.")) {
                     LabeledContent(L("Open delay")) {

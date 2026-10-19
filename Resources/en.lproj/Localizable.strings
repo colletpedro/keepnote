@@ -158,6 +158,7 @@
 "Keychain error %d: %@" = "Keychain error %d: %@";
 "Language" = "Language";
 "Launch at login" = "Launch at login";
+"Left" = "Left";
 "Library" = "Library";
 "Lilac" = "Lilac";
 "Link" = "Link";
@@ -232,7 +233,9 @@
 "Reopen" = "Reopen";
 "Report a problem" = "Report a problem";
 "Return to Deck" = "Return to Deck";
+"Right" = "Right";
 "Saving…" = "Saving…";
+"Screen edge" = "Screen edge";
 "Search %@" = "Search %@";
 "Search the archive" = "Search the archive";
 "Select All" = "Select All";
@@ -271,6 +274,7 @@
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.";
 "The notes themselves are kept." = "The notes themselves are kept.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "The pause between one card sliding out and the next. Zero opens them all at once.";
+"The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it.";
 "The stored encryption key is not a valid 256-bit key." = "The stored encryption key is not a valid 256-bit key.";
 "The sync folder could not be reopened: %@" = "The sync folder could not be reopened: %@";
 "The template is used only when a new daily note is created: from the calendar button on the deck, ⌥⌘Y or the menu. Adding the daily tag to a note you already have never changes its text." = "The template is used only when a new daily note is created: from the calendar button on the deck, ⌥⌘Y or the menu. Adding the daily tag to a note you already have never changes its text.";

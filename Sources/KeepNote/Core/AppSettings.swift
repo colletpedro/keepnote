@@ -15,6 +15,7 @@ final class AppSettings: ObservableObject {
         static let syncFolderBookmark = "syncFolderBookmark"
         static let fanStagger = "fanStaggerMilliseconds"
         static let openDelay = "openDelayMilliseconds"
+        static let screenEdge = "screenEdge"
         static let autosaveDelay = "autosaveDelayMilliseconds"
         static let undoWindow = "undoWindowSeconds"
         static let defaultNoteColor = "defaultNoteColor"
@@ -123,6 +124,16 @@ final class AppSettings: ObservableObject {
     /// opens, unless it arrives slowly. See `DeckIntent`.
     @Published var openDelay: TimeInterval {
         didSet { defaults.set(Int((openDelay * 1000).rounded()), forKey: Key.openDelay) }
+    }
+
+    /// Which side of every screen the deck sits on. Takes effect at once.
+    @Published var screenEdge: ScreenEdge = UserDefaults.standard.string(forKey: Key.screenEdge)
+        .flatMap(ScreenEdge.init(rawValue:)) ?? .right {
+        didSet {
+            guard screenEdge != oldValue else { return }
+            defaults.set(screenEdge.rawValue, forKey: Key.screenEdge)
+            NotificationCenter.default.post(name: .keepNoteWindowBehaviorChanged, object: nil)
+        }
     }
 
     /// Quiet period after the last keystroke before the body is sealed and written.

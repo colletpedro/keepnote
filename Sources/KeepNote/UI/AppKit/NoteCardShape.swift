@@ -3,15 +3,15 @@ import AppKit
 /// The shared look of a note card, so a tab in the deck and an open note are
 /// visibly the same object at two sizes.
 ///
-/// A card is `[tab | perforation | body]`. Its right edge is square, because it
-/// is always flush against the screen edge; the other three corners are
+/// A card is `[tab | perforation | body]`. The side against the screen edge
+/// is square, because it is always flush with it; the other corners are
 /// rounded.
 enum NoteCardShape {
-    static func path(in rect: NSRect, radius: CGFloat = EdgeMetrics.cardCornerRadius) -> NSBezierPath {
-        // Overhang the right side so that edge stays square once the view
-        // clips it, without hand-rolling the corner arcs.
+    static func path(in rect: NSRect, radius: CGFloat = EdgeMetrics.cardCornerRadius, edge: ScreenEdge = .right) -> NSBezierPath {
+        // Overhang the edge side so it stays square once the view clips it,
+        // without hand-rolling the corner arcs.
         let extended = NSRect(
-            x: rect.minX,
+            x: edge == .right ? rect.minX : rect.minX - radius,
             y: rect.minY,
             width: rect.width + radius,
             height: rect.height
