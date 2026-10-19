@@ -23,7 +23,7 @@ enum NoteLibrary: String, CaseIterable, Sendable {
         switch self {
         case .all: return L("All Notes")
         case .deck: return L("On the Deck")
-        case .archived: return L("Archived")
+        case .archived: return L("[notes] Archived")
         case .daily: return L("Daily")
         }
     }

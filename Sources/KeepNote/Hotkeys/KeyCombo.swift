@@ -118,7 +118,7 @@ enum GlobalCommand: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .newNote: return L("New Note")
         case .allNotes: return L("All Notes")
-        case .archive: return L("Archive")
+        case .archive: return L("[noun] Archive")
         case .todaysDaily: return L("Today\u{2019}s Daily")
         }
     }

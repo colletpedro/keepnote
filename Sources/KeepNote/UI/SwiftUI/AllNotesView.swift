@@ -440,6 +440,8 @@ private struct DayHeader: View {
         formatter.dateStyle = .full
         formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
+        // A heading: "Today", "Hoje", "Sexta-feira, 16 de outubro".
+        formatter.formattingContext = .beginningOfSentence
         return formatter
     }()
 }
@@ -632,15 +634,39 @@ struct NoteReadingPane: View {
         .onDisappear { model.flush() }
     }
 
+    /// The dates beside the buttons when the pane is wide enough; above them,
+    /// on a line of their own, when it is not (or in a longer language).
     private var infoBar: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                dates
+                Spacer(minLength: 8)
+                infoButtons
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                dates
+                HStack(spacing: 8) {
+                    Spacer(minLength: 0)
+                    infoButtons
+                }
+            }
+        }
+        .controlSize(.small)
+    }
+
+    private var dates: some View {
+        Text(L("Created %@ \u{00B7} Edited %@", Self.day.string(from: note.createdAt), Self.day.string(from: note.editedAt)))
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .fixedSize(horizontal: true, vertical: false)
+            .help(L("Created %@\nEdited %@", Self.formatter.string(from: note.createdAt), Self.formatter.string(from: note.editedAt)))
+    }
+
+    @ViewBuilder
+    private var infoButtons: some View {
         HStack(spacing: 8) {
-            Text(L("Created %@ \u{00B7} Edited %@", Self.day.string(from: note.createdAt), Self.day.string(from: note.editedAt)))
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .help(L("Created %@\nEdited %@", Self.formatter.string(from: note.createdAt), Self.formatter.string(from: note.editedAt)))
-            Spacer(minLength: 8)
             Button(L("Open")) { actions.open(note.id) }
                 .keyboardShortcut(.defaultAction)
             Toggle(L("Pin to Center"), isOn: Binding(get: { note.isPinned }, set: { actions.setPinned([note.id], $0) }))
@@ -655,7 +681,8 @@ struct NoteReadingPane: View {
             }
             Button(L("Export\u{2026}")) { actions.export([note.id]) }
         }
-        .controlSize(.small)
+        .lineLimit(1)
+        .fixedSize()
     }
 
     private static let formatter: DateFormatter = {
@@ -672,6 +699,8 @@ struct NoteReadingPane: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         formatter.doesRelativeDateFormatting = true
+        // "Created today", not "Created Today": the day sits inside a sentence.
+        formatter.formattingContext = .middleOfSentence
         return formatter
     }()
 }

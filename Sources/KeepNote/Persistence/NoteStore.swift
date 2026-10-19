@@ -161,7 +161,7 @@ final class NoteStore: ObservableObject {
             switch self {
             case .all: return L("All")
             case .active: return L("Active")
-            case .archived: return L("Archived")
+            case .archived: return L("[notes] Archived")
             }
         }
     }

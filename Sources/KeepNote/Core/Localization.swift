@@ -47,7 +47,13 @@ enum Localization {
     fileprivate static let table: [String: String] = loadTable(for: language)
 
     fileprivate static func string(_ key: String, in language: String) -> String {
-        language == self.language ? (table[key] ?? key) : (loadTable(for: language)[key] ?? key)
+        language == self.language ? (table[key] ?? shown(key)) : (loadTable(for: language)[key] ?? shown(key))
+    }
+
+    /// A key without its leading `[context] `, if any.
+    static func shown(_ key: String) -> String {
+        guard key.hasPrefix("["), let end = key.firstIndex(of: "]") else { return key }
+        return String(key[key.index(after: end)...].drop { $0 == " " })
     }
 
     static func normalized(_ identifier: String) -> String {
@@ -98,8 +104,13 @@ enum Localization {
 }
 
 /// The interface text for `key`, its English original.
+///
+/// English sometimes uses one word for two things Portuguese tells apart —
+/// "Archive" the place and "Archive" the command. The second gets a context
+/// in brackets, `L("[noun] Archive")`, which is never shown: without a
+/// table entry the key is shown without it.
 func L(_ key: String) -> String {
-    Localization.table[key] ?? key
+    Localization.table[key] ?? Localization.shown(key)
 }
 
 /// `key` in a language other than the running one — for the one prompt that

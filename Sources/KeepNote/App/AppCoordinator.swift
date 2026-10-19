@@ -746,7 +746,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             return
         }
         let controller = HostingWindowController(
-            title: L("Archive"),
+            title: L("[noun] Archive"),
             size: NSSize(width: 560, height: 440),
             autosaveName: "KeepNote.Archive",
             rootView: ArchiveView(store: store, actions: listActions())

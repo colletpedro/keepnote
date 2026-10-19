@@ -74,7 +74,7 @@ enum MainMenu {
         add(to: menu, L("Today\u{2019}s Daily"), #selector(AppCoordinator.menuTodaysDaily), target: target)
         add(to: menu, L("Edit Daily Template\u{2026}"), #selector(AppCoordinator.menuEditDailyTemplate), target: target)
         add(to: menu, L("All Notes"), #selector(AppCoordinator.menuAllNotes), target: target)
-        add(to: menu, L("Archive"), #selector(AppCoordinator.menuArchive), target: target)
+        add(to: menu, L("[noun] Archive"), #selector(AppCoordinator.menuArchive), target: target)
         menu.addItem(.separator())
         add(to: menu, L("Import\u{2026}"), #selector(AppCoordinator.menuImport), "i", target: target)
         add(to: menu, L("Export All\u{2026}"), #selector(AppCoordinator.menuExportAll), "e", target: target)

@@ -29,7 +29,7 @@ struct WelcomeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 shortcut(L("New note"), newNote)
                 shortcut(L("All notes"), allNotes)
-                shortcut(L("Archive"), archive)
+                shortcut(L("[noun] Archive"), archive)
                 shortcut(L("Today\u{2019}s Daily"), daily)
             }
             .padding(12)

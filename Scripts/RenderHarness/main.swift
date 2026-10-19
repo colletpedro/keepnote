@@ -84,7 +84,7 @@ MainActor.assumeIsolated {
     for color in NoteColor.allCases {
         let note = try! store.create(color: color, title: "Weekly plan", body: body, tags: ["work", "ideas"])
         let model = NoteEditorModel(note: note, store: store)
-        render("editor-anchored-\(color.displayName.lowercased())", size: EdgeMetrics.anchoredSize,
+        render("editor-anchored-\(String(describing: color))", size: EdgeMetrics.anchoredSize,
                NoteEditorView(model: model, presentation: .anchored, onClose: {}, onDelete: {}, onTogglePin: {}))
         if color == .butter {
             render("editor-detached", size: EdgeMetrics.detachedSize,
@@ -108,7 +108,7 @@ MainActor.assumeIsolated {
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                               backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: appearance)
-        window.title = "All Notes"
+        window.title = L("All Notes")
         window.contentView = NSHostingView(rootView: view)
         window.setFrame(NSRect(origin: NSPoint(x: -10000, y: -10000), size: size), display: false)
         window.orderFrontRegardless()
@@ -225,7 +225,7 @@ MainActor.assumeIsolated {
         for color in NoteColor.allCases {
             templateStore.setDailyTemplate(color: color)
             for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-                renderWindow("allnotes-template-color-\(color.displayName.lowercased())-\(suffix)", size: CGSize(width: 1080, height: 640), appearance: appearance,
+                renderWindow("allnotes-template-color-\(String(describing: color))-\(suffix)", size: CGSize(width: 1080, height: 640), appearance: appearance,
                              AllNotesView(store: templateStore, actions: actions, initialSidebar: .library(.daily),
                                           initialSelection: [DailyTemplatePane.rowID]))
             }
@@ -251,8 +251,20 @@ MainActor.assumeIsolated {
 
     // MARK: Settings > General and the welcome window.
 
-    render("settings-general", size: CGSize(width: SettingsWindowController.paneWidth, height: SettingsTab.general.paneHeight),
-           GeneralSettingsPane(settings: AppSettings.shared))
+    let paneActions = SettingsActions(chooseSyncFolder: {}, forgetSyncFolder: {}, importNotes: {},
+                                      exportAll: {}, showWelcome: {})
+    @MainActor func pane(_ tab: SettingsTab) -> CGSize { CGSize(width: SettingsWindowController.paneWidth, height: tab.paneHeight) }
+    render("settings-general", size: pane(.general), GeneralSettingsPane(settings: AppSettings.shared, actions: paneActions))
+    // A language picked but not yet in effect: the Relaunch Now row.
+    let picked = AppSettings(defaults: UserDefaults(suiteName: "keepnote-render-\(UUID().uuidString)")!)
+    picked.language = Localization.launchChoice == .english ? .portuguese : .english
+    render("settings-general-relaunch", size: pane(.general), GeneralSettingsPane(settings: picked, actions: paneActions))
+    render("settings-notes", size: pane(.notes), NotesSettingsPane(settings: AppSettings.shared))
+    render("settings-daily", size: pane(.daily), DailySettingsPane(actions: paneActions))
+    render("settings-sync", size: pane(.sync),
+           SyncSettingsPane(settings: AppSettings.shared, sync: FolderSyncService(store: store), actions: paneActions))
+    render("archive", size: CGSize(width: 560, height: 440), ArchiveView(store: store, actions: NoteListActions(
+        open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in }, delete: { _ in }, export: { _ in })))
     render("settings-deck", size: CGSize(width: SettingsWindowController.paneWidth, height: SettingsTab.deck.paneHeight),
            DeckSettingsPane(settings: AppSettings.shared))
     render("welcome", size: CGSize(width: 440, height: 690), WelcomeView(onDone: {}))

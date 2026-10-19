@@ -5,7 +5,9 @@
 # separate command-line tool, which draws each view off screen and exits.
 # Nothing is shown, nothing is installed, the real database is not touched.
 #
-#   ./Scripts/render.sh <output-dir>
+#   ./Scripts/render.sh <output-dir>            in English
+#   ./Scripts/render.sh <output-dir> pt-BR      in Portuguese, where the text
+#                                               runs longer: the layout check
 #
 set -euo pipefail
 
@@ -56,4 +58,5 @@ swiftc \
     -o "$BUILD/render" \
     "${SOURCES[@]}" "$ROOT/Scripts/RenderHarness/main.swift"
 
-"$BUILD/render" "$OUT_DIR"
+# The language comes from Resources, as the app's bundle would have it.
+KEEPNOTE_LANGUAGE="${2:-en}" KEEPNOTE_LPROJ_ROOT="$ROOT/Resources" "$BUILD/render" "$OUT_DIR"
