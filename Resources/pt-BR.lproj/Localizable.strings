@@ -5,6 +5,9 @@
 "%@  archive" = "%@  arquivadas";
 "%@  new note" = "%@  nova nota";
 "%@  today’s daily" = "%@  daily de hoje";
+"%@ changes color" = "%@ muda a cor";
+"%@ deletes with ten seconds to undo" = "%@ apaga, com dez segundos para desfazer";
+"%@ finds" = "%@ busca";
 "%d archived" = "%d arquivadas";
 "%d days" = "%d dias";
 "%d days ago" = "há %d dias";
@@ -65,6 +68,7 @@
 "Choose a folder" = "Escolha uma pasta";
 "Choose a folder for the exported notes." = "Escolha uma pasta para as notas exportadas.";
 "Choose a format." = "Escolha um formato.";
+"Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Clique num atalho e pressione a nova combinação; ela precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho.";
 "Close" = "Fechar";
 "Close (esc)" = "Fechar (esc)";
 "Code block" = "Bloco de código";
@@ -114,7 +118,7 @@
 "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files." = "Os arquivos nessa pasta podem ser lidos sem o app. O banco de dados deste Mac guarda o texto das notas cifrado, e essa chave nunca sai deste Mac — por isso ela não pode ir junto com os arquivos.";
 "Find in note" = "Buscar na nota";
 "Float Note" = "Flutuar Nota";
-"Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the right edge returns it." = "Flutuar Nota tira a nota da pilha para que ela fique na mesa; Voltar à Pilha a devolve. Os dois são o botão redondo abaixo de Fechar, na lombada da nota. Arrastar a lombada ou o cabeçalho para um pouco longe da borda também faz a nota flutuar, e arrastar uma nota flutuante até a borda direita a devolve.";
+"Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it." = "Flutuar Nota tira a nota da pilha para que ela fique na mesa; Voltar à Pilha a devolve. Os dois são o botão redondo abaixo de Fechar, na lombada da nota. Arrastar a lombada ou o cabeçalho para um pouco longe da borda também faz a nota flutuar, e arrastar uma nota flutuante até a borda da pilha a devolve.";
 "Float Note · Return to Deck" = "Flutuar Nota · Voltar à Pilha";
 "Floating" = "Flutuando";
 "Folder" = "Pasta";
@@ -144,7 +148,7 @@
 "Indent item" = "Recuar item";
 "Inline code" = "Código em linha";
 "Inside a note" = "Dentro de uma nota";
-"Inside a note: esc closes, ⌘F finds, ⌥⌘C changes color," = "Dentro de uma nota: esc fecha, ⌘F busca, ⌥⌘C muda a cor,";
+"Inside a note: %@." = "Dentro de uma nota: %@.";
 "It is the tag daily notes are made with, so it keeps its name." = "É a tag com que as notas daily são feitas, então mantém o nome.";
 "Italic" = "Itálico";
 "Keep on Deck" = "Manter na Pilha";
@@ -177,17 +181,19 @@
 "Move back to the stack" = "Devolver à pilha";
 "Move to Deck" = "Mover para a Pilha";
 "Move to Stack" = "Mover para a Pilha";
+"Needs ⌘, ⌥ or ⌃" = "Precisa de ⌘, ⌥ ou ⌃";
 "New Note" = "Nova Nota";
 "New Note with Tag" = "Nova Nota com a Tag";
 "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes." = "As novas notas daily começam com este texto em vez de uma página em branco. Ele não é uma nota: fica fora da pilha, das listas e da busca, e é sincronizado e exportado com suas notas.";
 "New note" = "Nova nota";
-"Next / previous match" = "Resultado seguinte / anterior";
 "Next Color" = "Próxima Cor";
 "Next color" = "Próxima cor";
+"Next match" = "Próximo resultado";
 "No additional text" = "Nenhum texto adicional";
 "No archived note matches that" = "Nenhuma nota arquivada corresponde a isso";
 "No daily notes yet" = "Nenhuma nota daily ainda";
 "No earlier dailies" = "Nenhuma daily anterior";
+"None" = "Nenhum";
 "None chosen" = "Nenhuma escolhida";
 "Note deleted" = "Nota apagada";
 "Notes" = "Notas";
@@ -216,6 +222,8 @@
 "Pinned and kept notes" = "Notas fixadas e mantidas";
 "Pinned to center" = "Fixada no centro";
 "Plain text — one file per note" = "Texto simples — um arquivo por nota";
+"Previous color" = "Cor anterior";
+"Previous match" = "Resultado anterior";
 "Quit" = "Encerrar";
 "Quit KeepNote" = "Encerrar KeepNote";
 "Quote" = "Citação";
@@ -289,6 +297,7 @@
 "Tools" = "Ferramentas";
 "Tools · right-click a tab · All Notes" = "Ferramentas · clique direito na aba · Todas as Notas";
 "Type a new tag or pick an existing one." = "Digite uma nova tag ou escolha uma existente.";
+"Type a shortcut" = "Digite o atalho";
 "Undo" = "Desfazer";
 "Undo a delete for" = "Desfazer uma exclusão por";
 "Unpin from Center" = "Desafixar do Centro";
@@ -306,13 +315,15 @@
 "Write what a new daily note should start with." = "Escreva com o que uma nova nota daily deve começar.";
 "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder." = "Grava um arquivo de texto simples por nota numa pasta que você escolhe. Ao ativar, a pasta é pedida.";
 "Your notes live in a deck on the right edge of the screen — move the cursor there and the cards fan out." = "Suas notas ficam numa pilha na borda direita da tela — leve o cursor até lá e os cartões se abrem em leque.";
+"Your notes live on the left edge of the screen." = "Suas notas ficam na borda esquerda da tela.";
 "Your notes live on the right edge of the screen." = "Suas notas ficam na borda direita da tela.";
 "Zoom" = "Zoom";
 "[notes] Archived" = "Arquivadas";
 "[noun] Archive" = "Arquivadas";
 "add daily" = "adicionar daily";
 "click the daily chip in a note" = "clique na tag daily de uma nota";
-"esc" = "esc";
+"esc closes" = "esc fecha";
+"esc · ⌘W" = "esc · ⌘W";
 "just now" = "agora mesmo";
 "none" = "nenhum";
 "the calendar button beside +" = "o botão de calendário ao lado do +";
@@ -326,4 +337,3 @@
 "• Move the cursor to the pill and the stack fans out." = "• Leve o cursor até a faixa e a pilha se abre em leque.";
 "• Right-click the pill for the menu." = "• Clique com o botão direito na faixa para ver o menu.";
 "↩ on an empty item" = "↩ num item vazio";
-"⇧⌘⌫ deletes with ten seconds to undo." = "⇧⌘⌫ apaga, com dez segundos para desfazer.";

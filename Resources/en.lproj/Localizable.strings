@@ -5,6 +5,9 @@
 "%@  archive" = "%@  archive";
 "%@  new note" = "%@  new note";
 "%@  today’s daily" = "%@  today’s daily";
+"%@ changes color" = "%@ changes color";
+"%@ deletes with ten seconds to undo" = "%@ deletes with ten seconds to undo";
+"%@ finds" = "%@ finds";
 "%d archived" = "%d archived";
 "%d days" = "%d days";
 "%d days ago" = "%d days ago";
@@ -65,6 +68,7 @@
 "Choose a folder" = "Choose a folder";
 "Choose a folder for the exported notes." = "Choose a folder for the exported notes.";
 "Choose a format." = "Choose a format.";
+"Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one.";
 "Close" = "Close";
 "Close (esc)" = "Close (esc)";
 "Code block" = "Code block";
@@ -114,7 +118,7 @@
 "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files." = "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files.";
 "Find in note" = "Find in note";
 "Float Note" = "Float Note";
-"Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the right edge returns it." = "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the right edge returns it.";
+"Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it." = "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it.";
 "Float Note · Return to Deck" = "Float Note · Return to Deck";
 "Floating" = "Floating";
 "Folder" = "Folder";
@@ -144,7 +148,7 @@
 "Indent item" = "Indent item";
 "Inline code" = "Inline code";
 "Inside a note" = "Inside a note";
-"Inside a note: esc closes, ⌘F finds, ⌥⌘C changes color," = "Inside a note: esc closes, ⌘F finds, ⌥⌘C changes color,";
+"Inside a note: %@." = "Inside a note: %@.";
 "It is the tag daily notes are made with, so it keeps its name." = "It is the tag daily notes are made with, so it keeps its name.";
 "Italic" = "Italic";
 "Keep on Deck" = "Keep on Deck";
@@ -177,17 +181,19 @@
 "Move back to the stack" = "Move back to the stack";
 "Move to Deck" = "Move to Deck";
 "Move to Stack" = "Move to Stack";
+"Needs ⌘, ⌥ or ⌃" = "Needs ⌘, ⌥ or ⌃";
 "New Note" = "New Note";
 "New Note with Tag" = "New Note with Tag";
 "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes." = "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.";
 "New note" = "New note";
-"Next / previous match" = "Next / previous match";
 "Next Color" = "Next Color";
 "Next color" = "Next color";
+"Next match" = "Next match";
 "No additional text" = "No additional text";
 "No archived note matches that" = "No archived note matches that";
 "No daily notes yet" = "No daily notes yet";
 "No earlier dailies" = "No earlier dailies";
+"None" = "None";
 "None chosen" = "None chosen";
 "Note deleted" = "Note deleted";
 "Notes" = "Notes";
@@ -216,6 +222,8 @@
 "Pinned and kept notes" = "Pinned and kept notes";
 "Pinned to center" = "Pinned to center";
 "Plain text — one file per note" = "Plain text — one file per note";
+"Previous color" = "Previous color";
+"Previous match" = "Previous match";
 "Quit" = "Quit";
 "Quit KeepNote" = "Quit KeepNote";
 "Quote" = "Quote";
@@ -289,6 +297,7 @@
 "Tools" = "Tools";
 "Tools · right-click a tab · All Notes" = "Tools · right-click a tab · All Notes";
 "Type a new tag or pick an existing one." = "Type a new tag or pick an existing one.";
+"Type a shortcut" = "Type a shortcut";
 "Undo" = "Undo";
 "Undo a delete for" = "Undo a delete for";
 "Unpin from Center" = "Unpin from Center";
@@ -306,13 +315,15 @@
 "Write what a new daily note should start with." = "Write what a new daily note should start with.";
 "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder." = "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder.";
 "Your notes live in a deck on the right edge of the screen — move the cursor there and the cards fan out." = "Your notes live in a deck on the right edge of the screen — move the cursor there and the cards fan out.";
+"Your notes live on the left edge of the screen." = "Your notes live on the left edge of the screen.";
 "Your notes live on the right edge of the screen." = "Your notes live on the right edge of the screen.";
 "Zoom" = "Zoom";
 "[notes] Archived" = "Archived";
 "[noun] Archive" = "Archive";
 "add daily" = "add daily";
 "click the daily chip in a note" = "click the daily chip in a note";
-"esc" = "esc";
+"esc closes" = "esc closes";
+"esc · ⌘W" = "esc · ⌘W";
 "just now" = "just now";
 "none" = "none";
 "the calendar button beside +" = "the calendar button beside +";
@@ -326,4 +337,3 @@
 "• Move the cursor to the pill and the stack fans out." = "• Move the cursor to the pill and the stack fans out.";
 "• Right-click the pill for the menu." = "• Right-click the pill for the menu.";
 "↩ on an empty item" = "↩ on an empty item";
-"⇧⌘⌫ deletes with ten seconds to undo." = "⇧⌘⌫ deletes with ten seconds to undo.";

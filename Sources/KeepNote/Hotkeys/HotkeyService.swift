@@ -37,7 +37,12 @@ final class HotkeyService: ObservableObject {
     private let signature: OSType = 0x484D_4E54 // 'HMNT'
 
     private let registrar: Registrar
-    private let defaults: UserDefaults
+    /// Where the combinations are kept, global and in-note alike.
+    let store: ShortcutStore
+    private var storeObserver: NSObjectProtocol?
+    /// While a shortcut is being recorded nothing is registered, so the
+    /// combination pressed reaches the recorder instead of its command.
+    private(set) var isSuspended = false
 
     /// The commands whose combination could not be registered, because another
     /// app holds it. Settings marks them and the menus show them without it.
@@ -45,7 +50,15 @@ final class HotkeyService: ObservableObject {
 
     init(registrar: Registrar? = nil, defaults: UserDefaults = .standard) {
         self.registrar = registrar ?? Self.carbonRegistrar
-        self.defaults = defaults
+        self.store = defaults == .standard ? ShortcutStore.shared : ShortcutStore(defaults: defaults)
+        storeObserver = NotificationCenter.default.addObserver(
+            forName: .keepNoteShortcutsChanged, object: store, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, !self.isSuspended else { return }
+                self.reregister()
+            }
+        }
     }
 
     func isUnavailable(_ command: GlobalCommand) -> Bool { unavailable.contains(command) }
@@ -79,27 +92,35 @@ final class HotkeyService: ObservableObject {
 
     // MARK: - Stored combos
 
-    func combo(for command: GlobalCommand) -> KeyCombo {
-        guard
-            let data = defaults.data(forKey: Self.defaultsKey(command)),
-            let combo = try? JSONDecoder().decode(KeyCombo.self, from: data)
-        else {
-            return command.defaultCombo
-        }
-        return combo
+    /// The combination for `command`; `nil` when it has none.
+    func combo(for command: GlobalCommand) -> KeyCombo? {
+        store.combo(for: .global(command))
+    }
+
+    /// "⌥⌘N", or "" when the command has no shortcut.
+    func label(for command: GlobalCommand) -> String {
+        combo(for: command)?.displayString ?? ""
     }
 
     func setCombo(_ combo: KeyCombo?, for command: GlobalCommand) {
-        if let combo, let data = try? JSONEncoder().encode(combo) {
-            defaults.set(data, forKey: Self.defaultsKey(command))
-        } else {
-            defaults.removeObject(forKey: Self.defaultsKey(command))
-        }
+        store.set(combo, for: .global(command))
+        if isSuspended { return }
         reregister()
     }
 
-    private static func defaultsKey(_ command: GlobalCommand) -> String {
-        "hotkey.\(command.rawValue)"
+    // MARK: - Recording
+
+    /// Takes every global shortcut away while one is being recorded.
+    func suspend() {
+        guard !isSuspended else { return }
+        isSuspended = true
+        unregisterAll()
+    }
+
+    func resume() {
+        guard isSuspended else { return }
+        isSuspended = false
+        reregister()
     }
 
     // MARK: - Registration
@@ -113,16 +134,18 @@ final class HotkeyService: ObservableObject {
         reregister()
     }
 
-    private func reregister() {
+    private func unregisterAll() {
         for registration in registrations.values {
             UnregisterEventHotKey(registration.ref)
         }
         registrations.removeAll()
+    }
 
+    private func reregister() {
+        unregisterAll()
         var failed: Set<GlobalCommand> = []
         for command in GlobalCommand.allCases {
-            guard let handler = actions[command] else { continue }
-            let combo = combo(for: command)
+            guard let handler = actions[command], let combo = combo(for: command) else { continue }
             if !register(combo, command: command, handler: handler) { failed.insert(command) }
         }
         unavailable = failed

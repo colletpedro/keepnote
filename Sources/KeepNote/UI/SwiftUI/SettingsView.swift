@@ -357,6 +357,7 @@ struct SyncSettingsPane: View {
 
 struct ShortcutsSettingsPane: View {
     @ObservedObject var hotkeys: HotkeyService = .shared
+    @ObservedObject var store: ShortcutStore = .shared
 
     var body: some View {
         Form {
@@ -364,6 +365,7 @@ struct ShortcutsSettingsPane: View {
                 ForEach(GlobalCommand.allCases) { command in
                     globalRow(command)
                 }
+                HelpNote(text: L("Click a shortcut and press the new combination; it needs \u{2318}, \u{2325} or \u{2303}. Esc cancels, Delete leaves the command without one."))
                 HelpNote(text: L("Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved."))
             }
 
@@ -381,14 +383,11 @@ struct ShortcutsSettingsPane: View {
             }
 
             Section(L("Inside a note")) {
-                row(L("Close"), L("esc"))
-                row(L("Find in note"), "\u{2318}F")
-                row(L("Next / previous match"), "\u{2318}G \u{00B7} \u{21E7}\u{2318}G")
-                row(L("Next color"), "\u{2325}\u{2318}C")
-                row(L("Float Note \u{00B7} Return to Deck"), "\u{2325}\u{2318}P")
-                row(L("Archive"), "\u{21E7}\u{2318}E")
-                row(L("Delete (undoable)"), "\u{21E7}\u{2318}\u{232B}")
-                HelpNote(text: L("Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the right edge returns it."))
+                row(L("Close"), L("esc \u{00B7} \u{2318}W"))
+                ForEach(NoteCommand.allCases) { command in
+                    recorderRow(.note(command))
+                }
+                HelpNote(text: L("Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it."))
             }
 
             Section(L("Formatting")) {
@@ -419,12 +418,23 @@ struct ShortcutsSettingsPane: View {
                         .foregroundStyle(.orange)
                         .help(L("Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu."))
                 }
-                Text(hotkeys.combo(for: command).displayString)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .strikethrough(hotkeys.isUnavailable(command))
+                recorder(.global(command))
             }
         }
+    }
+
+    private func recorderRow(_ action: ShortcutAction) -> some View {
+        LabeledContent(action.title) { recorder(action) }
+    }
+
+    private func recorder(_ action: ShortcutAction) -> some View {
+        ShortcutRecorder(
+            action: action,
+            store: store,
+            record: { ShortcutEditing.record($0, for: action, store: store, hotkeys: hotkeys) },
+            recordingChanged: { recording in recording ? hotkeys.suspend() : hotkeys.resume() }
+        )
+        .frame(width: 150, height: 22)
     }
 
     private func row(_ title: String, _ keys: String) -> some View {

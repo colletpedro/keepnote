@@ -725,37 +725,31 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             return true
         }
 
-        guard command else { return false }
-
-        // ⇧⌘⌫ arrives as a key code rather than a character. Plain ⌘⌫ is left
-        // alone so the text field gets its "delete to start of line".
-        if event.keyCode == 51 {
-            guard shift, !option else { return false }
-            requestDelete()
+        // The note's own commands, on whatever shortcuts Settings > Shortcuts
+        // gives them. Matched by key code, so they follow the recording.
+        if let noteCommand = ShortcutStore.shared.noteCommand(for: event) {
+            perform(noteCommand)
             return true
         }
 
-        switch event.charactersIgnoringModifiers?.lowercased() ?? "" {
-        case "f" where !option:
-            model.toggleFindBar()
-            return true
-        case "g":
-            model.advanceFind(by: shift ? -1 : 1)
-            return true
-        case "c" where option:
-            model.cycleColor(backwards: shift)
-            return true
-        case "e" where shift:
-            model.toggleComplete()
-            return true
-        case "p" where option:
-            togglePresentation()
-            return true
-        case "w":
+        // ⌘W closes, like any window; it is not one of the changeable ones.
+        if command, !shift, !option, event.charactersIgnoringModifiers?.lowercased() == "w" {
             close()
             return true
-        default:
-            return false
+        }
+        return false
+    }
+
+    private func perform(_ command: NoteCommand) {
+        switch command {
+        case .find: model.toggleFindBar()
+        case .findNext: model.advanceFind(by: 1)
+        case .findPrevious: model.advanceFind(by: -1)
+        case .nextColor: model.cycleColor(backwards: false)
+        case .previousColor: model.cycleColor(backwards: true)
+        case .float: togglePresentation()
+        case .archive: model.toggleComplete()
+        case .delete: requestDelete()
         }
     }
 

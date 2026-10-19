@@ -9,10 +9,13 @@ struct WelcomeView: View {
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var loginError: String?
 
-    private var newNote: String { HotkeyService.shared.combo(for: .newNote).displayString }
-    private var allNotes: String { HotkeyService.shared.combo(for: .allNotes).displayString }
-    private var archive: String { HotkeyService.shared.combo(for: .archive).displayString }
-    private var daily: String { HotkeyService.shared.combo(for: .todaysDaily).displayString }
+    /// The shortcuts as they are set now, kept current while the window is open.
+    @ObservedObject private var shortcuts: ShortcutStore = .shared
+    private func keys(_ action: ShortcutAction) -> String { shortcuts.label(for: action) ?? L("None") }
+    private var newNote: String { keys(.global(.newNote)) }
+    private var allNotes: String { keys(.global(.allNotes)) }
+    private var archive: String { keys(.global(.archive)) }
+    private var daily: String { keys(.global(.todaysDaily)) }
 
     var body: some View {
         VStack(spacing: 14) {

@@ -121,6 +121,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func installAppShortcuts() {
         appKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, let coordinator = self.coordinator else { return event }
+            // A shortcut being recorded in Settings gets every key, ⌘Q included.
+            if ShortcutRecorderField.isRecordingAny { return event }
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             guard flags.contains(.command) else { return event }
 
@@ -156,33 +158,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.hasSeededFirstNote = true
         guard store.notes.isEmpty else { return }
 
-        let newNote = HotkeyService.shared.combo(for: .newNote).displayString
-        let allNotes = HotkeyService.shared.combo(for: .allNotes).displayString
-        let archive = HotkeyService.shared.combo(for: .archive).displayString
-        let daily = HotkeyService.shared.combo(for: .todaysDaily).displayString
+        // The shortcuts as they are set now; one without a shortcut is left out.
+        let shortcuts = ShortcutStore.shared
+        /// `format` is already in the interface's language.
+        func line(_ action: ShortcutAction, _ format: String) -> [String] {
+            shortcuts.label(for: action).map { [String(format: format, locale: Localization.locale, $0)] } ?? []
+        }
+        var inside = [L("esc closes")]
+        if let find = shortcuts.label(for: .note(.find)) { inside.append(L("%@ finds", find)) }
+        if let color = shortcuts.label(for: .note(.nextColor)) { inside.append(L("%@ changes color", color)) }
+        if let delete = shortcuts.label(for: .note(.delete)) { inside.append(L("%@ deletes with ten seconds to undo", delete)) }
+        let edgeLine = AppSettings.shared.screenEdge == .left
+            ? L("Your notes live on the left edge of the screen.")
+            : L("Your notes live on the right edge of the screen.")
 
+        var lines = [
+            edgeLine,
+            "",
+            L("• Move the cursor to the pill and the stack fans out."),
+            L("• Click a card to open it. Typing saves on its own."),
+            L("• Right-click the pill for the menu."),
+            "",
+            L("Shortcuts"),
+        ]
+        lines += line(.global(.newNote), L("%@  new note"))
+        lines += line(.global(.allNotes), L("%@  all notes"))
+        lines += line(.global(.archive), L("%@  archive"))
+        lines += line(.global(.todaysDaily), L("%@  today\u{2019}s daily"))
+        lines += [
+            "",
+            L("Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,"),
+            L("> quotes. The syntax hides itself except on the line you edit."),
+            "",
+            L("Inside a note: %@.", inside.joined(separator: ", ")),
+        ]
         _ = try? store.create(
             color: .mint,
             title: L("Welcome to KeepNote"),
-            body: [
-                L("Your notes live on the right edge of the screen."),
-                "",
-                L("• Move the cursor to the pill and the stack fans out."),
-                L("• Click a card to open it. Typing saves on its own."),
-                L("• Right-click the pill for the menu."),
-                "",
-                L("Shortcuts"),
-                L("%@  new note", newNote),
-                L("%@  all notes", allNotes),
-                L("%@  archive", archive),
-                L("%@  today\u{2019}s daily", daily),
-                "",
-                L("Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,"),
-                L("> quotes. The syntax hides itself except on the line you edit."),
-                "",
-                L("Inside a note: esc closes, \u{2318}F finds, \u{2325}\u{2318}C changes color,"),
-                L("\u{21E7}\u{2318}\u{232B} deletes with ten seconds to undo."),
-            ].joined(separator: "\n"),
+            body: lines.joined(separator: "\n"),
             tags: ["welcome"]
         )
     }

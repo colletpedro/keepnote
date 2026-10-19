@@ -52,7 +52,65 @@ struct KeyCombo: Equatable, Codable, Sendable {
 
     /// The character a menu item needs for its key equivalent.
     var menuKeyEquivalent: String {
-        KeyCombo.keyName(for: keyCode).lowercased()
+        if let special = KeyCombo.menuSpecials[Int(keyCode)] { return special }
+        return KeyCombo.keyName(for: keyCode).lowercased()
+    }
+
+    /// Keys whose menu equivalent is not the character they are drawn with.
+    private static let menuSpecials: [Int: String] = {
+        var keys: [Int: String] = [
+            kVK_Delete: "\u{8}", kVK_ForwardDelete: "\u{7F}", kVK_Return: "\r", kVK_Tab: "\t", kVK_Space: " ",
+            kVK_Escape: "\u{1B}",
+            kVK_LeftArrow: String(UnicodeScalar(UInt16(NSLeftArrowFunctionKey))!),
+            kVK_RightArrow: String(UnicodeScalar(UInt16(NSRightArrowFunctionKey))!),
+            kVK_UpArrow: String(UnicodeScalar(UInt16(NSUpArrowFunctionKey))!),
+            kVK_DownArrow: String(UnicodeScalar(UInt16(NSDownArrowFunctionKey))!),
+            kVK_Home: String(UnicodeScalar(UInt16(NSHomeFunctionKey))!),
+            kVK_End: String(UnicodeScalar(UInt16(NSEndFunctionKey))!),
+            kVK_PageUp: String(UnicodeScalar(UInt16(NSPageUpFunctionKey))!),
+            kVK_PageDown: String(UnicodeScalar(UInt16(NSPageDownFunctionKey))!),
+        ]
+        for (index, code) in functionKeys.enumerated() {
+            keys[code] = String(UnicodeScalar(UInt16(NSF1FunctionKey + index))!)
+        }
+        return keys
+    }()
+
+    private static let functionKeys = [kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
+                                       kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20]
+
+    /// The key pressed in `event`, with the modifiers that count for a
+    /// shortcut (Caps Lock and Fn do not).
+    init(event: NSEvent) {
+        self.init(keyCode: Int(event.keyCode),
+                  modifiers: event.modifierFlags.intersection([.command, .option, .control, .shift]))
+    }
+
+    /// Whether `event` is this combination.
+    func matches(_ event: NSEvent) -> Bool {
+        KeyCombo(event: event) == self
+    }
+
+    /// A shortcut needs ⌘, ⌥ or ⌃: Shift alone, or nothing, is typing.
+    var hasRequiredModifier: Bool {
+        carbonModifiers & UInt32(cmdKey | optionKey | controlKey) != 0
+    }
+
+    /// How a combination is kept in the preferences: "45:2304".
+    var storageValue: String { "\(keyCode):\(carbonModifiers)" }
+
+    init?(storageValue: String) {
+        let parts = storageValue.split(separator: ":").compactMap { UInt32($0) }
+        guard parts.count == 2 else { return nil }
+        self.init(keyCode: parts[0], carbonModifiers: parts[1])
+    }
+
+    /// The key code for a character typed on a US layout, for the fixed
+    /// shortcuts that are written as characters (the Format menu's).
+    static func keyCode(forCharacter character: String) -> UInt32? {
+        let wanted = character.uppercased()
+        for code in 0..<128 where keyName(for: UInt32(code)) == wanted { return UInt32(code) }
+        return nil
     }
 
     static func keyName(for keyCode: UInt32) -> String {
@@ -96,7 +154,31 @@ struct KeyCombo: Equatable, Codable, Sendable {
         case kVK_Space: return L("Space")
         case kVK_Return: return "\u{21A9}"
         case kVK_Escape: return "\u{238B}"
-        default: return "?"
+        case kVK_Delete: return "\u{232B}"
+        case kVK_ForwardDelete: return "\u{2326}"
+        case kVK_Tab: return "\u{21E5}"
+        case kVK_LeftArrow: return "\u{2190}"
+        case kVK_RightArrow: return "\u{2192}"
+        case kVK_UpArrow: return "\u{2191}"
+        case kVK_DownArrow: return "\u{2193}"
+        case kVK_Home: return "\u{2196}"
+        case kVK_End: return "\u{2198}"
+        case kVK_PageUp: return "\u{21DE}"
+        case kVK_PageDown: return "\u{21DF}"
+        case kVK_ANSI_Minus: return "-"
+        case kVK_ANSI_Equal: return "="
+        case kVK_ANSI_LeftBracket: return "["
+        case kVK_ANSI_RightBracket: return "]"
+        case kVK_ANSI_Semicolon: return ";"
+        case kVK_ANSI_Quote: return "'"
+        case kVK_ANSI_Comma: return ","
+        case kVK_ANSI_Period: return "."
+        case kVK_ANSI_Slash: return "/"
+        case kVK_ANSI_Backslash: return "\\"
+        case kVK_ANSI_Grave: return "`"
+        default:
+            if let index = functionKeys.firstIndex(of: Int(keyCode)) { return "F\(index + 1)" }
+            return "?"
         }
     }
 }
