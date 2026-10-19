@@ -68,6 +68,7 @@ MainActor.assumeIsolated {
     runDailyTemplateColorSyncTests()
     runDailyTemplateColorArchiveTests()
     runHotkeyConflictTests()
+    runAboutLinkTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }
