@@ -12,6 +12,9 @@ final class UndoToastController {
     private var dismissTask: Task<Void, Never>?
 
     /// A plain notice: the same toast without the Undo button.
+    /// How wide the last toast was made, for the tests.
+    private(set) var widthForTesting: CGFloat = 0
+
     func notice(_ message: String, duration: TimeInterval = 2.5) {
         show(message: message, duration: duration, onUndo: nil)
     }
@@ -35,7 +38,7 @@ final class UndoToastController {
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
 
-        panel.contentView = NSHostingView(
+        let hosting = NSHostingView(
             rootView: UndoToastView(
                 message: message,
                 duration: duration,
@@ -50,11 +53,17 @@ final class UndoToastController {
                 }
             )
         )
+        panel.contentView = hosting
+        // As wide as the message needs, so a longer one (or a longer
+        // language) is not cut short: never under 300 pt, never past 560.
+        let width = min(560, max(300, ceil(hosting.fittingSize.width)))
+        panel.setContentSize(NSSize(width: width, height: 46))
+        widthForTesting = width
 
         if let screen = NSScreen.main {
             let area = screen.visibleFrame
             panel.setFrameOrigin(NSPoint(
-                x: area.midX - 150,
+                x: area.midX - width / 2,
                 y: area.minY + 64
             ))
         }

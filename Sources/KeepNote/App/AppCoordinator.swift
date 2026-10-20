@@ -137,6 +137,12 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                 bring(offer, into: made.note.id)
             }
             open(noteID: made.note.id, from: nil, caret: made.caret)
+            if let offer, settings.carryOverMode == .automatic {
+                let id = made.note.id
+                undoToast.show(message: Self.broughtMessage(offer), duration: settings.undoWindow) { [weak self] in
+                    self?.unbring(offer, from: id)
+                }
+            }
             if let offer, settings.carryOverMode == .ask {
                 let id = made.note.id
                 noteWindows[id]?.offerCarryOver(offer) { [weak self] in self?.bring(offer, into: id) }
@@ -156,6 +162,30 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         let sources = dailies.map { DailyCarryOver.Source(day: $0.dailyDay!, createdAt: $0.createdAt, body: $0.body) }
         return DailyCarryOver.offer(for: today, sources: sources, newBody: note.body,
                                     othersToday: dailies.filter { $0.dailyDay == today }.count)
+    }
+
+    /// "3 tasks brought from Thursday".
+    static func broughtMessage(_ offer: DailyCarryOver.Offer) -> String {
+        let weekday = DailyCarryOver.weekday(of: offer.day)
+        return offer.count == 1
+            ? L("1 task brought from %@", weekday)
+            : L("%d tasks brought from %@", offer.count, weekday)
+    }
+
+    /// Undo in Bring automatically: the tasks come out of the daily again, as
+    /// long as their block is still as it was brought.
+    func unbring(_ offer: DailyCarryOver.Offer, from id: UUID) {
+        guard let note = store.note(id: id), !note.isLocked else { return }
+        let heading = DailyCarryOver.heading(for: offer.day)
+        if let window = noteWindows[id] {
+            window.editBody { DailyCarryOver.removing(offer, from: $0, heading: heading) }
+            return
+        }
+        do {
+            try store.setBody(DailyCarryOver.removing(offer, from: note.body, heading: heading), id: id)
+        } catch {
+            present(error)
+        }
     }
 
     /// Puts the tasks at the end of the daily, under the day they came from.

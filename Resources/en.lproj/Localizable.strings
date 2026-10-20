@@ -25,11 +25,13 @@
 "%d notes selected" = "%d notes selected";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notes will lose this tag. The notes themselves are kept.";
 "%d of %@" = "%d of %@";
+"%d tasks brought from %@" = "%d tasks brought from %@";
 "%d unfinished tasks from %@. Bring them?" = "%d unfinished tasks from %@. Bring them?";
 "1 locked note was not exported" = "1 locked note was not exported";
 "1 locked note was skipped" = "1 locked note was skipped";
 "1 note" = "1 note";
 "1 note will lose this tag. The notes themselves are kept." = "1 note will lose this tag. The notes themselves are kept.";
+"1 task brought from %@" = "1 task brought from %@";
 "1 unfinished task from %@. Bring it?" = "1 unfinished task from %@. Bring it?";
 "> quotes. The syntax hides itself except on the line you edit." = "> quotes. The syntax hides itself except on the line you edit.";
 "A decrypted note body was not valid UTF-8." = "A decrypted note body was not valid UTF-8.";

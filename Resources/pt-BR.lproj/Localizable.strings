@@ -25,11 +25,13 @@
 "%d notes selected" = "%d notas selecionadas";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notas vão perder esta tag. As notas em si são mantidas.";
 "%d of %@" = "%d de %@";
+"%d tasks brought from %@" = "%d tarefas trazidas de %@";
 "%d unfinished tasks from %@. Bring them?" = "%d tarefas pendentes de %@. Trazer?";
 "1 locked note was not exported" = "1 nota bloqueada não foi exportada";
 "1 locked note was skipped" = "1 nota bloqueada foi ignorada";
 "1 note" = "1 nota";
 "1 note will lose this tag. The notes themselves are kept." = "1 nota vai perder esta tag. A nota em si é mantida.";
+"1 task brought from %@" = "1 tarefa trazida de %@";
 "1 unfinished task from %@. Bring it?" = "1 tarefa pendente de %@. Trazer?";
 "> quotes. The syntax hides itself except on the line you edit." = "> citações. A sintaxe fica oculta, exceto na linha que você edita.";
 "A decrypted note body was not valid UTF-8." = "O texto decifrado de uma nota não era UTF-8 válido.";
