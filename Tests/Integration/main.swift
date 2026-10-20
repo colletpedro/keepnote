@@ -74,6 +74,7 @@ MainActor.assumeIsolated {
     runEdgeFrameTests()
     runShortcutTests()
     runCarryOverSettingTests()
+    runCarryOverTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }

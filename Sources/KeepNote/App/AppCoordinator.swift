@@ -154,6 +154,10 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     // MARK: - Unfinished tasks
 
+    /// For Tests/Integration.
+    func noteWindowForTesting(_ id: UUID) -> NoteWindowController? { noteWindows[id] }
+    var undoToastForTesting: UndoToastController { undoToast }
+
     /// What the new daily `note` is offered from the last day before it with
     /// a daily, or nothing (Settings > Daily says not to, or there is none).
     private func carryOverOffer(for note: Note) -> DailyCarryOver.Offer? {

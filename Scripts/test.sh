@@ -70,7 +70,7 @@ swiftc \
 
 # The runners speak English, whatever this Mac's language: the expected
 # strings in the tests are the English ones.
-KEEPNOTE_LANGUAGE=en "$OUT/run-tests"
+KEEPNOTE_LANGUAGE=en KEEPNOTE_LPROJ_ROOT="$ROOT/Resources" "$OUT/run-tests"
 
 APP_SOURCES=()
 while IFS= read -r file; do APP_SOURCES+=("$file"); done < <(
@@ -91,4 +91,4 @@ swiftc \
     -o "$OUT/run-integration-tests" \
     "${APP_SOURCES[@]}" "$ROOT/Tests/Harness.swift" "${INTEGRATION[@]}"
 
-KEEPNOTE_LANGUAGE=en "$OUT/run-integration-tests"
+KEEPNOTE_LANGUAGE=en KEEPNOTE_LPROJ_ROOT="$ROOT/Resources" "$OUT/run-integration-tests"

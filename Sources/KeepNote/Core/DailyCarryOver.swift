@@ -111,8 +111,12 @@ enum DailyCarryOver {
 extension DailyCarryOver {
     /// "From Thursday, 16/10": the day the tasks came from, as the heading
     /// above them. The day and month in the locale's order.
-    static func heading(for day: DailyDay, locale: Locale = Localization.locale, calendar: Calendar = .current) -> String {
-        L("From %@", formatted(day, template: "EEEEdM", locale: locale, calendar: calendar))
+    /// `language` asks for another interface language than the running one
+    /// (the tests read both).
+    static func heading(for day: DailyDay, locale: Locale = Localization.locale, calendar: Calendar = .current,
+                        language: String? = nil) -> String {
+        let format = language.map { L("From %@", in: $0) } ?? L("From %@")
+        return String(format: format, locale: locale, formatted(day, template: "EEEEdM", locale: locale, calendar: calendar))
     }
 
     /// "Thursday": the day's name alone, for the banner and the notice.

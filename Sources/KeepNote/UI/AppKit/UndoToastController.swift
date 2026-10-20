@@ -12,8 +12,10 @@ final class UndoToastController {
     private var dismissTask: Task<Void, Never>?
 
     /// A plain notice: the same toast without the Undo button.
-    /// How wide the last toast was made, for the tests.
+    /// How wide the last toast was made, what it said and its Undo, for the tests.
     private(set) var widthForTesting: CGFloat = 0
+    private(set) var messageForTesting: String?
+    private(set) var undoForTesting: (() -> Void)?
 
     func notice(_ message: String, duration: TimeInterval = 2.5) {
         show(message: message, duration: duration, onUndo: nil)
@@ -21,6 +23,8 @@ final class UndoToastController {
 
     func show(message: String, duration: TimeInterval, onUndo: (() -> Void)?) {
         dismiss()
+        messageForTesting = message
+        undoForTesting = onUndo
 
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 300, height: 46),
