@@ -25,10 +25,12 @@
 "%d notes selected" = "%d notes selected";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notes will lose this tag. The notes themselves are kept.";
 "%d of %@" = "%d of %@";
+"%d unfinished tasks from %@. Bring them?" = "%d unfinished tasks from %@. Bring them?";
 "1 locked note was not exported" = "1 locked note was not exported";
 "1 locked note was skipped" = "1 locked note was skipped";
 "1 note" = "1 note";
 "1 note will lose this tag. The notes themselves are kept." = "1 note will lose this tag. The notes themselves are kept.";
+"1 unfinished task from %@. Bring it?" = "1 unfinished task from %@. Bring it?";
 "> quotes. The syntax hides itself except on the line you edit." = "> quotes. The syntax hides itself except on the line you edit.";
 "A decrypted note body was not valid UTF-8." = "A decrypted note body was not valid UTF-8.";
 "A deleted note waits this long, with an Undo button, before it is gone for good." = "A deleted note waits this long, with an Undo button, before it is gone for good.";
@@ -62,6 +64,7 @@
 "Autosave after" = "Autosave after";
 "Bold" = "Bold";
 "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu." = "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu.";
+"Bring" = "Bring";
 "Bring All to Front" = "Bring All to Front";
 "Bring automatically" = "Bring automatically";
 "Bulleted list" = "Bulleted list";
@@ -210,6 +213,7 @@
 "No earlier dailies" = "No earlier dailies";
 "None" = "None";
 "None chosen" = "None chosen";
+"Not now" = "Not now";
 "Note deleted" = "Note deleted";
 "Notes" = "Notes";
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,";

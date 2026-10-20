@@ -86,6 +86,16 @@ MainActor.assumeIsolated {
         let model = NoteEditorModel(note: note, store: store)
         render("editor-anchored-\(String(describing: color))", size: EdgeMetrics.anchoredSize,
                NoteEditorView(model: model, presentation: .anchored, onClose: {}, onDelete: {}, onTogglePin: {}))
+        if color == .mint {
+            // A new daily offered yesterday's unfinished tasks.
+            let daily = try! store.create(color: .mint, title: "Daily 19/10", body: "## Today\n- [ ] ", tags: ["daily"])
+            let dailyModel = NoteEditorModel(note: daily, store: store)
+            dailyModel.carryOverOffer = CarryOverBanner(count: 3, weekday: DailyCarryOver.weekday(of: DailyDay(year: 2026, month: 10, day: 15))) { _ in }
+            render("editor-carry-over", size: EdgeMetrics.anchoredSize,
+                   NoteEditorView(model: dailyModel, presentation: .anchored, onClose: {}, onDelete: {}, onTogglePin: {}))
+            render("editor-carry-over-detached", size: EdgeMetrics.detachedSize,
+                   NoteEditorView(model: dailyModel, presentation: .detached, onClose: {}, onDelete: {}, onTogglePin: {}))
+        }
         if color == .butter {
             render("editor-detached", size: EdgeMetrics.detachedSize,
                    NoteEditorView(model: model, presentation: .detached, onClose: {}, onDelete: {}, onTogglePin: {}))

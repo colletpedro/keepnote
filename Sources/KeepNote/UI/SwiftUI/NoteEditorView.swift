@@ -46,6 +46,10 @@ final class NoteEditorModel: ObservableObject {
     /// Body could not be decrypted: the note is read-only and is never saved.
     @Published private(set) var isLocked: Bool
 
+    /// "3 unfinished tasks from Thursday. Bring them?" at the top of a new
+    /// daily, in Ask each time. Gone for good once either button is pressed.
+    @Published var carryOverOffer: CarryOverBanner?
+
     @Published var isFindBarVisible = false
     @Published var findQuery = ""
     @Published var findIndex = 0
@@ -120,6 +124,13 @@ final class NoteEditorModel: ObservableObject {
     /// Called by the debouncer, and directly whenever the note is about to
     /// close, the app deactivates, or the app is quitting.
     func flush() { debouncer.flush() }
+
+    /// Bring or Not now: the banner goes, and does not come back.
+    func answerCarryOver(bring: Bool) {
+        guard let banner = carryOverOffer else { return }
+        carryOverOffer = nil
+        banner.answer(bring)
+    }
 
     private func commit() {
         guard !isLocked else { return }
@@ -438,6 +449,12 @@ struct NoteEditorView: View {
     private var content: some View {
         VStack(spacing: 0) {
             header
+            if let banner = model.carryOverOffer {
+                CarryOverBannerView(banner: banner, color: model.color) { bring in
+                    model.answerCarryOver(bring: bring)
+                }
+                .transition(.opacity)
+            }
             if model.isFindBarVisible {
                 findBar
             }
@@ -667,7 +684,7 @@ struct NoteEditorView: View {
     }
 }
 
-private struct NoteFooterButtonStyle: ButtonStyle {
+struct NoteFooterButtonStyle: ButtonStyle {
     let color: NoteColor
 
     func makeBody(configuration: Configuration) -> some View {

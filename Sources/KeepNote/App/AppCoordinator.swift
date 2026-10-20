@@ -137,6 +137,10 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                 bring(offer, into: made.note.id)
             }
             open(noteID: made.note.id, from: nil, caret: made.caret)
+            if let offer, settings.carryOverMode == .ask {
+                let id = made.note.id
+                noteWindows[id]?.offerCarryOver(offer) { [weak self] in self?.bring(offer, into: id) }
+            }
         } catch {
             present(error)
         }

@@ -25,10 +25,12 @@
 "%d notes selected" = "%d notas selecionadas";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notas vão perder esta tag. As notas em si são mantidas.";
 "%d of %@" = "%d de %@";
+"%d unfinished tasks from %@. Bring them?" = "%d tarefas pendentes de %@. Trazer?";
 "1 locked note was not exported" = "1 nota bloqueada não foi exportada";
 "1 locked note was skipped" = "1 nota bloqueada foi ignorada";
 "1 note" = "1 nota";
 "1 note will lose this tag. The notes themselves are kept." = "1 nota vai perder esta tag. A nota em si é mantida.";
+"1 unfinished task from %@. Bring it?" = "1 tarefa pendente de %@. Trazer?";
 "> quotes. The syntax hides itself except on the line you edit." = "> citações. A sintaxe fica oculta, exceto na linha que você edita.";
 "A decrypted note body was not valid UTF-8." = "O texto decifrado de uma nota não era UTF-8 válido.";
 "A deleted note waits this long, with an Undo button, before it is gone for good." = "Uma nota apagada espera esse tempo, com um botão Desfazer, antes de sumir de vez.";
@@ -62,6 +64,7 @@
 "Autosave after" = "Salvar automaticamente após";
 "Bold" = "Negrito";
 "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu." = "Negrito, itálico e tachado envolvem a seleção, ou a desembrulham se ela já estiver envolvida. Link transforma a seleção em [texto](url) e usa a URL da área de transferência; colar uma URL sobre um texto selecionado faz o mesmo. As listas valem para todas as linhas selecionadas e alternam. Os mesmos comandos ficam no topo do menu do clique direito.";
+"Bring" = "Trazer";
 "Bring All to Front" = "Trazer Todas para a Frente";
 "Bring automatically" = "Trazer automaticamente";
 "Bulleted list" = "Lista com marcadores";
@@ -210,6 +213,7 @@
 "No earlier dailies" = "Nenhuma daily anterior";
 "None" = "Nenhum";
 "None chosen" = "Nenhuma escolhida";
+"Not now" = "Agora não";
 "Note deleted" = "Nota apagada";
 "Notes" = "Notas";
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "As notas são markdown: # títulos, **negrito**, - listas, - [ ] tarefas,";

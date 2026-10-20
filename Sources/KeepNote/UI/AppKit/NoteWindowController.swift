@@ -573,6 +573,17 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         model.refreshFromStore()
     }
 
+    /// Ask each time: the offer at the top of the note. `bring` runs if Bring
+    /// is pressed; either answer takes the banner away for good.
+    func offerCarryOver(_ offer: DailyCarryOver.Offer, bring: @escaping () -> Void) {
+        model.carryOverOffer = CarryOverBanner(
+            count: offer.count, weekday: DailyCarryOver.weekday(of: offer.day)
+        ) { yes in if yes { bring() } }
+    }
+
+    var carryOverOfferForTesting: CarryOverBanner? { model.carryOverOffer }
+    func answerCarryOverForTesting(bring: Bool) { model.answerCarryOver(bring: bring) }
+
     /// Changes the note's text in the editor itself — what is typed there so
     /// far included — and writes it at once.
     func editBody(_ change: (String) -> String) {
