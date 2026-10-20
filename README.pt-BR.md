@@ -22,7 +22,7 @@ Requer um Mac com chip Apple (M1 ou mais novo) e macOS 13 ou mais recente. O dow
 
 ## Atualizações
 
-O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem [no site](https://colletpedro.github.io/keepnote/pt-br/) e na [página de releases](https://github.com/colletpedro/keepnote/releases). **Ajustes → About → Check for Updates…** abre o site no navegador.
+O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem [no site](https://colletpedro.github.io/keepnote/pt-br/) e na [página de releases](https://github.com/colletpedro/keepnote/releases). **Ajustes → Sobre → Buscar atualizações…** abre o site no navegador.
 
 ## Por que o macOS mostra um aviso?
 
@@ -35,16 +35,16 @@ O KeepNote não é notarizado pela Apple. A notarização exige uma assinatura p
 
 ## O que ele faz
 
-- **Um deck na borda da tela.** As notas são abas na borda direita, ou na esquerda (Settings → Deck → Screen edge): o deck inteiro, as espiadas e as notas ancoradas se espelham para sair em direção ao meio da tela, e um Dock de qualquer lado fica livre. Passar o cursor pela borda abre as abas em leque, cada uma com sua cor e seu rótulo; o deck rola quando há muitas. Tocar numa aba mostra uma espiada da nota sem tirar o foco do app em que você está; clicar abre a nota para edição.
-- **Ancorada ou solta.** Uma nota aberta fica ancorada ao deck e fecha quando você clica em outro lugar. **Float Note** (⌥⌘P) a descola da borda para ela ficar na tela, redimensionável, e lembra a posição; arrastar uma nota solta de volta até a borda do deck a devolve.
-- **Markdown enquanto você escreve.** Negrito, itálico, tachado, destaque, links, títulos, listas com marcador, numeradas e checklists (com recuo e renumeração automática), citações, código, tabelas e divisores, tudo com atalho e num menu Tools dentro da nota.
-- **Cores e tags.** Cinco cores de papel, trocáveis a qualquer momento, e `#tags` com sugestões enquanto você digita. O All Notes filtra por tag e busca no título, nas tags e no texto.
-- **Notas daily.** Dê a uma nota a tag `daily`, ou use **Today's Daily** (⌥⌘Y, ou o botão de calendário no deck). O deck mantém as dailies dos seus dois dias mais recentes; as mais antigas são arquivadas e ficam em **Daily** no All Notes, agrupadas por dia. Você pode definir um modelo para as novas notas daily.
-- **Fixar, manter e arquivar por tempo.** *Pin to Center* prende até cinco notas no meio do deck, sempre inteiras. *Keep on Deck* livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe; 14 por padrão) vão sozinhas para o Archive, nunca são apagadas; nos dois últimos dias aparece um relógio na aba. Fixar, manter e as regras de arquivamento não mudam a data *Edited* da nota, que só muda quando você altera o texto ou o título.
-- **Archive e desfazer.** As notas arquivadas têm janela própria. Apagar uma nota dá 10 segundos (ajustável) para desfazer.
-- **Sync por pasta.** Opcionalmente, o KeepNote grava um arquivo de texto `.hmnote` por nota numa pasta que você escolhe (o iCloud Drive é sugerido). O provedor da pasta leva os arquivos entre os Macs; o KeepNote não tem servidor próprio.
+- **Uma pilha na borda da tela.** As notas são abas na borda direita, ou na esquerda (Ajustes → Pilha → Borda da tela): a pilha inteira, as espiadas e as notas ancoradas se espelham para sair em direção ao meio da tela, e um Dock de qualquer lado fica livre. Passar o cursor pela borda abre as abas em leque, cada uma com sua cor e seu rótulo; a pilha rola quando há muitas. Tocar numa aba mostra uma espiada da nota sem tirar o foco do app em que você está; clicar abre a nota para edição.
+- **Ancorada ou solta.** Uma nota aberta fica ancorada à pilha e fecha quando você clica em outro lugar. **Flutuar nota** (⌥⌘P) a descola da borda para ela ficar na tela, redimensionável, e lembra a posição; arrastar uma nota flutuante de volta até a borda da pilha a devolve (**Voltar à pilha**).
+- **Markdown enquanto você escreve.** Negrito, itálico, tachado, destaque, links, títulos, listas com marcador, numeradas e checklists (com recuo e renumeração automática), citações, código, tabelas e divisores, tudo com atalho e no menu Ferramentas dentro da nota.
+- **Cores e tags.** Cinco cores de papel, trocáveis a qualquer momento, e `#tags` com sugestões enquanto você digita. A janela Todas as notas filtra por tag e busca no título, nas tags e no texto.
+- **Notas daily.** Dê a uma nota a tag `daily`, ou use **Daily de hoje** (⌥⌘Y, ou o botão de calendário na pilha). A pilha mantém as dailies dos seus dois dias mais recentes; as mais antigas são arquivadas e ficam em **Daily**, em Todas as notas, agrupadas por dia. Você pode definir um modelo para as novas notas daily (Ajustes → Daily → **Editar modelo da Daily…**).
+- **Fixar, manter e arquivar por tempo.** *Fixar no centro* prende até cinco notas no meio da pilha, sempre inteiras. *Manter na pilha* livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe em Ajustes → Pilha → **Arquivar notas não abertas há**; 14 por padrão) vão sozinhas para Arquivadas, nunca são apagadas; nos dois últimos dias aparece um relógio na aba. Fixar, manter e as regras de arquivamento não mudam a data *Editada* da nota, que só muda quando você altera o texto ou o título.
+- **Arquivadas e desfazer.** As notas arquivadas têm janela própria. Apagar uma nota dá 10 segundos (ajustável em Ajustes → Notas → **Desfazer uma exclusão por**) para desfazer.
+- **Sincronização por pasta.** Opcionalmente (Ajustes → Sincronização), o KeepNote grava um arquivo de texto `.hmnote` por nota numa pasta que você escolhe (o iCloud Drive é sugerido). O provedor da pasta leva os arquivos entre os Macs; o KeepNote não tem servidor próprio.
 - **Importar e exportar.** Exporte as notas em Markdown ou texto simples, um arquivo por nota ou um só documento, ou num arquivo KeepNote (`.hmnotearchive`) que preserva cores, estados e datas. A importação lê esse arquivo ou uma pasta de arquivos `.hmnote`.
-- **Onde ele fica.** Na barra de menus, e no Dock só enquanto uma das janelas dele está aberta. Abrir no login e aparecer sobre apps em tela cheia são opcionais.
+- **Onde ele fica.** Na barra de menus, e no Dock só enquanto uma das janelas dele está aberta. **Abrir ao iniciar sessão** e **Mostrar sobre apps em tela cheia** (Ajustes → Geral) são opcionais. O idioma do app se escolhe em Ajustes → Geral → **Idioma**.
 
 ## Compilar a partir do código
 
@@ -72,14 +72,14 @@ Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Ace
 
 ## Atalhos
 
-Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocados em Settings → Shortcuts: clique no atalho e pressione a nova combinação, que precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho, e **Restore Defaults** traz estes de volta. Uma combinação que outro comando do KeepNote já usa, ou que o sistema recusa porque outro app a tem, não é aceita; o campo diz o motivo. Seus atalhos ficam guardados neste Mac, e os menus, as dicas e a janela de boas-vindas mostram sempre os atuais. Os atalhos de formatação são fixos.
+Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocados em Ajustes → Atalhos: clique no atalho e pressione a nova combinação, que precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho, e **Restaurar padrões** traz estes de volta. Uma combinação que outro comando do KeepNote já usa, ou que o sistema recusa porque outro app a tem, não é aceita; o campo diz o motivo. Seus atalhos ficam guardados neste Mac, e os menus, as dicas e a janela de boas-vindas mostram sempre os atuais. Os atalhos de formatação são fixos.
 
 | Globais, de qualquer app | O que faz |
 |---|---|
 | `⌥⌘N` | Nova nota |
-| `⌥⌘A` | All Notes |
-| `⌥⌘E` | Archive |
-| `⌥⌘Y` | Today's Daily |
+| `⌥⌘A` | Todas as notas |
+| `⌥⌘E` | Arquivadas |
+| `⌥⌘Y` | Daily de hoje |
 
 | Numa nota | O que faz |
 |---|---|
@@ -87,7 +87,7 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 | `⌘F` | Buscar na nota |
 | `⌘G` / `⇧⌘G` | Próxima / anterior ocorrência |
 | `⌥⌘C` / `⇧⌥⌘C` | Próxima / anterior cor |
-| `⌥⌘P` | Float Note / Return to Deck |
+| `⌥⌘P` | Flutuar nota / Voltar à pilha |
 | `⇧⌘E` | Arquivar / trazer de volta |
 | `⇧⌘⌫` | Apagar (com desfazer) |
 | `⇥` / `⇧⇥` | Recuar / voltar um nível num item de lista |
@@ -115,7 +115,7 @@ O banco fica em `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Applica
 
 ## Desinstalar
 
-Primeiro saia do KeepNote (ícone da barra de menus → Quit KeepNote). Se **Launch at login** estiver ligado, desligue em Settings → General antes de apagar o app. Depois remova cada item:
+Primeiro saia do KeepNote (ícone da barra de menus → Encerrar KeepNote). Se **Abrir ao iniciar sessão** estiver ligado, desligue em Ajustes → Geral antes de apagar o app. Depois remova cada item:
 
 | O quê | Onde | Como remover |
 |---|---|---|
@@ -123,9 +123,9 @@ Primeiro saia do KeepNote (ícone da barra de menus → Quit KeepNote). Se **Lau
 | Banco (suas notas) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, com `notes.sqlite-wal` e `notes.sqlite-shm` ao lado | Apague o container inteiro, `~/Library/Containers/com.keepnote.KeepNote`. No Finder: Ir → Ir para a Pasta…, digite `~/Library/Containers` e mova a pasta chamada **KeepNote** para o Lixo. |
 | Preferências | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist` | Vai junto com o container acima. |
 | Chave de criptografia | Keychain de login, item de senha com serviço `com.keepnote.KeepNote.bodykey`, conta `default` | Acesso às Chaves: busque `com.keepnote.KeepNote.bodykey` e apague. Ou no Terminal: `security delete-generic-password -s com.keepnote.KeepNote.bodykey` |
-| Item de login | O próprio KeepNote, registrado no macOS (`SMAppService`) quando Launch at login está ligado | Desligue Launch at login antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −. |
+| Item de login | O próprio KeepNote, registrado no macOS (`SMAppService`) quando Abrir ao iniciar sessão está ligado | Desligue Abrir ao iniciar sessão antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −. |
 
-A chave só serve para abrir aquele banco; remova os dois juntos. Sem o container, suas notas vão embora com ele, então exporte antes (Settings → About → Export All Notes…) se quiser guardá-las.
+A chave só serve para abrir aquele banco; remova os dois juntos. Sem o container, suas notas vão embora com ele, então exporte antes (Ajustes → Sobre → Exportar todas as notas…) se quiser guardá-las.
 
 **A pasta de sync é sua.** O KeepNote nunca a apaga, e desinstalar deixa a pasta e os arquivos `.hmnote` e `.hmtemplate` exatamente onde estão. Apague você mesmo se não quiser mais.
 

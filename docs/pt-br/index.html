@@ -100,15 +100,15 @@
     <h2>O que ele faz</h2>
     <p class="sub">Pequeno, discreto e seu. Sem cadastro.</p>
     <ul class="features">
-      <li><h3>Um deck na borda da tela</h3><p>As notas são abas na borda direita, ou na esquerda: tudo se espelha para sair em direção ao meio. Uma espiada não tira o foco do app em que você está.</p></li>
-      <li><h3>Ancorada ou solta</h3><p>Float Note (⌥⌘P) descola a nota da borda, redimensionável, e ela lembra o lugar.</p></li>
+      <li><h3>Uma pilha na borda da tela</h3><p>As notas são abas na borda direita, ou na esquerda (Ajustes → Pilha → Borda da tela): tudo se espelha para sair em direção ao meio. Uma espiada não tira o foco do app em que você está.</p></li>
+      <li><h3>Ancorada ou solta</h3><p>Flutuar nota (⌥⌘P) descola a nota da borda, redimensionável, e ela lembra o lugar; Voltar à pilha a devolve.</p></li>
       <li><h3>Markdown enquanto você escreve</h3><p>Negrito, links, títulos, listas, checklists, citações, código, tabelas, tudo com atalho.</p></li>
       <li><h3>Cores e tags</h3><p>Cinco cores de papel e #tags com sugestões. A busca cobre título, tags e texto.</p></li>
-      <li><h3>Notas daily</h3><p>A daily de hoje está a um atalho (⌥⌘Y). Os dois últimos dias ficam no deck; os mais antigos vão para Daily no All Notes. Você pode definir um modelo para as novas notas daily.</p></li>
-      <li><h3>Fixar, manter, arquivar por tempo</h3><p><em>Pin to Center</em> prende até cinco notas no meio do deck, sempre inteiras. <em>Keep on Deck</em> livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe; 14 por padrão) vão sozinhas para o Archive, nunca são apagadas; nos dois últimos dias aparece um relógio na aba.</p></li>
-      <li><h3>Sync por pasta</h3><p>Arquivos de texto opcionais numa pasta que você escolhe, como o iCloud Drive. Nenhum servidor nosso no meio.</p></li>
+      <li><h3>Notas daily</h3><p>A Daily de hoje está a um atalho (⌥⌘Y). Os dois últimos dias ficam na pilha; os mais antigos vão para Daily, em Todas as notas. Você pode definir um modelo para as novas notas daily.</p></li>
+      <li><h3>Fixar, manter, arquivar por tempo</h3><p><em>Fixar no centro</em> prende até cinco notas no meio da pilha, sempre inteiras. <em>Manter na pilha</em> livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe; 14 por padrão) vão sozinhas para Arquivadas, nunca são apagadas; nos dois últimos dias aparece um relógio na aba.</p></li>
+      <li><h3>Sincronização por pasta</h3><p>Arquivos de texto opcionais numa pasta que você escolhe, como o iCloud Drive. Nenhum servidor nosso no meio.</p></li>
       <li><h3>Importar e exportar</h3><p>Markdown, texto simples, ou um arquivo KeepNote que preserva cores, estados e datas.</p></li>
-      <li><h3>Discreto, e com seus atalhos</h3><p>Na barra de menus, e no Dock só enquanto uma janela dele está aberta. Todo atalho global e de dentro da nota pode ser gravado de novo nos Ajustes; conflitos são detectados, e Restore Defaults traz de volta os do KeepNote.</p></li>
+      <li><h3>Discreto, e com seus atalhos</h3><p>Na barra de menus, e no Dock só enquanto uma janela dele está aberta. Todo atalho global e de dentro da nota pode ser gravado de novo nos Ajustes; conflitos são detectados, e Restaurar padrões traz de volta os do KeepNote.</p></li>
     </ul>
   </div>
 </section>
@@ -131,7 +131,7 @@
         <p>Ajustes do Sistema → Privacidade e Segurança → Segurança → Abrir Mesmo Assim. Não pergunta de novo. (No macOS 13 e 14, clicar no app com Control e escolher Abrir também funciona.)</p>
       </li>
     </ol>
-    <p class="sub">O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem aqui no site e na <a href="https://github.com/colletpedro/keepnote/releases">página de releases</a>. No app, Ajustes → About → Check for Updates… abre esta página.</p>
+    <p class="sub">O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem aqui no site e na <a href="https://github.com/colletpedro/keepnote/releases">página de releases</a>. No app, Ajustes → Sobre → Buscar atualizações… abre esta página.</p>
   </div>
 </section>
 
@@ -150,15 +150,15 @@
 <section id="uninstall">
   <div class="wrap why">
     <h2>Desinstalar</h2>
-    <p>Primeiro saia do KeepNote (ícone da barra de menus → Quit KeepNote). Se <b>Launch at login</b> estiver ligado, desligue em Settings → General antes de apagar o app. Depois remova cada item:</p>
+    <p>Primeiro saia do KeepNote (ícone da barra de menus → Encerrar KeepNote). Se <b>Abrir ao iniciar sessão</b> estiver ligado, desligue em Ajustes → Geral antes de apagar o app. Depois remova cada item:</p>
     <ol class="promises">
       <li><div><b>O app.</b> <code>/Applications/KeepNote.app</code>. Mova para o Lixo.</div></li>
       <li><div><b>O banco, suas notas.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite</code>, com <code>notes.sqlite-wal</code> e <code>notes.sqlite-shm</code> ao lado. Apague o container inteiro, <code>~/Library/Containers/com.keepnote.KeepNote</code>: no Finder escolha Ir → Ir para a Pasta…, digite <code>~/Library/Containers</code> e mova a pasta chamada <b>KeepNote</b> para o Lixo.</div></li>
       <li><div><b>As preferências.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist</code>. Vão junto com o container.</div></li>
       <li><div><b>A chave de criptografia.</b> Um item de senha no keychain de login, serviço <code>com.keepnote.KeepNote.bodykey</code>, conta <code>default</code>. No Acesso às Chaves, busque e apague, ou rode <code>security delete-generic-password -s com.keepnote.KeepNote.bodykey</code> no Terminal.</div></li>
-      <li><div><b>O item de login.</b> O próprio KeepNote, registrado no macOS enquanto Launch at login está ligado. Desligue antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −.</div></li>
+      <li><div><b>O item de login.</b> O próprio KeepNote, registrado no macOS enquanto Abrir ao iniciar sessão está ligado. Desligue antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −.</div></li>
     </ol>
-    <p>A chave só serve para abrir aquele banco, então remova os dois juntos. Sem o container, suas notas vão embora com ele: exporte antes (Settings → About → Export All Notes…) se quiser guardá-las.</p>
+    <p>A chave só serve para abrir aquele banco, então remova os dois juntos. Sem o container, suas notas vão embora com ele: exporte antes (Ajustes → Sobre → Exportar todas as notas…) se quiser guardá-las.</p>
     <p><b>A pasta de sync é sua.</b> O KeepNote nunca a apaga, e desinstalar deixa a pasta e os arquivos <code>.hmnote</code> e <code>.hmtemplate</code> exatamente onde estão. Apague você mesmo se não quiser mais.</p>
   </div>
 </section>
