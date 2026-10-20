@@ -38,7 +38,7 @@ enum SettingsTab: Int, CaseIterable {
         case .general: return 450
         case .notes: return 270
         case .deck: return 430
-        case .daily: return 230
+        case .daily: return 380
         case .sync: return 440
         case .shortcuts: return 740
         case .about: return 424
@@ -228,6 +228,7 @@ private func stepper(_ label: String, value: Binding<Int>, in range: ClosedRange
 
 struct DailySettingsPane: View {
     var actions: SettingsActions
+    @ObservedObject var settings: AppSettings = .shared
     @ObservedObject var shortcuts: ShortcutStore = .shared
 
     /// Names the Today's Daily shortcut as it is set now.
@@ -246,6 +247,16 @@ struct DailySettingsPane: View {
                 }
                 HelpNote(text: DailyTemplateText.help)
                 HelpNote(text: templateHelp)
+            }
+
+            Section {
+                Option(help: L("When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed.")) {
+                    Picker(L("Unfinished tasks from your last daily"), selection: $settings.carryOverMode) {
+                        ForEach(CarryOverMode.allCases, id: \.self) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                }
             }
         }
         .formStyle(.grouped)

@@ -16,6 +16,7 @@ final class AppSettings: ObservableObject {
         static let fanStagger = "fanStaggerMilliseconds"
         static let openDelay = "openDelayMilliseconds"
         static let screenEdge = "screenEdge"
+        static let carryOver = "dailyCarryOver"
         static let autosaveDelay = "autosaveDelayMilliseconds"
         static let undoWindow = "undoWindowSeconds"
         static let defaultNoteColor = "defaultNoteColor"
@@ -134,6 +135,12 @@ final class AppSettings: ObservableObject {
             defaults.set(screenEdge.rawValue, forKey: Key.screenEdge)
             NotificationCenter.default.post(name: .keepNoteWindowBehaviorChanged, object: nil)
         }
+    }
+
+    /// What a new daily does with yesterday's unticked tasks. Ask by default.
+    @Published var carryOverMode: CarryOverMode = UserDefaults.standard.string(forKey: Key.carryOver)
+        .flatMap(CarryOverMode.init(rawValue:)) ?? .default {
+        didSet { defaults.set(carryOverMode.rawValue, forKey: Key.carryOver) }
     }
 
     /// Quiet period after the last keystroke before the body is sealed and written.

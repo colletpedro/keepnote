@@ -57,11 +57,13 @@
 "Archives soon" = "Archives soon";
 "Archives tomorrow" = "Archives tomorrow";
 "Archive…" = "Archive…";
+"Ask each time" = "Ask each time";
 "Automatic" = "Automatic";
 "Autosave after" = "Autosave after";
 "Bold" = "Bold";
 "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu." = "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu.";
 "Bring All to Front" = "Bring All to Front";
+"Bring automatically" = "Bring automatically";
 "Bulleted list" = "Bulleted list";
 "Butter" = "Butter";
 "Cancel" = "Cancel";
@@ -105,6 +107,7 @@
 "Delete Tag…" = "Delete Tag…";
 "Delete the tag “#%@”?" = "Delete the tag “#%@”?";
 "Divider" = "Divider";
+"Don’t bring" = "Don’t bring";
 "Down Arrow" = "Down Arrow";
 "Earlier dailies" = "Earlier dailies";
 "Edit" = "Edit";
@@ -324,6 +327,7 @@
 "Type a shortcut" = "Type a shortcut";
 "Undo" = "Undo";
 "Undo a delete for" = "Undo a delete for";
+"Unfinished tasks from your last daily" = "Unfinished tasks from your last daily";
 "Unpin from Center" = "Unpin from Center";
 "Untagged" = "Untagged";
 "Untitled" = "Untitled";
@@ -336,6 +340,7 @@
 "Version %@ (%@)" = "Version %@ (%@)";
 "Waiting for your approval in System Settings > General > Login Items." = "Waiting for your approval in System Settings > General > Login Items.";
 "Welcome to KeepNote" = "Welcome to KeepNote";
+"When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed." = "When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed.";
 "Where new daily notes start" = "Where new daily notes start";
 "Window" = "Window";
 "Write what a new daily note should start with." = "Write what a new daily note should start with.";

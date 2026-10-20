@@ -57,11 +57,13 @@
 "Archives soon" = "Arquiva em breve";
 "Archives tomorrow" = "Arquiva amanhã";
 "Archive…" = "Arquivadas…";
+"Ask each time" = "Perguntar sempre";
 "Automatic" = "Automática";
 "Autosave after" = "Salvar automaticamente após";
 "Bold" = "Negrito";
 "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu." = "Negrito, itálico e tachado envolvem a seleção, ou a desembrulham se ela já estiver envolvida. Link transforma a seleção em [texto](url) e usa a URL da área de transferência; colar uma URL sobre um texto selecionado faz o mesmo. As listas valem para todas as linhas selecionadas e alternam. Os mesmos comandos ficam no topo do menu do clique direito.";
 "Bring All to Front" = "Trazer Todas para a Frente";
+"Bring automatically" = "Trazer automaticamente";
 "Bulleted list" = "Lista com marcadores";
 "Butter" = "Manteiga";
 "Cancel" = "Cancelar";
@@ -105,6 +107,7 @@
 "Delete Tag…" = "Apagar Tag…";
 "Delete the tag “#%@”?" = "Apagar a tag “#%@”?";
 "Divider" = "Divisor";
+"Don’t bring" = "Não trazer";
 "Down Arrow" = "Seta para Baixo";
 "Earlier dailies" = "Dailies anteriores";
 "Edit" = "Editar";
@@ -324,6 +327,7 @@
 "Type a shortcut" = "Digite o atalho";
 "Undo" = "Desfazer";
 "Undo a delete for" = "Desfazer uma exclusão por";
+"Unfinished tasks from your last daily" = "Tarefas pendentes da última daily";
 "Unpin from Center" = "Desafixar do Centro";
 "Untagged" = "Sem Tag";
 "Untitled" = "Sem Título";
@@ -336,6 +340,7 @@
 "Version %@ (%@)" = "Versão %@ (%@)";
 "Waiting for your approval in System Settings > General > Login Items." = "Aguardando sua aprovação em Ajustes do Sistema > Geral > Itens de Início.";
 "Welcome to KeepNote" = "Boas-vindas ao KeepNote";
+"When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed." = "Quando uma nova nota daily é criada, os itens de checklist que ficaram sem marcar nas dailies do último dia anterior. Perguntar sempre oferece esses itens no topo da nota nova; eles entram no fim dela, abaixo do dia de onde vieram. A daily anterior nunca muda.";
 "Where new daily notes start" = "Onde as novas notas daily começam";
 "Window" = "Janela";
 "Write what a new daily note should start with." = "Escreva com o que uma nova nota daily deve começar.";
