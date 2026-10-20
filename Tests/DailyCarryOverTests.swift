@@ -1,9 +1,9 @@
 import Foundation
 
 func runDailyCarryOverRuleTests() {
-    let thursday = DailyDay(year: 2026, month: 10, day: 16)
-    let friday = DailyDay(year: 2026, month: 10, day: 17)
-    let monday = DailyDay(year: 2026, month: 10, day: 20)
+    let thursday = DailyDay(year: 2026, month: 10, day: 15)
+    let friday = DailyDay(year: 2026, month: 10, day: 16)
+    let monday = DailyDay(year: 2026, month: 10, day: 19)
     func at(_ s: Double) -> Date { Date(timeIntervalSince1970: 1_790_000_000 + s) }
     func source(_ day: DailyDay, _ body: String, _ order: Double = 0) -> DailyCarryOver.Source {
         .init(day: day, createdAt: at(order), body: body)
@@ -34,7 +34,7 @@ func runDailyCarryOverRuleTests() {
         - [ ] A footnote
     - [ ] Numbered task
     """)
-    expect("carry: from Thursday", offer?.day.string, "2026-10-16")
+    expect("carry: from Thursday", offer?.day.string, "2026-10-15")
     expect("carry: five of them", offer.map { String($0.count) }, "5")
 
     // Only the last day before today with a daily; every daily of that day.
@@ -77,4 +77,35 @@ func runDailyCarryOverRuleTests() {
     expect("carry: a tab is a level", lines(DailyCarryOver.offer(for: monday, sources: [source(friday, "- [ ] A\n\t- [ ] B")], newBody: "", othersToday: 0)),
            "- [ ] A\n    - [ ] B")
     expect("carry: compared without case, accents or spaces", DailyCarryOver.key("  Revisar   o RASCUNHO "), DailyCarryOver.key("revisar o rascunho"))
+}
+
+func runDailyCarryOverInsertTests() {
+    var utc = Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(identifier: "UTC")!
+    let thursday = DailyDay(year: 2026, month: 10, day: 15)
+    let english = Locale(identifier: "en_BR")
+    let american = Locale(identifier: "en_US")
+    let portuguese = Locale(identifier: "pt_BR")
+    expect("heading: in English", DailyCarryOver.heading(for: thursday, locale: english, calendar: utc), "From Thursday, 15/10")
+    expect("heading: in the US order", DailyCarryOver.heading(for: thursday, locale: american, calendar: utc), "From Thursday, 10/15")
+    // The key is English in this runner; the Portuguese words come from the
+    // table, the date from the locale.
+    expect("heading: the day in Portuguese", DailyCarryOver.weekday(of: thursday, locale: portuguese, calendar: utc), "quinta-feira")
+    expect("heading: day and month in Portuguese",
+           DailyCarryOver.heading(for: thursday, locale: portuguese, calendar: utc), "From quinta-feira, 15/10")
+    expect("weekday: in English", DailyCarryOver.weekday(of: thursday, locale: english, calendar: utc), "Thursday")
+
+    let offer = DailyCarryOver.Offer(day: thursday, lines: ["- [ ] Send the invoice", "    - [ ] Attach the receipt"])
+    let heading = "From Thursday, 15/10"
+    let template = "## Today\n- [ ] \n\n"
+    let inserted = DailyCarryOver.inserting(offer, into: template, heading: heading)
+    expect("insert: at the end, under the day", inserted,
+           "## Today\n- [ ] \n\n### From Thursday, 15/10\n- [ ] Send the invoice\n    - [ ] Attach the receipt\n")
+    expect("insert: into an empty daily", DailyCarryOver.inserting(offer, into: "", heading: heading),
+           "### From Thursday, 15/10\n- [ ] Send the invoice\n    - [ ] Attach the receipt\n")
+    expect("undo: the block comes out again", DailyCarryOver.removing(offer, from: inserted, heading: heading), "## Today\n- [ ] \n")
+    expect("undo: with text typed after it, that stays",
+           DailyCarryOver.removing(offer, from: inserted + "More I wrote.\n", heading: heading), "## Today\n- [ ] \n\nMore I wrote.\n")
+    let edited = inserted.replacingOccurrences(of: "Send the invoice", with: "Send the invoice today")
+    expect("undo: a block that was edited is left alone", DailyCarryOver.removing(offer, from: edited, heading: heading), edited)
 }

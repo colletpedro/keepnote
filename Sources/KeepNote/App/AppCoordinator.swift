@@ -132,7 +132,39 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         do {
             let made = try store.createDaily()
+            let offer = carryOverOffer(for: made.note)
+            if let offer, settings.carryOverMode == .automatic {
+                bring(offer, into: made.note.id)
+            }
             open(noteID: made.note.id, from: nil, caret: made.caret)
+        } catch {
+            present(error)
+        }
+    }
+
+    // MARK: - Unfinished tasks
+
+    /// What the new daily `note` is offered from the last day before it with
+    /// a daily, or nothing (Settings > Daily says not to, or there is none).
+    private func carryOverOffer(for note: Note) -> DailyCarryOver.Offer? {
+        guard settings.carryOverMode != .never, let today = note.dailyDay else { return nil }
+        let dailies = store.notes.filter { $0.id != note.id && $0.isDaily && $0.dailyDay != nil }
+        let sources = dailies.map { DailyCarryOver.Source(day: $0.dailyDay!, createdAt: $0.createdAt, body: $0.body) }
+        return DailyCarryOver.offer(for: today, sources: sources, newBody: note.body,
+                                    othersToday: dailies.filter { $0.dailyDay == today }.count)
+    }
+
+    /// Puts the tasks at the end of the daily, under the day they came from.
+    /// An editor already showing the note takes the new text too.
+    func bring(_ offer: DailyCarryOver.Offer, into id: UUID) {
+        guard let note = store.note(id: id), !note.isLocked else { return }
+        let heading = DailyCarryOver.heading(for: offer.day)
+        if let window = noteWindows[id] {
+            window.editBody { DailyCarryOver.inserting(offer, into: $0, heading: heading) }
+            return
+        }
+        do {
+            try store.setBody(DailyCarryOver.inserting(offer, into: note.body, heading: heading), id: id)
         } catch {
             present(error)
         }

@@ -107,3 +107,53 @@ enum DailyCarryOver {
         TagText.fold(text).split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 }
+
+extension DailyCarryOver {
+    /// "From Thursday, 16/10": the day the tasks came from, as the heading
+    /// above them. The day and month in the locale's order.
+    static func heading(for day: DailyDay, locale: Locale = Localization.locale, calendar: Calendar = .current) -> String {
+        L("From %@", formatted(day, template: "EEEEdM", locale: locale, calendar: calendar))
+    }
+
+    /// "Thursday": the day's name alone, for the banner and the notice.
+    static func weekday(of day: DailyDay, locale: Locale = Localization.locale, calendar: Calendar = .current) -> String {
+        formatted(day, template: "EEEE", locale: locale, calendar: calendar)
+    }
+
+    private static func formatted(_ day: DailyDay, template: String, locale: Locale, calendar: Calendar) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        formatter.formattingContext = .middleOfSentence
+        return day.date(calendar: calendar).map(formatter.string(from:)) ?? day.string
+    }
+
+    /// The block the tasks go in: the heading, then the items.
+    static func block(_ offer: Offer, heading: String) -> String {
+        (["### " + heading] + offer.lines).joined(separator: "\n")
+    }
+
+    /// `body` with the tasks at its end, under their heading, a blank line
+    /// before. Only the new daily changes; the one they came from does not.
+    static func inserting(_ offer: Offer, into body: String, heading: String) -> String {
+        // Only the trailing blank lines go: a template's empty "- [ ] " keeps
+        // its space, which is what makes it an item the caret can fill in.
+        var trimmed = body
+        while trimmed.hasSuffix("\n") { trimmed.removeLast() }
+        return (trimmed.isEmpty ? "" : trimmed + "\n\n") + block(offer, heading: heading) + "\n"
+    }
+
+    /// Undo: `body` without the block `inserting` added, if it is still there
+    /// as it was written; otherwise `body` unchanged.
+    static func removing(_ offer: Offer, from body: String, heading: String) -> String {
+        let block = block(offer, heading: heading)
+        guard let range = body.range(of: block, options: .backwards) else { return body }
+        var before = String(body[..<range.lowerBound])
+        let after = String(body[range.upperBound...])
+        while before.hasSuffix("\n") { before.removeLast() }
+        let rest = after.drop { $0 == "\n" }
+        return before.isEmpty ? String(rest) : before + (rest.isEmpty ? "\n" : "\n\n" + rest)
+    }
+}
