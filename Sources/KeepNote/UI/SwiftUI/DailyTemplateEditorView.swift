@@ -171,6 +171,7 @@ struct DailyTemplateCard: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(color.secondaryInkSwiftUI)
                     .help(L("Tools"))
+                    .accessibilityLabel(L("Tools"))
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)

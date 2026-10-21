@@ -7,6 +7,7 @@
 "%@  today’s daily" = "%@  daily de hoje";
 "%@ (%@)" = "%@ (%@)";
 "%@ changes color" = "%@ muda a cor";
+"%@ color" = "Cor %@";
 "%@ deletes with ten seconds to undo" = "%@ apaga, com dez segundos para desfazer";
 "%@ finds" = "%@ busca";
 "%@ note" = "Nota %@";
@@ -86,6 +87,7 @@
 "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Clique num atalho e pressione a nova combinação; ela precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho.";
 "Close" = "Fechar";
 "Close (esc)" = "Fechar (esc)";
+"Closes the note. What you wrote is saved." = "Fecha a nota. O que você escreveu fica salvo.";
 "Code block" = "Bloco de código";
 "Colors, states and dates came across unchanged." = "Cores, estados e datas vieram sem alteração.";
 "Command" = "Command";
@@ -124,6 +126,8 @@
 "Edit tags" = "Editar tags";
 "Edit the text new daily notes start from" = "Editar o texto com que as novas notas daily começam";
 "Edited %@" = "Editada %@";
+"Edits the tags" = "Edita as tags";
+"Empty task" = "Tarefa vazia";
 "End the list, or outdent when nested" = "Encerrar a lista, ou recuar quando aninhada";
 "Escape" = "Esc";
 "Every note with this tag gets the new name." = "Todas as notas com esta tag recebem o novo nome.";
@@ -145,6 +149,7 @@
 "Forget Folder" = "Esquecer pasta";
 "Format" = "Formatar";
 "Formatting" = "Formatação";
+"Formatting, Pin to Center and Keep on Deck" = "Formatação, Fixar no centro e Manter na pilha";
 "Forward Delete" = "Apagar à direita";
 "From %@" = "De %@";
 "General" = "Geral";
@@ -188,6 +193,7 @@
 "Left" = "Esquerda";
 "Left Arrow" = "Seta para a esquerda";
 "Library" = "Biblioteca";
+"Lifts the note off the deck so it stays on screen" = "Tira a nota da pilha para ela ficar na tela";
 "Lilac" = "Lilás";
 "Link" = "Link";
 "Lists" = "Listas";
@@ -251,12 +257,14 @@
 "Pin to Center holds up to five notes in the middle of the deck, always whole; Keep on Deck stops a note from being archived. Notes you have not opened for 14 days (you choose 7, 14 or 30 in Settings) move to the Archive on their own — never deleted, and a clock on the tab warns you for the last two days." = "Fixar no centro mantém até cinco notas no meio da pilha, sempre inteiras; Manter na pilha impede que uma nota seja arquivada. Notas que você não abre há 14 dias (você escolhe 7, 14 ou 30 nos Ajustes) vão sozinhas para Arquivadas — nunca são apagadas, e um relógio na aba avisa nos dois últimos dias.";
 "Pinned" = "Fixada";
 "Pinned and kept notes" = "Notas fixadas e mantidas";
+"Pinned notes stay whole in the middle of the deck" = "As notas fixadas ficam inteiras no meio da pilha";
 "Pinned to center" = "Fixada no centro";
 "Plain text — one file per note" = "Texto simples — um arquivo por nota";
 "Press the new shortcut for %@. Escape cancels, Delete leaves it without one." = "Pressione o novo atalho para %@. Esc cancela, Delete deixa sem atalho.";
 "Press to record a new shortcut." = "Pressione para gravar um novo atalho.";
 "Previous color" = "Cor anterior";
 "Previous match" = "Resultado anterior";
+"Puts the note back on the deck" = "Devolve a nota à pilha";
 "Quit" = "Encerrar";
 "Quit KeepNote" = "Encerrar KeepNote";
 "Quote" = "Citação";
@@ -269,6 +277,7 @@
 "Remove Tag" = "Remover tag";
 "Remove Tag…" = "Remover tag…";
 "Remove a tag from %@" = "Remover uma tag de %@";
+"Remove tag" = "Remover tag";
 "Rename" = "Renomear";
 "Rename Tag…" = "Renomear tag…";
 "Rename “#%@”" = "Renomear “#%@”";
@@ -298,6 +307,7 @@
 "Show in menu bar" = "Mostrar na barra de menus";
 "Show notes tagged #%@" = "Mostrar notas com a tag #%@";
 "Show over full-screen apps" = "Mostrar sobre apps em tela cheia";
+"Shows the earlier dailies" = "Mostra as dailies anteriores";
 "Single document — all selected notes" = "Documento único — todas as notas selecionadas";
 "Sky" = "Céu";
 "Space" = "Espaço";
@@ -312,6 +322,7 @@
 "Tab" = "Tab";
 "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste." = "Tab funciona em qualquer ponto de um item, ou em vários itens selecionados. Os itens numerados se renumeram quando você insere, remove, recua ou cola.";
 "Table" = "Tabela";
+"Tag %@" = "Tag %@";
 "Tags" = "Tags";
 "Tags: %@" = "Tags: %@";
 "That file is not a KeepNote archive." = "Esse arquivo não é um arquivo do KeepNote.";
@@ -370,6 +381,7 @@
 "add daily" = "adicionar daily";
 "archives in %d days" = "arquiva em %d dias";
 "archives tomorrow" = "arquiva amanhã";
+"chosen" = "escolhida";
 "click the daily chip in a note" = "clique na tag daily de uma nota";
 "daily" = "daily";
 "esc closes" = "esc fecha";

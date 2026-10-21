@@ -7,6 +7,7 @@
 "%@  today’s daily" = "%@  today’s daily";
 "%@ (%@)" = "%@ (%@)";
 "%@ changes color" = "%@ changes color";
+"%@ color" = "%@ color";
 "%@ deletes with ten seconds to undo" = "%@ deletes with ten seconds to undo";
 "%@ finds" = "%@ finds";
 "%@ note" = "%@ note";
@@ -86,6 +87,7 @@
 "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one.";
 "Close" = "Close";
 "Close (esc)" = "Close (esc)";
+"Closes the note. What you wrote is saved." = "Closes the note. What you wrote is saved.";
 "Code block" = "Code block";
 "Colors, states and dates came across unchanged." = "Colors, states and dates came across unchanged.";
 "Command" = "Command";
@@ -124,6 +126,8 @@
 "Edit tags" = "Edit tags";
 "Edit the text new daily notes start from" = "Edit the text new daily notes start from";
 "Edited %@" = "Edited %@";
+"Edits the tags" = "Edits the tags";
+"Empty task" = "Empty task";
 "End the list, or outdent when nested" = "End the list, or outdent when nested";
 "Escape" = "Escape";
 "Every note with this tag gets the new name." = "Every note with this tag gets the new name.";
@@ -145,6 +149,7 @@
 "Forget Folder" = "Forget Folder";
 "Format" = "Format";
 "Formatting" = "Formatting";
+"Formatting, Pin to Center and Keep on Deck" = "Formatting, Pin to Center and Keep on Deck";
 "Forward Delete" = "Forward Delete";
 "From %@" = "From %@";
 "General" = "General";
@@ -188,6 +193,7 @@
 "Left" = "Left";
 "Left Arrow" = "Left Arrow";
 "Library" = "Library";
+"Lifts the note off the deck so it stays on screen" = "Lifts the note off the deck so it stays on screen";
 "Lilac" = "Lilac";
 "Link" = "Link";
 "Lists" = "Lists";
@@ -251,12 +257,14 @@
 "Pin to Center holds up to five notes in the middle of the deck, always whole; Keep on Deck stops a note from being archived. Notes you have not opened for 14 days (you choose 7, 14 or 30 in Settings) move to the Archive on their own — never deleted, and a clock on the tab warns you for the last two days." = "Pin to Center holds up to five notes in the middle of the deck, always whole; Keep on Deck stops a note from being archived. Notes you have not opened for 14 days (you choose 7, 14 or 30 in Settings) move to the Archive on their own — never deleted, and a clock on the tab warns you for the last two days.";
 "Pinned" = "Pinned";
 "Pinned and kept notes" = "Pinned and kept notes";
+"Pinned notes stay whole in the middle of the deck" = "Pinned notes stay whole in the middle of the deck";
 "Pinned to center" = "Pinned to center";
 "Plain text — one file per note" = "Plain text — one file per note";
 "Press the new shortcut for %@. Escape cancels, Delete leaves it without one." = "Press the new shortcut for %@. Escape cancels, Delete leaves it without one.";
 "Press to record a new shortcut." = "Press to record a new shortcut.";
 "Previous color" = "Previous color";
 "Previous match" = "Previous match";
+"Puts the note back on the deck" = "Puts the note back on the deck";
 "Quit" = "Quit";
 "Quit KeepNote" = "Quit KeepNote";
 "Quote" = "Quote";
@@ -269,6 +277,7 @@
 "Remove Tag" = "Remove Tag";
 "Remove Tag…" = "Remove Tag…";
 "Remove a tag from %@" = "Remove a tag from %@";
+"Remove tag" = "Remove tag";
 "Rename" = "Rename";
 "Rename Tag…" = "Rename Tag…";
 "Rename “#%@”" = "Rename “#%@”";
@@ -298,6 +307,7 @@
 "Show in menu bar" = "Show in menu bar";
 "Show notes tagged #%@" = "Show notes tagged #%@";
 "Show over full-screen apps" = "Show over full-screen apps";
+"Shows the earlier dailies" = "Shows the earlier dailies";
 "Single document — all selected notes" = "Single document — all selected notes";
 "Sky" = "Sky";
 "Space" = "Space";
@@ -312,6 +322,7 @@
 "Tab" = "Tab";
 "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste." = "Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste.";
 "Table" = "Table";
+"Tag %@" = "Tag %@";
 "Tags" = "Tags";
 "Tags: %@" = "Tags: %@";
 "That file is not a KeepNote archive." = "That file is not a KeepNote archive.";
@@ -370,6 +381,7 @@
 "add daily" = "add daily";
 "archives in %d days" = "archives in %d days";
 "archives tomorrow" = "archives tomorrow";
+"chosen" = "chosen";
 "click the daily chip in a note" = "click the daily chip in a note";
 "daily" = "daily";
 "esc closes" = "esc closes";

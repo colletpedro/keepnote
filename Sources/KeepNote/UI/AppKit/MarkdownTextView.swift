@@ -420,6 +420,12 @@ final class MarkdownTextView: NSTextView {
         return hit
     }
 
+    /// VoiceOver's press on a checklist box.
+    func toggleCheckboxForAccessibility(markerRange: NSRange) {
+        toggleCheckbox(markerRange: markerRange)
+        NSAccessibility.post(element: self, notification: .valueChanged)
+    }
+
     /// Flips the character between the brackets.
     private func toggleCheckbox(markerRange: NSRange) {
         guard let storage = textStorage else { return }
@@ -443,5 +449,49 @@ final class MarkdownTextView: NSTextView {
             return url
         }
         return nil
+    }
+}
+
+// MARK: - VoiceOver
+
+/// A checklist item's box, as VoiceOver sees it: a checkbox named by the
+/// item's text, ticked or not, which pressing ticks or unticks.
+final class ChecklistBoxElement: NSAccessibilityElement {
+    var toggle: () -> Void = {}
+    override func accessibilityPerformPress() -> Bool {
+        toggle()
+        return true
+    }
+}
+
+extension MarkdownTextView {
+    /// The text as usual, and a checkbox for every checklist item. The boxes
+    /// are drawn over hidden "[ ]" characters, which VoiceOver would
+    /// otherwise read as punctuation.
+    override func accessibilityChildren() -> [Any]? {
+        (super.accessibilityChildren() ?? []) + checklistBoxes()
+    }
+
+    func checklistBoxes() -> [ChecklistBoxElement] {
+        guard let storage = textStorage, storage.length > 0, let window else { return [] }
+        var boxes: [ChecklistBoxElement] = []
+        let text = storage.string as NSString
+        storage.enumerateAttribute(MarkdownStyler.decorationKey, in: NSRange(location: 0, length: storage.length)) { value, range, _ in
+            guard let raw = value as? String,
+                  let kind = MarkdownStyler.Decoration(rawValue: raw), kind == .checkbox || kind == .checkboxDone,
+                  let frame = markerFrame(range, width: MarkdownStyler.checkboxWidth) else { return }
+            let line = text.paragraphRange(for: range)
+            let label = text.substring(with: NSRange(location: NSMaxRange(range), length: max(0, NSMaxRange(line) - NSMaxRange(range))))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let box = ChecklistBoxElement()
+            box.setAccessibilityRole(.checkBox)
+            box.setAccessibilityLabel(label.isEmpty ? L("Empty task") : label)
+            box.setAccessibilityValue(kind == .checkboxDone ? 1 : 0)
+            box.setAccessibilityParent(self)
+            box.setAccessibilityFrame(window.convertToScreen(convert(frame, to: nil)))
+            box.toggle = { [weak self] in self?.toggleCheckboxForAccessibility(markerRange: range) }
+            boxes.append(box)
+        }
+        return boxes
     }
 }

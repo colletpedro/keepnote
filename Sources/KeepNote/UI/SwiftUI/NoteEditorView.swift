@@ -284,6 +284,12 @@ final class NoteEditorModel: ObservableObject {
 
     /// Puts the suggestion in place of the word under the caret and leaves the
     /// field ready for the next tag.
+    /// Takes `tag` off the note (VoiceOver's action on a chip).
+    func removeTag(_ tag: String) {
+        let folded = TagText.fold(tag)
+        tagsText = TagText.format(TagText.parse(tagsText).filter { TagText.fold($0) != folded })
+    }
+
     func acceptTagRow(at index: Int) {
         guard tagRows.indices.contains(index) else { return }
         let result = TagText.accept(tagRows[index].tag, in: tagsText, caret: tagCaret)
@@ -412,6 +418,7 @@ struct NoteEditorView: View {
                 .buttonStyle(.plain)
                 .help(L("Close (esc)"))
                 .accessibilityLabel(L("Close"))
+                .accessibilityHint(L("Closes the note. What you wrote is saved."))
 
                 floatButton
             }
@@ -437,6 +444,7 @@ struct NoteEditorView: View {
         }
         .buttonStyle(.plain)
         .help(shortcuts.tooltip(floating ? L("Return to Deck") : L("Float Note"), .note(.float)))
+        .accessibilityHint(floating ? L("Puts the note back on the deck") : L("Lifts the note off the deck so it stays on screen"))
         .accessibilityLabel(floating ? L("Return to Deck") : L("Float Note"))
     }
 
@@ -528,6 +536,7 @@ struct NoteEditorView: View {
             .foregroundStyle(model.color.secondaryInkSwiftUI)
             .help(model.isPinned ? L("Unpin from Center") : L("Pin to Center"))
             .accessibilityLabel(model.isPinned ? L("Unpin from Center") : L("Pin to Center"))
+            .accessibilityHint(L("Pinned notes stay whole in the middle of the deck"))
 
             Button(action: onShowTools) {
                 Image(systemName: "wrench.and.screwdriver")
@@ -536,6 +545,8 @@ struct NoteEditorView: View {
             .buttonStyle(.plain)
             .foregroundStyle(model.color.secondaryInkSwiftUI)
             .help(L("Tools"))
+            .accessibilityLabel(L("Tools"))
+            .accessibilityHint(L("Formatting, Pin to Center and Keep on Deck"))
 
         }
         .padding(.horizontal, 14)
@@ -615,9 +626,9 @@ struct NoteEditorView: View {
                 .opacity(showChips ? 0 : 1)
 
                 if showChips {
-                    TagChips(tags: tags, color: model.color) { tag in
+                    TagChips(tags: tags, color: model.color, onTag: { tag in
                         if DailyNotes.isReserved(tag) { onDailyChip() } else { model.tagField?.focus() }
-                    }
+                    }, onRemove: { model.removeTag($0) })
                         .contentShape(Rectangle())
                         .onTapGesture { model.tagField?.focus() }
                 }
@@ -711,6 +722,8 @@ private struct TagChips: View {
     let color: NoteColor
     /// A chip was clicked. The field takes the click, except on `daily`.
     var onTag: (String) -> Void
+    /// VoiceOver's "Remove tag" action on a chip.
+    var onRemove: (String) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 5) {
@@ -725,6 +738,12 @@ private struct TagChips: View {
                     .contentShape(Capsule())
                     .onTapGesture { onTag(tag) }
                     .help(DailyNotes.isReserved(tag) ? L("Earlier dailies") : L("Edit tags"))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(L("Tag %@", tag))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityHint(DailyNotes.isReserved(tag) ? L("Shows the earlier dailies") : L("Edits the tags"))
+                    .accessibilityAction { onTag(tag) }
+                    .accessibilityAction(named: L("Remove tag")) { onRemove(tag) }
             }
             Spacer(minLength: 0)
         }
@@ -766,6 +785,9 @@ struct NoteColorRow: View {
                 }
                 .buttonStyle(.plain)
                 .help(color.displayName)
+                .accessibilityLabel(L("%@ color", color.displayName))
+                .accessibilityValue(isSelected ? L("chosen") : "")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .padding(.leading, 3)

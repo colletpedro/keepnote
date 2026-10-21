@@ -532,6 +532,11 @@ struct TagChipLinks: View {
                     .contentShape(Capsule())
                     .onTapGesture { onTag(tag) }
                     .help(L("Show notes tagged #%@", tag))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(L("Tag %@", tag))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityHint(L("Show notes tagged #%@", tag))
+                    .accessibilityAction { onTag(tag) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

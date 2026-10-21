@@ -126,9 +126,11 @@ private struct ArchiveRow: View {
             Button(action: onOpen) { Image(systemName: "doc.text") }
                 .buttonStyle(.borderless)
                 .help(L("Open"))
+                .accessibilityLabel(L("Open"))
             Button(action: onRestore) { Image(systemName: "tray.and.arrow.up") }
                 .buttonStyle(.borderless)
                 .help(L("Move back to the stack"))
+                .accessibilityLabel(L("Move back to the stack"))
         }
         .padding(.vertical, 3)
     }
