@@ -86,6 +86,7 @@ private enum LeftInEnglish {
         "above \\(": "an internal signature",
         "pinned \\(": "an internal signature",
         "Backups": "the backups folder's name on disk",
+        "Attachments": "a folder's name on disk, the same on every Mac whatever its language",
         "VACUUM INTO": "SQL",
         "backup ": "unified log, for development",
     ]

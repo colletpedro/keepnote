@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import Foundation
+import UniformTypeIdentifiers
 
 /// Optional folder sync: one flat `.hmnote` per note in a folder the user
 /// picks, with no server and no CloudKit. Whatever provider owns that folder —
@@ -58,6 +59,9 @@ final class FolderSyncService: NSObject, ObservableObject {
     private var folderHolds: [UUID: Held] = [:]
     /// The same for the daily template's file.
     private var templateHeld: Held?
+    /// Attachments already written to (or found in) the folder's
+    /// `Attachments` folder: plain copies, named `<id>.<extension>`.
+    private var attachmentsInFolder: Set<String> = []
 
     /// A date written here is exact. One read from a file is only kept there
     /// to the millisecond, so it stands for any moment within that.
@@ -407,6 +411,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             Task { @MainActor in
                 self?.apply(files)
                 if let template { self?.applyTemplate(template) }
+                self?.importMissingAttachments()
                 completion?()
             }
         }
@@ -423,6 +428,10 @@ final class FolderSyncService: NSObject, ObservableObject {
             pullAll()
             return
         }
+        // A file arriving in `Attachments` may be one a note is waiting for.
+        if urls.contains(where: { $0.deletingLastPathComponent().lastPathComponent == ExportService.attachmentsFolder }) {
+            importMissingAttachments()
+        }
         let wanted = urls.filter { $0.pathExtension == AppPaths.noteFileExtension }
         let wantedTemplates = urls.filter { $0.pathExtension == AppPaths.templateFileExtension }
         guard !wanted.isEmpty || !wantedTemplates.isEmpty else { return }
@@ -436,6 +445,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             Task { @MainActor in
                 if !files.isEmpty { self?.apply(files) }
                 if let template { self?.applyTemplate(template) }
+                if !files.isEmpty { self?.importMissingAttachments() }
             }
         }
     }
@@ -457,6 +467,45 @@ final class FolderSyncService: NSObject, ObservableObject {
             try store.applyIncoming(fresh.filter { !$0.isTombstone }.map(\.note))
         } catch {
             status = .failed(L("Could not apply a change from the folder: %@", error.localizedDescription))
+        }
+    }
+
+    /// Attachments the notes here refer to and this Mac does not have: read
+    /// from the folder's `Attachments` when they are there (the provider may
+    /// still be bringing them; a later change in that folder tries again),
+    /// and kept only if their bytes match their name.
+    func importMissingAttachments() {
+        guard let folderURL else { return }
+        var wanted: [String: AttachmentText.Reference] = [:]
+        for note in store.notes where !note.isLocked {
+            for reference in AttachmentText.references(in: note.body) where store.attachments[reference.id] == nil {
+                wanted[reference.id] = reference
+            }
+        }
+        guard !wanted.isEmpty else { return }
+        let folder = folderURL.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        let presenter = presenter
+        let ids = Set(wanted.keys)
+        io.async { [weak self] in
+            var found: [(String, Data, String)] = []
+            for (id, url) in NoteArchive.readAttachments(in: folder) where ids.contains(id) {
+                var coordinationError: NSError?
+                NSFileCoordinator(filePresenter: presenter).coordinate(readingItemAt: url, options: [.withoutChanges],
+                                                                       error: &coordinationError) { readURL in
+                    if let data = try? Data(contentsOf: readURL) { found.append((id, data, url.pathExtension)) }
+                }
+            }
+            guard !found.isEmpty else { return }
+            Task { @MainActor in
+                guard let self else { return }
+                for (id, data, ext) in found {
+                    guard let reference = wanted[id] else { continue }
+                    let name = reference.isImage || reference.label.isEmpty ? L("Image") + "." + ext : reference.label
+                    if self.store.receiveAttachment(data, id: id, name: name, type: UTType(filenameExtension: ext)) != nil {
+                        self.attachmentsInFolder.insert(id)
+                    }
+                }
+            }
         }
     }
 
@@ -558,8 +607,35 @@ final class FolderSyncService: NSObject, ObservableObject {
         // Already there as it is.
         if let held = folderHolds[note.id], held.matches(note.updatedAt) { return }
         let file = HMNoteFile(note: note)
+        // The files first, so a Mac that reads the note finds them waiting.
+        pushAttachments(of: note, into: folderURL)
         write(contents: file.serialized(), to: folderURL.appendingPathComponent(file.fileName))
         folderHolds[note.id] = Held(date: note.updatedAt, isExact: true)
+    }
+
+    /// A plain copy of each attachment the note refers to, once, in the
+    /// folder's `Attachments`: readable without KeepNote, like the notes.
+    private func pushAttachments(of note: Note, into folderURL: URL) {
+        let folder = folderURL.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        for id in AttachmentText.ids(in: note.body).sorted() where !attachmentsInFolder.contains(id) {
+            guard let info = store.attachments[id], let data = store.attachmentData(id) else { continue }
+            attachmentsInFolder.insert(id)
+            let url = folder.appendingPathComponent("\(id).\(info.fileExtension)")
+            let presenter = presenter
+            io.async { [weak self] in
+                guard !FileManager.default.fileExists(atPath: url.path) else { return }
+                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                var failure: Error?
+                var coordinationError: NSError?
+                NSFileCoordinator(filePresenter: presenter).coordinate(writingItemAt: url, options: [.forReplacing],
+                                                                       error: &coordinationError) { writeURL in
+                    do { try data.write(to: writeURL, options: .atomic) } catch { failure = error }
+                }
+                guard let error = failure ?? coordinationError else { return }
+                let message = L("Could not write %@: %@", url.lastPathComponent, error.localizedDescription)
+                Task { @MainActor in self?.status = .failed(message) }
+            }
+        }
     }
 
     private func pushTombstone(id: UUID) {

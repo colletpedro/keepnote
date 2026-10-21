@@ -1,6 +1,9 @@
 import AppKit
 import UniformTypeIdentifiers
 
+/// Where an export reads an attachment's bytes from: id → info and bytes.
+typealias AttachmentSource = (String) -> (AttachmentInfo, Data)?
+
 enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
     /// One `.md` per note.
     case markdownPerNote
@@ -44,17 +47,17 @@ enum ExportService {
     @discardableResult
     static func run(
         notes allNotes: [Note], format: ExportFormat, suggestedName: String = "KeepNote",
-        dailyTemplate: DailyTemplate? = nil
+        dailyTemplate: DailyTemplate? = nil, attachments: AttachmentSource? = nil
     ) throws -> Int? {
         let notes = allNotes.filter { !$0.isLocked }
         let skipped = allNotes.count - notes.count
         guard !notes.isEmpty else { return skipped }
         if format.writesToDirectory {
             guard let directory = promptForDirectory() else { return nil }
-            try writePerNote(notes: notes, format: format, into: directory)
+            try writePerNote(notes: notes, format: format, into: directory, attachments: attachments)
         } else {
             guard let url = promptForFile(format: format, suggestedName: suggestedName) else { return nil }
-            try writeSingleFile(notes: notes, format: format, to: url, dailyTemplate: dailyTemplate)
+            try writeSingleFile(notes: notes, format: format, to: url, dailyTemplate: dailyTemplate, attachments: attachments)
         }
         return skipped
     }
@@ -88,22 +91,64 @@ enum ExportService {
 
     // MARK: - Writers
 
-    private static func writePerNote(notes: [Note], format: ExportFormat, into directory: URL) throws {
+    /// Markdown, one file per note: the notes' attachments go into an
+    /// `Attachments` folder beside them, under their own names, and the text
+    /// links to them there. Plain text says what was attached.
+    static func writePerNote(notes: [Note], format: ExportFormat, into directory: URL,
+                             attachments: AttachmentSource? = nil) throws {
         let isMarkdown = format == .markdownPerNote
         var usedNames = Set<String>()
+        var links: [String: String] = [:]
+        if isMarkdown, let attachments {
+            links = try writeAttachments(of: notes, from: attachments, into: directory.appendingPathComponent(attachmentsFolder, isDirectory: true))
+        }
         for note in notes {
             let base = safeFileName(for: note, taken: &usedNames)
             let url = directory.appendingPathComponent("\(base).\(isMarkdown ? "md" : "txt")")
-            let contents = isMarkdown ? markdown(for: note) : plainText(for: note)
+            let contents = isMarkdown ? markdown(for: note, links: links) : plainText(for: note)
             try contents.write(to: url, atomically: true, encoding: .utf8)
         }
     }
 
-    private static func writeSingleFile(notes: [Note], format: ExportFormat, to url: URL, dailyTemplate: DailyTemplate?) throws {
+    /// The folder attachments are written into, beside exported notes and
+    /// inside an archive.
+    nonisolated static let attachmentsFolder = "Attachments"
+
+    /// Writes each attachment the notes refer to, once, under its own name
+    /// (numbered when two share one). Returns id → relative path.
+    private static func writeAttachments(of notes: [Note], from source: AttachmentSource, into folder: URL) throws -> [String: String] {
+        var links: [String: String] = [:]
+        var taken = Set<String>()
+        for note in notes {
+            for reference in AttachmentText.references(in: note.body) where links[reference.id] == nil {
+                guard let (info, data) = source(reference.id) else { continue }
+                if links.isEmpty { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) }
+                let name = uniqueName(info.fileName, taken: &taken)
+                try data.write(to: folder.appendingPathComponent(name), options: .atomic)
+                links[reference.id] = attachmentsFolder + "/" + name
+            }
+        }
+        return links
+    }
+
+    private static func uniqueName(_ name: String, taken: inout Set<String>) -> String {
+        let base = (name as NSString).deletingPathExtension
+        let ext = (name as NSString).pathExtension
+        var candidate = name
+        var counter = 2
+        while taken.contains(candidate.lowercased()) {
+            candidate = ext.isEmpty ? "\(base) \(counter)" : "\(base) \(counter).\(ext)"
+            counter += 1
+        }
+        taken.insert(candidate.lowercased())
+        return candidate
+    }
+
+    private static func writeSingleFile(notes: [Note], format: ExportFormat, to url: URL, dailyTemplate: DailyTemplate?,
+                                        attachments: AttachmentSource?) throws {
         switch format {
         case .archivePackage:
-            let data = try NoteArchive.encode(notes: notes, dailyTemplate: dailyTemplate)
-            try data.write(to: url, options: .atomic)
+            try NoteArchive.write(notes: notes, dailyTemplate: dailyTemplate, attachments: attachments, to: url)
         case .singleDocument:
             let document = notes
                 .sorted { $0.editedAt > $1.editedAt }
@@ -118,13 +163,15 @@ enum ExportService {
 
     // MARK: - Renderers
 
-    static func markdown(for note: Note) -> String {
+    /// `links` maps attachments to the files written beside the note; one
+    /// that has none is said in words.
+    static func markdown(for note: Note, links: [String: String] = [:]) -> String {
         var lines = ["# \(note.displayTitle)", ""]
         if !note.tags.isEmpty {
             lines.append(note.tags.map { "#\($0)" }.joined(separator: " "))
             lines.append("")
         }
-        lines.append(note.body)
+        lines.append(exportedBody(note.body, links: links, markdown: true))
         lines.append("")
         lines.append("---")
         lines.append("")
@@ -135,12 +182,33 @@ enum ExportService {
 
     static func plainText(for note: Note) -> String {
         var lines = [note.displayTitle, String(repeating: "=", count: max(3, note.displayTitle.count)), ""]
-        lines.append(note.body)
+        lines.append(exportedBody(note.body, links: [:], markdown: false))
         if !note.tags.isEmpty {
             lines.append("")
             lines.append(L("Tags: %@", note.tags.joined(separator: ", ")))
         }
         return lines.joined(separator: "\n")
+    }
+
+    /// The body with each attachment line pointed at its exported file, or,
+    /// where there is none, said in words: "[Image: a red barn]".
+    static func exportedBody(_ body: String, links: [String: String], markdown: Bool) -> String {
+        let references = AttachmentText.references(in: body)
+        guard !references.isEmpty else { return body }
+        let text = NSMutableString(string: body)
+        for reference in references.reversed() {
+            let replacement: String
+            if markdown, let link = links[reference.id] {
+                let target = link.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? link
+                replacement = "\(reference.isImage ? "!" : "")[\(reference.label)](\(target))"
+            } else if reference.isImage {
+                replacement = "[" + (reference.label.isEmpty ? L("Image") : L("Image: %@", reference.label)) + "]"
+            } else {
+                replacement = "[" + L("File: %@", reference.label.isEmpty ? L("Attachment") : reference.label) + "]"
+            }
+            text.replaceCharacters(in: reference.range, with: replacement)
+        }
+        return text as String
     }
 
     /// Titles become file names, so anything a file system dislikes goes, and
@@ -252,6 +320,52 @@ enum NoteArchive {
         return try encoder.encode(payload)
     }
 
+    /// The name of the JSON inside an archive that is a folder (one that
+    /// carries attachments).
+    static let manifestName = "archive.json"
+
+    /// Writes the archive: one JSON file, or — when the notes have
+    /// attachments — a package holding that JSON and an `Attachments` folder
+    /// with each file as `<id>.<extension>`, which is how the text names them.
+    static func write(notes: [Note], dailyTemplate: DailyTemplate?, attachments: AttachmentSource?, to url: URL) throws {
+        let json = try encode(notes: notes, dailyTemplate: dailyTemplate)
+        var files: [(String, Data)] = []
+        var seen = Set<String>()
+        if let attachments {
+            for note in notes {
+                for id in AttachmentText.ids(in: note.body).sorted() where !seen.contains(id) {
+                    seen.insert(id)
+                    if let (info, data) = attachments(id) { files.append(("\(id).\(info.fileExtension)", data)) }
+                }
+            }
+        }
+        let manager = FileManager.default
+        if manager.fileExists(atPath: url.path) { try manager.removeItem(at: url) }
+        guard !files.isEmpty else {
+            try json.write(to: url, options: .atomic)
+            return
+        }
+        let folder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        try manager.createDirectory(at: folder, withIntermediateDirectories: true)
+        try json.write(to: url.appendingPathComponent(manifestName), options: .atomic)
+        for (name, data) in files {
+            try data.write(to: folder.appendingPathComponent(name), options: .atomic)
+        }
+    }
+
+    /// The files in an `Attachments` folder named as the text names them,
+    /// `<id>.<extension>`: id → (file name, bytes).
+    static func readAttachments(in folder: URL) -> [String: URL] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        var found: [String: URL] = [:]
+        for file in files {
+            let id = file.deletingPathExtension().lastPathComponent.lowercased()
+            guard id.count == 64, id.allSatisfy(\.isHexDigit) else { continue }
+            found[id] = file
+        }
+        return found
+    }
+
     static func decode(_ data: Data) throws -> [Note] {
         try decodeContents(data).notes
     }
@@ -331,7 +445,18 @@ enum NoteImporter {
         var isDirectory: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
 
-        if isDirectory.boolValue {
+        var attachmentFolder: URL?
+        let manifest = url.appendingPathComponent(NoteArchive.manifestName)
+        if isDirectory.boolValue, FileManager.default.fileExists(atPath: manifest.path) {
+            // An archive that carries attachments: a package.
+            let data = try Data(contentsOf: manifest)
+            imported = try NoteArchive.decode(data)
+            template = try NoteArchive.decodeTemplate(data)
+            attachmentFolder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        } else if isDirectory.boolValue {
+            // A folder of .hmnote files, a copy of a sync folder: its
+            // attachments are in its `Attachments` folder.
+            attachmentFolder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
             let contents = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
             for file in contents where file.pathExtension == AppPaths.noteFileExtension {
                 guard
@@ -355,6 +480,19 @@ enum NoteImporter {
             let data = try Data(contentsOf: url)
             imported = try NoteArchive.decode(data)
             template = try NoteArchive.decodeTemplate(data)
+        }
+
+        // The files first, so the notes find them when they arrive.
+        if let attachmentFolder {
+            let files = NoteArchive.readAttachments(in: attachmentFolder)
+            for note in imported {
+                for reference in AttachmentText.references(in: note.body) where store.attachments[reference.id] == nil {
+                    guard let file = files[reference.id], let data = try? Data(contentsOf: file) else { continue }
+                    store.receiveAttachment(data, id: reference.id, name: reference.isImage
+                        ? L("Image") + "." + file.pathExtension : reference.label,
+                        type: UTType(filenameExtension: file.pathExtension))
+                }
+            }
         }
 
         // One transaction and one change for the lot. `.importer`, not

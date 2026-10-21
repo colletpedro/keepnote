@@ -618,7 +618,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                 notes: notes,
                 format: format,
                 suggestedName: notes.count == 1 ? notes[0].displayTitle : L("KeepNote Export"),
-                dailyTemplate: store.dailyTemplate
+                dailyTemplate: store.dailyTemplate,
+                attachments: attachmentSource
             )
             if let skipped, skipped > 0 {
                 let alert = NSAlert()
@@ -628,6 +629,14 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             }
         } catch {
             present(error)
+        }
+    }
+
+    /// An attachment's info and bytes, for exports and archives.
+    var attachmentSource: AttachmentSource {
+        { [store] id in
+            guard let info = store.attachments[id], let data = store.attachmentData(id) else { return nil }
+            return (info, data)
         }
     }
 
