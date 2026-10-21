@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// How the open note is being shown.
@@ -22,25 +23,161 @@ enum NoteDragPhase {
     case ended
 }
 
-/// Editing state for one open note.
+/// What is being written in one note — title, body and tags — and the
+/// autosave that takes it to the store.
 ///
-/// The view writes here on every keystroke; this object writes to the store
+/// One per note, however many editors show it: a note open in a window and in
+/// All Notes' pane at the same time is one buffer, so what is typed in one
+/// is in the other at once and nothing either holds can overwrite the other.
+/// The views write here on every keystroke; this object writes to the store
 /// only once the user has been quiet for `autosaveDelay` (250 ms by default).
-/// Everything else — colour, tags, complete, delete — is written straight
-/// through, because those are deliberate single actions, not a stream.
 @MainActor
-final class NoteEditorModel: ObservableObject {
+final class NoteBuffer: ObservableObject {
     @Published var title: String {
-        didSet { guard title != oldValue else { return }; scheduleSave() }
+        didSet { guard title != oldValue, !isApplyingStore else { return }; scheduleSave() }
     }
     @Published var text: String {
-        didSet { guard text != oldValue else { return }; scheduleSave() }
+        didSet { guard text != oldValue, !isApplyingStore else { return }; scheduleSave() }
     }
     @Published var tagsText: String {
-        didSet { guard tagsText != oldValue else { return }; scheduleSave() }
+        didSet { guard tagsText != oldValue, !isApplyingStore else { return }; scheduleSave() }
     }
-    @Published private(set) var color: NoteColor
     @Published private(set) var editedAt: Date
+    /// True from an edit until it is written; the header says "Saving…" only
+    /// for that stretch.
+    @Published private(set) var isSaving = false
+    /// "3 unfinished tasks from Thursday. Bring them?" at the top of a new
+    /// daily, in Ask each time. Gone for good once either button is pressed.
+    @Published var carryOverOffer: CarryOverBanner?
+    /// Body could not be decrypted: the note is read-only and is never saved.
+    private(set) var isLocked: Bool
+
+    let noteID: UUID
+    private let store: NoteStore
+    private let debouncer: Debouncer
+    private var storeChanges: AnyCancellable?
+    /// Taking the store's copy is not an edit, so it schedules no write.
+    private var isApplyingStore = false
+
+    private init(note: Note, store: NoteStore) {
+        self.noteID = note.id
+        self.store = store
+        self.title = note.title
+        self.text = note.body
+        self.tagsText = TagText.format(note.tags)
+        self.editedAt = note.editedAt
+        self.isLocked = note.isLocked
+        self.debouncer = Debouncer(delay: AppSettings.shared.autosaveDelay)
+        // Kept up to date by the store itself, so a buffer is never behind
+        // whatever editor picks it up next.
+        let id = note.id
+        storeChanges = store.changes.sink { [weak self] change, _ in
+            switch change {
+            case .updated(id), .stateChanged(id), .restored(id), .inserted(id), .reloaded: break
+            case .batch(let ids) where ids.contains(id): break
+            default: return
+            }
+            guard let self, let note = self.store.note(id: id) else { return }
+            self.refresh(from: note)
+        }
+    }
+
+    /// The buffers some editor still holds, by note. A buffer lives as long as
+    /// one of its editors does.
+    private static let open = NSMapTable<NSUUID, NoteBuffer>.strongToWeakObjects()
+
+    /// The note's buffer: the one its other editors already share, or a new one.
+    static func shared(for note: Note, store: NoteStore) -> NoteBuffer {
+        if let existing = open.object(forKey: note.id as NSUUID), existing.store === store {
+            existing.refresh(from: note)
+            return existing
+        }
+        let buffer = NoteBuffer(note: note, store: store)
+        open.setObject(buffer, forKey: note.id as NSUUID)
+        return buffer
+    }
+
+    /// Writes what every editor still holds: leaving the app, quitting.
+    static func flushAll() {
+        open.objectEnumerator()?.allObjects.compactMap { $0 as? NoteBuffer }.forEach { $0.flush() }
+    }
+
+    private func scheduleSave() {
+        guard !isLocked else { return }
+        isSaving = true
+        debouncer.schedule { [weak self] in self?.commit() }
+    }
+
+    /// Called by the debouncer, and directly whenever an editor is about to
+    /// close, the app deactivates, or the app is quitting.
+    func flush() { debouncer.flush() }
+
+    private func commit() {
+        guard !isLocked else { return }
+        let tags = TagText.parse(tagsText)
+        do {
+            try store.update(id: noteID) { note in
+                note.title = self.title
+                note.body = self.text
+                note.tags = tags
+            }
+            if let refreshed = store.note(id: noteID) { editedAt = refreshed.editedAt }
+            isSaving = false
+        } catch {
+            isSaving = false
+            NSApp.presentError(error)
+        }
+    }
+
+    /// The note as the store has it now — a sync pull, a tag renamed across
+    /// notes. What is still waiting to be written is not overwritten.
+    func refresh(from note: Note) {
+        if editedAt != note.editedAt { editedAt = note.editedAt }
+        isLocked = note.isLocked
+        guard !debouncer.hasPendingWork else { return }
+        isApplyingStore = true
+        defer { isApplyingStore = false }
+        if note.title != title { title = note.title }
+        if note.body != text { text = note.body }
+        // The field is only rewritten when it stands for different tags, so a
+        // spelling the user typed is not reformatted under them.
+        if TagText.fieldDiffers(from: note.tags, field: tagsText) { tagsText = TagText.format(note.tags) }
+    }
+}
+
+/// Editing state for one editor of a note: a note window's, or All Notes'
+/// pane's.
+///
+/// The text itself is the note's `NoteBuffer`, shared by every editor of it;
+/// what is here is this editor's own — its find bar, its tag suggestions —
+/// and the note's colour and places, which come from the store. Those are
+/// deliberate single actions, not a stream, and are written straight through.
+@MainActor
+final class NoteEditorModel: ObservableObject {
+    let buffer: NoteBuffer
+
+    var title: String {
+        get { buffer.title }
+        set { buffer.title = newValue }
+    }
+    var text: String {
+        get { buffer.text }
+        set { buffer.text = newValue }
+    }
+    var tagsText: String {
+        get { buffer.tagsText }
+        set { buffer.tagsText = newValue }
+    }
+    var editedAt: Date { buffer.editedAt }
+    var isSaving: Bool { buffer.isSaving }
+    /// "3 unfinished tasks from Thursday. Bring them?": the note's, so it
+    /// shows in every editor of the new daily until it is answered.
+    var carryOverOffer: CarryOverBanner? {
+        get { buffer.carryOverOffer }
+        set { buffer.carryOverOffer = newValue }
+    }
+
+    @Published private(set) var color: NoteColor
     @Published private(set) var state: NoteState
     /// "Keep on Deck": the footer says so, and the Tools menu shows it ticked.
     @Published private(set) var keepOnDeck: Bool
@@ -48,10 +185,6 @@ final class NoteEditorModel: ObservableObject {
     @Published private(set) var isPinned: Bool
     /// Body could not be decrypted: the note is read-only and is never saved.
     @Published private(set) var isLocked: Bool
-
-    /// "3 unfinished tasks from Thursday. Bring them?" at the top of a new
-    /// daily, in Ask each time. Gone for good once either button is pressed.
-    @Published var carryOverOffer: CarryOverBanner?
 
     @Published var isFindBarVisible = false
     @Published var findQuery = ""
@@ -69,38 +202,24 @@ final class NoteEditorModel: ObservableObject {
     /// Esc closed the list; typing (or focusing again) brings it back.
     private var tagListDismissed = false
 
-    /// True from an edit until it is written; the header says "Saving…" only
-    /// for that stretch.
-    @Published private(set) var isSaving = false
-
-    let noteID: UUID
+    var noteID: UUID { buffer.noteID }
     private let store: NoteStore
-    private let debouncer: Debouncer
+    private var bufferChanges: AnyCancellable?
 
     init(note: Note, store: NoteStore) {
-        self.noteID = note.id
         self.store = store
-        self.title = note.title
-        self.text = note.body
-        self.tagsText = TagText.format(note.tags)
+        self.buffer = NoteBuffer.shared(for: note, store: store)
         self.color = note.color
-        self.editedAt = note.editedAt
         self.state = note.state
         self.keepOnDeck = note.keepOnDeck
         self.isPinned = note.isPinned
         self.deckLine = DeckStatus.line(for: note)
         self.isLocked = note.isLocked
-        self.debouncer = Debouncer(delay: AppSettings.shared.autosaveDelay)
-        Self.live.add(self)
+        // What another editor of the note types redraws this one.
+        bufferChanges = buffer.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
-    /// Every editor alive — in a note window or in All Notes' pane — so that
-    /// quitting or leaving the app writes what any of them still holds.
-    private static let live = NSHashTable<NoteEditorModel>.weakObjects()
-
-    static func flushAll() {
-        live.allObjects.forEach { $0.flush() }
-    }
+    static func flushAll() { NoteBuffer.flushAll() }
 
     var displayTitle: String {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -124,38 +243,15 @@ final class NoteEditorModel: ObservableObject {
 
     // MARK: - Saving
 
-    private func scheduleSave() {
-        guard !isLocked else { return }
-        isSaving = true
-        debouncer.schedule { [weak self] in self?.commit() }
-    }
-
-    /// Called by the debouncer, and directly whenever the note is about to
-    /// close, the app deactivates, or the app is quitting.
-    func flush() { debouncer.flush() }
+    /// Writes what is waiting: before a close, when the app deactivates, or
+    /// when it quits.
+    func flush() { buffer.flush() }
 
     /// Bring or Not now: the banner goes, and does not come back.
     func answerCarryOver(bring: Bool) {
         guard let banner = carryOverOffer else { return }
         carryOverOffer = nil
         banner.answer(bring)
-    }
-
-    private func commit() {
-        guard !isLocked else { return }
-        let tags = TagText.parse(tagsText)
-        do {
-            try store.update(id: noteID) { note in
-                note.title = self.title
-                note.body = self.text
-                note.tags = tags
-            }
-            if let refreshed = store.note(id: noteID) { editedAt = refreshed.editedAt }
-            isSaving = false
-        } catch {
-            isSaving = false
-            NSApp.presentError(error)
-        }
     }
 
     // MARK: - Commands
@@ -336,16 +432,8 @@ final class NoteEditorModel: ObservableObject {
         keepOnDeck = note.keepOnDeck
         isPinned = note.isPinned
         updateDeckLine(note)
-        editedAt = note.editedAt
         isLocked = note.isLocked
-        if !debouncer.hasPendingWork {
-            if note.title != title { title = note.title }
-            if note.body != text { text = note.body }
-            // Tags that arrived from sync or All Notes. The field is only
-            // rewritten when it stands for different tags, so a spelling the
-            // user typed is not reformatted under them.
-            if TagText.fieldDiffers(from: note.tags, field: tagsText) { tagsText = TagText.format(note.tags) }
-        }
+        buffer.refresh(from: note)
     }
 }
 
