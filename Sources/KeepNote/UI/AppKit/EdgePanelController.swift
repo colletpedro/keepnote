@@ -48,6 +48,68 @@ final class EdgePanelController: NSObject {
 
     var noteCount: Int { notes.count }
 
+    // MARK: - Keyboard (Focus Deck)
+
+    /// The deck has the keyboard: arrows move between its stops, Return opens,
+    /// Space peeks, Esc gives the keyboard back.
+    private(set) var isKeyboardFocused = false
+    /// The app that had the keyboard before, which gets it back on Esc.
+    private var returnApp: NSRunningApplication?
+    private var resignObserver: NSObjectProtocol?
+
+    func focusFromKeyboard() {
+        if NSWorkspace.shared.frontmostApplication != NSRunningApplication.current {
+            returnApp = NSWorkspace.shared.frontmostApplication
+        }
+        openFromKeyboardOrVoiceOver()
+        guard isFanned else { return }
+        isKeyboardFocused = true
+        panel.allowsKey = true
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        panel.makeFirstResponder(stackView)
+        stackView.beginKeyboardFocus()
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: panel, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.endKeyboardFocus(giveBack: false) }
+        }
+    }
+
+    /// Esc, a click elsewhere, or a stop that opens something: the keyboard
+    /// focus ends. `giveBack` returns the keyboard to the app that had it.
+    func endKeyboardFocus(giveBack: Bool) {
+        guard isKeyboardFocused else { return }
+        isKeyboardFocused = false
+        if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
+        resignObserver = nil
+        stackView.endKeyboardFocus()
+        preview.hide()
+        panel.allowsKey = false
+        if giveBack {
+            collapse()
+            returnApp?.activate()
+        } else if openNoteCount == 0 {
+            scheduleCollapse()
+        }
+        returnApp = nil
+    }
+
+    /// Space on a tab: its peek, as hovering would show it.
+    func peekFromKeyboard(noteID: UUID) {
+        if preview.visibleNoteID == noteID {
+            preview.hide()
+        } else {
+            showPreview(for: noteID)
+        }
+    }
+
+    /// Return on a stop.
+    func pressFromKeyboard(_ stop: NSView) {
+        endKeyboardFocus(giveBack: false)
+        _ = stop.accessibilityPerformPress()
+    }
+
     /// VoiceOver's press on the stripe (and the keyboard): the deck opens at
     /// once, with no wait for the cursor.
     func openFromKeyboardOrVoiceOver() {
@@ -204,6 +266,11 @@ final class EdgePanelController: NSObject {
         // While the editor is open it already occupies that spot; a peek
         // underneath it would just be two cards in the same place.
         guard openNoteCount == 0 else { return }
+        // With the keyboard, the peek waits for Space.
+        if isKeyboardFocused {
+            if entered { preview.hide() }
+            return
+        }
 
         if entered {
             previewHideTask?.cancel()
@@ -301,7 +368,7 @@ final class EdgePanelController: NSObject {
         intentTask?.cancel()
         intentTask = nil
         intent.exit()
-        guard isFanned, openNoteCount == 0 else { return }
+        guard isFanned, openNoteCount == 0, !isKeyboardFocused else { return }
         // Moving from a tab onto its own peek leaves the deck's tracking area,
         // but is not leaving the deck. `scheduleCollapse` re-checks that when
         // it fires, by which time the preview's own enter event has arrived.

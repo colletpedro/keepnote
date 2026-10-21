@@ -380,7 +380,16 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             .allNotes: { [weak self] in self?.showAllNotes() },
             .todaysDaily: { [weak self] in self?.openTodaysDaily() },
             .archive: { [weak self] in self?.showArchive() },
+            .focusDeck: { [weak self] in self?.focusDeck() },
         ])
+    }
+
+    /// Focus Deck: the deck of the screen the cursor is on takes the keyboard.
+    func focusDeck() {
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
+        let deck = screen.flatMap { panels[$0.displayID] } ?? panels.values.first
+        deck?.focusFromKeyboard()
     }
 
     // MARK: - Commands

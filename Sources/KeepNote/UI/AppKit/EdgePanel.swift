@@ -31,7 +31,9 @@ final class EdgePanel: NSPanel {
     /// window. That is also what keeps it out of ⌘` cycling and out of Stage
     /// Manager's grouping, since an unmanaged floating panel is not a window
     /// Stage Manager considers part of an app's set.
-    override var canBecomeKey: Bool { false }
+    override var canBecomeKey: Bool { allowsKey }
+    /// Only while Focus Deck has given the deck the keyboard.
+    var allowsKey = false
     override var canBecomeMain: Bool { false }
 
     func applyBehavior() {

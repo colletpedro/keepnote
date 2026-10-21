@@ -212,6 +212,8 @@ enum GlobalCommand: String, CaseIterable, Identifiable, Sendable {
     case allNotes
     case archive
     case todaysDaily
+    /// The deck takes the keyboard: arrows, Return, Space, Esc.
+    case focusDeck
 
     var id: String { rawValue }
 
@@ -224,6 +226,7 @@ enum GlobalCommand: String, CaseIterable, Identifiable, Sendable {
         case .allNotes: return L("All Notes")
         case .archive: return L("[noun] Archive")
         case .todaysDaily: return L("Today\u{2019}s Daily")
+        case .focusDeck: return L("Focus Deck")
         }
     }
 
@@ -238,6 +241,10 @@ enum GlobalCommand: String, CaseIterable, Identifiable, Sendable {
         case .todaysDaily:
             // Not \u{2325}\u{2318}D, which is the Dock's, nor \u{2325}\u{2318}T, which inserts a table in a note.
             return KeyCombo(keyCode: UInt32(kVK_ANSI_Y), carbonModifiers: UInt32(cmdKey | optionKey))
+        case .focusDeck:
+            // ⌃⌥⌘D: "D" for deck, with all three modifiers because ⌥⌘D hides
+            // the Dock and ⌃⌘D looks a word up.
+            return KeyCombo(keyCode: UInt32(kVK_ANSI_D), carbonModifiers: UInt32(cmdKey | optionKey | controlKey))
         }
     }
 }

@@ -149,6 +149,7 @@
 "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it." = "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it.";
 "Float Note · Return to Deck" = "Float Note · Return to Deck";
 "Floating" = "Floating";
+"Focus Deck" = "Focus Deck";
 "Folder" = "Folder";
 "Forget Folder" = "Forget Folder";
 "Format" = "Format";

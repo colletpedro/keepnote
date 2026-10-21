@@ -3,8 +3,11 @@ import AppKit
 /// One note's tab in the fanned deck: the left edge of its card, flush against
 /// the screen edge, carrying the colour and the rotated label. On the left
 /// edge everything is drawn mirrored except the label and the markers' glyphs.
-final class NoteCardView: SpringView {
+final class NoteCardView: SpringView, KeyboardFocusable {
     let noteID: UUID
+    var showsKeyboardFocus = false {
+        didSet { if showsKeyboardFocus != oldValue { needsDisplay = true } }
+    }
     /// The side of the screen the deck is on.
     let edge: ScreenEdge
     private var label: String
@@ -224,6 +227,9 @@ final class NoteCardView: SpringView {
             body.lineWidth = 1.5
             body.stroke()
         }
+        if showsKeyboardFocus {
+            KeyboardFocusRing.draw(in: bounds, path: NoteCardShape.path(in: bounds.insetBy(dx: 1.5, dy: 1.5), edge: edge))
+        }
     }
 }
 
@@ -287,7 +293,10 @@ extension NoteCardView {
 
 /// The "+N" chip below the deck, counting the tabs scrolled out of sight once
 /// the screen cannot hold them all. Clicking it opens All Notes.
-final class OverflowCardView: SpringView {
+final class OverflowCardView: SpringView, KeyboardFocusable {
+    var showsKeyboardFocus = false {
+        didSet { if showsKeyboardFocus != oldValue { needsDisplay = true } }
+    }
     private var remaining: Int
     var onActivate: (() -> Void)?
     var baseOrigin: NSPoint = .zero
@@ -336,12 +345,16 @@ final class OverflowCardView: SpringView {
         let size = text.size()
         // Nudged away from the edge, where the square side is.
         text.draw(at: NSPoint(x: (bounds.width - size.width) / 2 + 3 * edge.inward, y: (bounds.height - size.height) / 2))
+        if showsKeyboardFocus { KeyboardFocusRing.draw(in: bounds) }
     }
 }
 
 /// The round "+" under the deck: the one thing in the whole interface that
 /// exists purely to be clicked.
-final class PlusButtonView: SpringView {
+final class PlusButtonView: SpringView, KeyboardFocusable {
+    var showsKeyboardFocus = false {
+        didSet { if showsKeyboardFocus != oldValue { needsDisplay = true } }
+    }
     /// What the round button shows: the "+" of New Note, or the calendar of
     /// Today's Daily.
     enum Glyph { case plus, calendar }
@@ -418,6 +431,8 @@ final class PlusButtonView: SpringView {
         circle.lineWidth = 1
         circle.stroke()
 
+        if showsKeyboardFocus { KeyboardFocusRing.draw(in: bounds, path: NSBezierPath(ovalIn: bounds.insetBy(dx: 1.5, dy: 1.5))) }
+
         NSColor.secondaryLabelColor.setStroke()
         switch glyph {
         case .plus: drawPlus()
@@ -461,5 +476,21 @@ enum CalendarGlyph {
         header.lineWidth = lineWidth
         header.lineCapStyle = .round
         header.stroke()
+    }
+}
+
+/// A deck stop that draws the keyboard's focus ring (Focus Deck).
+protocol KeyboardFocusable: AnyObject {
+    var showsKeyboardFocus: Bool { get set }
+}
+
+/// The ring itself: the system's keyboard-focus colour, drawn just inside
+/// the view so it shows on every paper colour and on the round buttons.
+enum KeyboardFocusRing {
+    static func draw(in rect: NSRect, path: NSBezierPath? = nil) {
+        let ring = path ?? NSBezierPath(roundedRect: rect.insetBy(dx: 1.5, dy: 1.5), xRadius: 8, yRadius: 8)
+        NSColor.keyboardFocusIndicatorColor.withAlphaComponent(1).setStroke()
+        ring.lineWidth = 3
+        ring.stroke()
     }
 }

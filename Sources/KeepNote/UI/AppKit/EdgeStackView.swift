@@ -93,6 +93,84 @@ final class EdgeStackView: NSView {
         return children
     }
 
+    // MARK: - Keyboard (Focus Deck)
+
+    /// The stop the keyboard is on: a tab, "+N", "+" or Today's Daily, in the
+    /// order VoiceOver reads them.
+    private(set) var keyboardIndex: Int?
+    private var keyboardStops: [NSView] { accessibilityOrderForTesting }
+    var keyboardStop: NSView? { keyboardIndex.flatMap { keyboardStops.indices.contains($0) ? keyboardStops[$0] : nil } }
+
+    override var acceptsFirstResponder: Bool { keyboardIndex != nil }
+
+    func beginKeyboardFocus() {
+        keyboardIndex = keyboardStops.isEmpty ? nil : 0
+        showKeyboardFocus()
+    }
+
+    func endKeyboardFocus() {
+        keyboardIndex = nil
+        showKeyboardFocus()
+        if hover != nil { setHover(nil) }
+    }
+
+    /// One step down (or up), stopping at either end.
+    func moveKeyboardFocus(by step: Int) {
+        guard let index = keyboardIndex, !keyboardStops.isEmpty else { return }
+        keyboardIndex = min(max(index + step, 0), keyboardStops.count - 1)
+        showKeyboardFocus()
+    }
+
+    override func keyDown(with event: NSEvent) {
+        guard keyboardIndex != nil else { return super.keyDown(with: event) }
+        let shift = event.modifierFlags.contains(.shift)
+        switch Int(event.keyCode) {
+        case 125, 124: moveKeyboardFocus(by: 1)                  // down, right
+        case 126, 123: moveKeyboardFocus(by: -1)                 // up, left
+        case 48: moveKeyboardFocus(by: shift ? -1 : 1)           // Tab
+        case 115: keyboardIndex = 0; showKeyboardFocus()         // Home
+        case 119: keyboardIndex = max(0, keyboardStops.count - 1); showKeyboardFocus()   // End
+        case 36, 76:                                             // Return
+            if let stop = keyboardStop { controller?.pressFromKeyboard(stop) }
+        case 49:                                                 // Space
+            if let card = keyboardStop as? NoteCardView { controller?.peekFromKeyboard(noteID: card.noteID) }
+        case 53: controller?.endKeyboardFocus(giveBack: true)    // Esc
+        default: super.keyDown(with: event)
+        }
+    }
+
+    /// The focused stop drawn with the keyboard ring, a focused tab opened as
+    /// hovering opens it and scrolled into view, and VoiceOver told.
+    private func showKeyboardFocus() {
+        let stop = keyboardStop
+        for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }].joined() {
+            (view as? KeyboardFocusable)?.showsKeyboardFocus = view === stop
+        }
+        if let card = stop as? NoteCardView, let index = cards.firstIndex(of: card) {
+            revealTab(index)
+            setHover(DeckGeometry.Hover(index: index, cursorY: geometry.frames[index].midY))
+        } else if stop != nil, hover != nil {
+            setHover(nil)
+        }
+        if let stop { NSAccessibility.post(element: stop, notification: .focusedUIElementChanged) }
+    }
+
+    /// Scrolls the part of the deck tab `index` is in until it is whole.
+    private func revealTab(_ index: Int) {
+        guard geometry.frames.indices.contains(index) else { return }
+        let frame = geometry.frames[index]
+        let clipRect = geometry.clip(of: index)
+        var delta: CGFloat = 0
+        if frame.minY < clipRect.minY { delta = clipRect.minY - frame.minY }
+        if frame.maxY > clipRect.maxY { delta = clipRect.maxY - frame.maxY }
+        guard delta != 0 else { return }
+        if let pinned = geometry.pinned, index >= pinned.above + pinned.count {
+            setScrollOffset(lowerScrollOffset: lowerScrollOffset + delta, animated: true)
+        } else {
+            setScrollOffset(scrollOffset + delta, animated: true)
+        }
+    }
+
     /// The tabs in the order VoiceOver reads them, for the tests.
     var accessibilityOrderForTesting: [NSView] { (accessibilityChildren() ?? []).compactMap { $0 as? NSView } }
 

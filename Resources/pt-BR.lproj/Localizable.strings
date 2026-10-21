@@ -149,6 +149,7 @@
 "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it." = "Flutuar nota tira a nota da pilha para que ela fique na mesa; Voltar à pilha a devolve. Os dois são o botão redondo abaixo de Fechar, na lombada da nota. Arrastar a lombada ou o cabeçalho para um pouco longe da borda também faz a nota flutuar, e arrastar uma nota flutuante até a borda da pilha a devolve.";
 "Float Note · Return to Deck" = "Flutuar nota · Voltar à pilha";
 "Floating" = "Flutuando";
+"Focus Deck" = "Focar a pilha";
 "Folder" = "Pasta";
 "Forget Folder" = "Esquecer pasta";
 "Format" = "Formatar";
