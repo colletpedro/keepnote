@@ -154,3 +154,19 @@ func runBackupTests() {
         expectTrue("restore fails: says the notes are as they were (\(message))", message.contains("Your notes are as they were"))
     }
 }
+
+/// Settings shows how many backups there are and the space they take.
+@MainActor
+func runBackupSpaceTests() {
+    let url = scratchDirectory().appendingPathComponent("notes.sqlite")
+    let store = reopened(url, key: SymmetricKey(size: .bits256))
+    expectTrue("space: none at first", store.backupSummary.count == 0 && store.backupSummary.bytes == 0)
+    _ = try! store.create(title: "a", body: String(repeating: "x", count: 20_000))
+    try! store.backUp(kind: .manual)
+    try! store.backUp(kind: .manual)
+    let files = Backups.list(in: store.backupDirectory)
+    let onDisk = files.reduce(0) { $0 + ((try? $1.url.resourceValues(forKeys: [.totalFileAllocatedSizeKey]).totalFileAllocatedSize) ?? 0) }
+    expect("space: two backups", String(store.backupSummary.count), "2")
+    expect("space: the space they take on disk", String(store.backupSummary.bytes), String(onDisk))
+    expectTrue("space: more than nothing", store.backupSummary.bytes > 0)
+}

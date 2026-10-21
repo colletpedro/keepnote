@@ -93,6 +93,7 @@ MainActor.assumeIsolated {
     runPaneKeyboardTests()
     runBackupTests()
     runRestoreFlowTests()
+    runBackupSpaceTests()
     runAttachmentEditorTests()
     runAttachmentCardTests()
     runAttachmentDisplayTests()

@@ -71,6 +71,14 @@ enum Backups {
         return urls.compactMap(parse).sorted { $0.date != $1.date ? $0.date > $1.date : $0.url.path > $1.url.path }
     }
 
+    /// The space every backup in `directory` takes, in bytes.
+    static func totalSize(in directory: URL) -> Int {
+        list(in: directory).reduce(0) { total, backup in
+            total + ((try? backup.url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileSizeKey]))
+                .flatMap { $0.totalFileAllocatedSize ?? $0.fileSize } ?? 0)
+        }
+    }
+
     /// Whether today still needs its copy: none made today, other than the
     /// one before a migration (that is the notes before the update, not today's).
     static func isDailyDue(in directory: URL, now: Date, calendar: Calendar = .current) -> Bool {

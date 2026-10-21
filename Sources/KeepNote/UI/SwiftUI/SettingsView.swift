@@ -35,7 +35,7 @@ enum SettingsTab: Int, CaseIterable {
     /// Each pane is a fixed size; the window animates between them.
     var paneHeight: CGFloat {
         switch self {
-        case .general: return 630
+        case .general: return 670
         case .notes: return 270
         case .deck: return 430
         case .daily: return 380
@@ -196,6 +196,11 @@ private struct BackupsSection: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            LabeledContent(L("Space used")) {
+                Text(spaceLine)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
                 Button(L("Back Up Now"), action: actions.backUpNow)
@@ -203,6 +208,13 @@ private struct BackupsSection: View {
                     .disabled(store.lastBackup == nil)
             }
         }
+    }
+
+    /// "3 backups · 1.2 MB".
+    private var spaceLine: String {
+        let summary = store.backupSummary
+        let size = ByteCountFormatter.string(fromByteCount: Int64(summary.bytes), countStyle: .file)
+        return L("%@ \u{00B7} %@", Lplural(summary.count, L("1 backup"), L("%d backups")), size)
     }
 
     private var lastLine: String {

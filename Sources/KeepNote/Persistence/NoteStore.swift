@@ -94,6 +94,8 @@ final class NoteStore: ObservableObject {
     let backupDirectory: URL
     /// The newest copy, for Settings; refreshed after every backup.
     @Published private(set) var lastBackup: Backup?
+    /// How many backups there are and the space they take, for Settings.
+    @Published private(set) var backupSummary = (count: 0, bytes: 0)
     private var purgeTimers: [UUID: Timer] = [:]
 
     /// `now` is the clock the store reads from the start — launching on a
@@ -110,16 +112,23 @@ final class NoteStore: ObservableObject {
         // Files no note refers to any more, left by a deletion in a session
         // that ended first.
         removeOrphanAttachments()
-        lastBackup = Backups.list(in: backupDirectory).first
+        refreshBackupSummary()
     }
 
     // MARK: - Backups
+
+    /// The newest backup, how many there are and their space, read again.
+    func refreshBackupSummary() {
+        let all = Backups.list(in: backupDirectory)
+        lastBackup = all.first
+        backupSummary = (all.count, Backups.totalSize(in: backupDirectory))
+    }
 
     /// A copy of the database now, made after every change already queued.
     @discardableResult
     func backUp(kind: Backup.Kind) throws -> Backup {
         let backup = try writer.backUp(kind: kind, into: backupDirectory, now: now())
-        lastBackup = Backups.list(in: backupDirectory).first
+        refreshBackupSummary()
         return backup
     }
 
@@ -131,7 +140,7 @@ final class NoteStore: ObservableObject {
         writer.backUpLater(kind: .daily, into: backupDirectory, now: date) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
-                self.lastBackup = Backups.list(in: self.backupDirectory).first
+                self.refreshBackupSummary()
                 switch result {
                 case .success(let backup): done(backup)
                 case .failure(let error):

@@ -487,3 +487,6 @@
 "Image: %@" = "Image: %@";
 "Has attachments" = "Has attachments";
 "⌘-click to open" = "⌘-click to open";
+"Space used" = "Space used";
+"1 backup" = "1 backup";
+"%d backups" = "%d backups";
