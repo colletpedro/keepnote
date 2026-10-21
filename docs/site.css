@@ -17,7 +17,10 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 
 body {
   margin: 0;
@@ -28,7 +31,12 @@ body {
 
 a { color: var(--sky); text-underline-offset: 3px; }
 a:hover { color: var(--text); }
-:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; border-radius: 4px; }
+/* On the light button the ring is drawn in the page's text colour, so it shows
+   against the mint as well as the dark page around it. */
+.btn:focus-visible { outline-color: var(--text); box-shadow: 0 0 0 6px var(--bg); }
+/* The focus sits on the video's own controls, inside it: ring the video. */
+video.player:focus, video.player:focus-within { outline: 3px solid var(--sky); outline-offset: 3px; }
 
 .wrap { width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 20px; }
 

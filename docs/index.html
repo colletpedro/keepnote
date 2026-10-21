@@ -90,8 +90,8 @@
 <section id="see" class="video">
   <div class="wrap">
     <h2>A row of tabs, a note when you need it</h2>
-    <p class="sub">Move the cursor to the screen edge, right or left as you choose. The tabs fan out; touch one for a quick look, click it to write.</p>
-    <video class="player" src="media/keepnote.mp4" poster="media/keepnote-poster.jpg" width="1280" height="720" autoplay muted loop playsinline controls preload="metadata" aria-label="KeepNote demo video"></video>
+    <p class="sub" id="video-desc">Move the cursor to the screen edge, right or left as you choose. The tabs fan out; touch one for a quick look, click it to write.</p>
+    <video class="player" src="media/keepnote.mp4" poster="media/keepnote-poster.jpg" width="1280" height="720" muted loop playsinline controls preload="metadata" aria-label="KeepNote demo: the deck of tabs on the screen edge fanning out, a quick look at a note, and a note opened to write in" aria-describedby="video-desc"></video>
   </div>
 </section>
 
@@ -177,6 +177,21 @@ fetch("version.json").then(function (r) { return r.json(); }).then(function (v) 
   document.getElementById("version").textContent = v.version;
   document.getElementById("version-line").hidden = false;
 }).catch(function () {});
+</script>
+<script>
+/* The demo plays by itself only when motion is welcome: with "Reduce motion"
+   on it waits, paused on its first frame, for its own play button. */
+(function () {
+  var video = document.querySelector("video.player");
+  if (!video || !window.matchMedia) return;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function apply() {
+    if (reduce.matches) { video.pause(); video.removeAttribute("autoplay"); }
+    else { video.setAttribute("autoplay", ""); var p = video.play(); if (p && p.catch) p.catch(function () {}); }
+  }
+  apply();
+  if (reduce.addEventListener) reduce.addEventListener("change", apply);
+})();
 </script>
 </body>
 </html>
