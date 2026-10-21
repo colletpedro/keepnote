@@ -168,3 +168,26 @@ func runPaneOpenedTests() {
     expect("opened: leaving the pane counts as its last opening", store.note(id: note.id)?.lastOpenedDay?.string, store.today.string)
     coordinator.allNotesDidSelect(nil)
 }
+
+/// Open in All Notes opens the note floating.
+@MainActor
+func runPaneOpenFloatingTests() {
+    let url = scratchDirectory().appendingPathComponent("float.sqlite")
+    let store = reopened(url, key: SymmetricKey(size: .bits256))
+    let coordinator = AppCoordinator(store: store)
+    let note = try! store.create(title: "Float me", body: "x")
+    coordinator.openFloating(noteID: note.id)
+    expectTrue("open: from All Notes the note floats", coordinator.noteWindowForTesting(note.id)?.presentation == .detached)
+    expectTrue("open: and comes back floating at the next launch", AppSettings.shared.floatingNoteIDs.contains(note.id))
+    coordinator.noteWindowForTesting(note.id)?.close()
+
+    // Already open on the deck: it is lifted off, not opened twice.
+    coordinator.open(noteID: note.id, from: nil)
+    let anchored = coordinator.noteWindowForTesting(note.id)
+    expectTrue("open: first anchored", anchored?.presentation == .anchored)
+    coordinator.openFloating(noteID: note.id)
+    expectTrue("open: the same window", coordinator.noteWindowForTesting(note.id) === anchored)
+    expectTrue("open: now floating", anchored?.presentation == .detached)
+    anchored?.close()
+    AppSettings.shared.setFloating(false, noteID: note.id)
+}

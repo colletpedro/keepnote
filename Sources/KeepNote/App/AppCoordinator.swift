@@ -427,6 +427,22 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         controller.show()
     }
 
+    /// Open from All Notes: the note as a floating note, off the deck, where
+    /// it was last left floating — All Notes is a window of its own, and an
+    /// anchored note would close as soon as it lost the keyboard to it. A note
+    /// already open anchored is lifted off.
+    func openFloating(noteID: UUID) {
+        if let existing = noteWindows[noteID] {
+            if existing.presentation != .detached { existing.togglePresentation() }
+            existing.show()
+            return
+        }
+        guard let note = store.note(id: noteID) else { return }
+        let controller = makeNoteWindow(note: note, originFrame: nil, floating: true)
+        lastNoteOpenedAt = Date()
+        controller.show()
+    }
+
     /// The notes that were floating when the app last ran come back floating,
     /// where they were left, without taking focus. Notes deleted since are
     /// dropped from the list.
@@ -819,6 +835,13 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         )
     }
 
+    /// All Notes' actions: Open there opens the note floating.
+    private func allNotesActions() -> NoteListActions {
+        var actions = listActions()
+        actions.open = { [weak self] id in self?.openFloating(noteID: id) }
+        return actions
+    }
+
     /// All Notes, in front. `selecting` picks what the sidebar shows: kept for
     /// the next opening, and sent to the window if it is already open.
     /// `template` also selects the daily template's row, on the Daily list.
@@ -839,7 +862,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             autosaveName: "KeepNote.AllNotes",
             minSize: NSSize(width: 900, height: 480),
             rootView: AllNotesView(
-                store: store, actions: listActions(),
+                store: store, actions: allNotesActions(),
                 initialSelection: template ? [DailyTemplatePane.rowID] : [])
         )
         controller.onClose = { [weak self] in

@@ -423,3 +423,7 @@
 "Select a note to edit it here" = "Select a note to edit it here";
 "Read-only: this note could not be decrypted with the key on this Mac. Its text is kept as it is, so the right key can still open it." = "Read-only: this note could not be decrypted with the key on this Mac. Its text is kept as it is, so the right key can still open it.";
 "Archived · editing it keeps it in the archive" = "Archived · editing it keeps it in the archive";
+"Show Sidebar and List" = "Show Sidebar and List";
+"Hide Sidebar and List" = "Hide Sidebar and List";
+"Show the sidebar and the list again" = "Show the sidebar and the list again";
+"Write with the note filling the window" = "Write with the note filling the window";

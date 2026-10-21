@@ -44,6 +44,8 @@ struct AllNotesView: View {
     /// openings in `AppSettings.allNotesSelection`.
     @State private var sidebarSelection: NoteSelection
     @State private var selection: Set<UUID> = []
+    /// The sidebar and the list, or the pane alone over the whole window.
+    @State private var columns: NavigationSplitViewVisibility = .all
     /// The Daily introduction has been dismissed with "Got it".
     @State private var introSeen = AppSettings.shared.dailyIntroSeen
 
@@ -96,7 +98,7 @@ struct AllNotesView: View {
     }
 
     private var splitView: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columns) {
             AllNotesSidebar(
                 index: index,
                 selection: $sidebarSelection,
@@ -316,7 +318,15 @@ struct AllNotesView: View {
         return Toggle(L("Keep on Deck"), isOn: Binding(get: { all }, set: { actions.setKeepOnDeck(ids, $0) }))
     }
 
-    /// Search (inside the current selection), New Note and Settings. Archive,
+    private var paneFillsWindow: Bool { columns == .detailOnly }
+
+    /// The same button hides the sidebar and the list and brings them back.
+    private func toggleFullPane() {
+        columns = paneFillsWindow ? .all : .detailOnly
+    }
+
+    /// Search (inside the current selection), New Note, Settings and the
+    /// button that gives the pane the whole window. Archive,
     /// export and delete live with the notes: the reading pane, the context
     /// menu and the multiple-selection pane.
     @ToolbarContentBuilder
@@ -331,6 +341,12 @@ struct AllNotesView: View {
                 Label(L("Settings"), systemImage: "gearshape")
             }
             .help(L("Settings"))
+
+            Button(action: toggleFullPane) {
+                Label(paneFillsWindow ? L("Show Sidebar and List") : L("Hide Sidebar and List"),
+                      systemImage: paneFillsWindow ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+            }
+            .help(paneFillsWindow ? L("Show the sidebar and the list again") : L("Write with the note filling the window"))
         }
     }
 }
@@ -641,10 +657,10 @@ private struct NoteRow: View {
     }()
 }
 
-/// One note, to edit: its dates and the Open, Archive and Export buttons in
-/// the window's own colours, then the note's own editor — spine, title,
-/// body, find, colours and tags — exactly as in a note window, saving the
-/// same way.
+/// One note, to edit: its dates and the Open (as a floating note), Archive
+/// and Export buttons in the window's own colours, then the note's own
+/// editor — spine, title, body, find, colours and tags — exactly as in a
+/// note window, saving the same way.
 struct NoteReadingPane: View {
     let note: Note
     let store: NoteStore
