@@ -30,3 +30,20 @@ func runDeckAccessibilityTests() {
     controller.collapse()
     controller.hidePanel()
 }
+
+/// No state told by colour alone: a kept, a pinned and a floating tab say so.
+@MainActor
+func runTabStateWordsTests() {
+    let url = scratchDirectory().appendingPathComponent("tab-words-\(UUID().uuidString).sqlite")
+    let store = try! NoteStore(databaseURL: url, cipher: BodyCipher(key: SymmetricKey(size: .bits256)))
+    var kept = try! store.create(title: "Kept", body: "")
+    kept.keepOnDeck = true
+    var pinned = try! store.create(color: .sky, title: "Pinned", body: "")
+    pinned.pinnedAt = Date()
+    let keptCard = NoteCardView(note: kept, height: EdgeMetrics.tabHeight)
+    expect("words: kept", keptCard.accessibilityValue() as? String, "\(kept.color.displayName) note, kept on deck")
+    let pinnedCard = NoteCardView(note: pinned, height: EdgeMetrics.tabHeight)
+    expectTrue("words: pinned", (pinnedCard.accessibilityValue() as? String)?.hasPrefix("Sky note, pinned to center") == true)
+    pinnedCard.isFloating = true
+    expectTrue("words: floating", (pinnedCard.accessibilityValue() as? String)?.contains("floating") == true)
+}

@@ -76,6 +76,7 @@ MainActor.assumeIsolated {
     runCarryOverSettingTests()
     runCarryOverTests()
     runDeckAccessibilityTests()
+    runTabStateWordsTests()
     runAnnouncementTests()
     runDeckKeyboardTests()
     runChecklistKeyboardTests()

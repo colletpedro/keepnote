@@ -579,6 +579,17 @@ private struct NoteRow: View {
                             .scaledFont(9)
                             .foregroundStyle(.secondary)
                             .help(DeckStatus.archivedLine(for: note) ?? L("Archived"))
+                            .accessibilityLabel(DeckStatus.archivedLine(for: note) ?? L("Archived"))
+                    }
+                    // Pinned, kept and about to be archived: a mark and words,
+                    // as on the tabs.
+                    if note.isPinned {
+                        stateMark("pin.fill", L("Pinned to center"))
+                    } else if note.keepOnDeck {
+                        stateMark("bookmark.fill", L("Kept on deck"))
+                    }
+                    if note.state != .archived, DeckStatus.isExpiring(note), let line = DeckStatus.line(for: note) {
+                        stateMark("clock", line)
                     }
                     Spacer(minLength: 4)
                     Text(Self.formatter.localizedString(for: note.editedAt, relativeTo: Date()))
@@ -598,6 +609,14 @@ private struct NoteRow: View {
             }
         }
         .padding(.vertical, 5)
+    }
+
+    private func stateMark(_ symbol: String, _ label: String) -> some View {
+        Image(systemName: symbol)
+            .scaledFont(9)
+            .foregroundStyle(.secondary)
+            .help(label)
+            .accessibilityLabel(label)
     }
 
     private static let formatter: RelativeDateTimeFormatter = {

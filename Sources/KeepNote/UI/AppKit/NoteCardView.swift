@@ -213,7 +213,10 @@ final class NoteCardView: SpringView, KeyboardFocusable {
 
         // Floating and daily: the label gives up the top of the tab to the
         // markers, the floating one first, the calendar under it.
-        let markerZone: CGFloat = (isFloating ? 16 : 0) + (isDaily ? 14 : 0) + (isPinned ? 14 : 0)
+        // Kept on Deck has its own mark too (a pinned note is kept already), so
+        // no state is told by colour or position alone.
+        let showsKept = keepOnDeck && !isPinned
+        let markerZone: CGFloat = (isFloating ? 16 : 0) + (isDaily ? 14 : 0) + (isPinned || showsKept ? 14 : 0)
         NoteCardShape.drawTabLabel(
             label,
             in: mirrored(NSRect(x: 0, y: 0, width: bounds.width - 12, height: bounds.height)),
@@ -226,6 +229,7 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         if isDaily { drawDailyMarker(below: isFloating ? 16 : 0) }
         if isExpiring { drawExpiringMarker() }
         if isPinned { drawPinMarker(below: (isFloating ? 16 : 0) + (isDaily ? 14 : 0)) }
+        if showsKept { drawKeptMarker(below: (isFloating ? 16 : 0) + (isDaily ? 14 : 0)) }
 
         if isHovered {
             color.spine.withAlphaComponent(0.95).setStroke()
@@ -274,6 +278,20 @@ extension NoteCardView {
         let configuration = NSImage.SymbolConfiguration(pointSize: 8, weight: .bold)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color.secondaryInk.withAlphaComponent(0.8)]))
         guard let glyph = NSImage(systemSymbolName: "pin.fill", accessibilityDescription: L("Pinned"))?
+            .withSymbolConfiguration(configuration) else { return }
+        let size = glyph.size
+        let tabWidth = bounds.width - 12
+        glyph.draw(in: mirrored(NSRect(x: (tabWidth - size.width) / 2, y: bounds.maxY - 8 - offset - size.height,
+                                       width: size.width, height: size.height)))
+    }
+}
+
+extension NoteCardView {
+    /// A small bookmark: Keep on Deck.
+    fileprivate func drawKeptMarker(below offset: CGFloat) {
+        let configuration = NSImage.SymbolConfiguration(pointSize: 7.5, weight: .bold)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [color.secondaryInk.withAlphaComponent(0.8)]))
+        guard let glyph = NSImage(systemSymbolName: "bookmark.fill", accessibilityDescription: L("Kept on deck"))?
             .withSymbolConfiguration(configuration) else { return }
         let size = glyph.size
         let tabWidth = bounds.width - 12
