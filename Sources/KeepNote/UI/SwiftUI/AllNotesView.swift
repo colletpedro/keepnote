@@ -522,15 +522,17 @@ struct TagChipLinks: View {
     var body: some View {
         HStack(spacing: 4) {
             ForEach(tags, id: \.self) { tag in
-                Text("#\(tag)")
-                    .font(.system(size: size, weight: .medium))
-                    .foregroundStyle(color.inkSwiftUI)
-                    .lineLimit(1)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1.5)
-                    .background(Capsule().fill(color.spineSwiftUI))
-                    .contentShape(Capsule())
-                    .onTapGesture { onTag(tag) }
+                Button { onTag(tag) } label: {
+                    Text("#\(tag)")
+                        .font(.system(size: size, weight: .medium))
+                        .foregroundStyle(color.inkSwiftUI)
+                        .lineLimit(1)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1.5)
+                        .background(Capsule().fill(color.spineSwiftUI))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(InkFocusButtonStyle(color: color, shape: Capsule()))
                     .help(L("Show notes tagged #%@", tag))
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(L("Tag %@", tag))
@@ -778,7 +780,7 @@ private struct NoteReadingCard: View {
                                 Label(L("Add tag"), systemImage: "plus")
                                     .font(.system(size: 11.5, weight: .medium))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(InkFocusButtonStyle(color: note.color))
                             .foregroundStyle(note.color.secondaryInkSwiftUI)
                         }
                         Spacer(minLength: 0)

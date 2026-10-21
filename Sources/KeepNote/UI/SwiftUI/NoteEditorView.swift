@@ -418,7 +418,7 @@ struct NoteEditorView: View {
                         .background(Circle().fill(model.color.surfaceSwiftUI.opacity(0.7)))
                         .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(InkFocusButtonStyle(color: model.color, shape: Circle()))
                 .help(L("Close (esc)"))
                 .accessibilityLabel(L("Close"))
                 .accessibilityHint(L("Closes the note. What you wrote is saved."))
@@ -445,7 +445,7 @@ struct NoteEditorView: View {
                 .background(Circle().fill(model.color.inkSwiftUI))
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(InkFocusButtonStyle(color: model.color))
         .help(shortcuts.tooltip(floating ? L("Return to Deck") : L("Float Note"), .note(.float)))
         .accessibilityHint(floating ? L("Puts the note back on the deck") : L("Lifts the note off the deck so it stays on screen"))
         .accessibilityLabel(floating ? L("Return to Deck") : L("Float Note"))
@@ -535,7 +535,7 @@ struct NoteEditorView: View {
                 Image(systemName: model.isPinned ? "pin.fill" : "pin")
                     .font(.system(size: 11))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(InkFocusButtonStyle(color: model.color))
             .foregroundStyle(model.color.secondaryInkSwiftUI)
             .help(model.isPinned ? L("Unpin from Center") : L("Pin to Center"))
             .accessibilityLabel(model.isPinned ? L("Unpin from Center") : L("Pin to Center"))
@@ -545,7 +545,7 @@ struct NoteEditorView: View {
                 Image(systemName: "wrench.and.screwdriver")
                     .font(.system(size: 11))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(InkFocusButtonStyle(color: model.color))
             .foregroundStyle(model.color.secondaryInkSwiftUI)
             .help(L("Tools"))
             .accessibilityLabel(L("Tools"))
@@ -577,15 +577,15 @@ struct NoteEditorView: View {
                     .font(.system(size: 10.5).monospacedDigit())
                     .foregroundStyle(model.color.inkSwiftUI.opacity(0.5))
                 Button { model.advanceFind(by: -1) } label: { Image(systemName: "chevron.up") }
-                    .buttonStyle(.plain)
+                    .buttonStyle(InkFocusButtonStyle(color: model.color))
                     .disabled(model.matchCount == 0)
                 Button { model.advanceFind(by: 1) } label: { Image(systemName: "chevron.down") }
-                    .buttonStyle(.plain)
+                    .buttonStyle(InkFocusButtonStyle(color: model.color))
                     .disabled(model.matchCount == 0)
             }
 
             Button { model.toggleFindBar() } label: { Image(systemName: "xmark") }
-                .buttonStyle(.plain)
+                .buttonStyle(InkFocusButtonStyle(color: model.color))
         }
         .font(.system(size: 10.5))
         .foregroundStyle(model.color.inkSwiftUI.opacity(0.6))
@@ -679,7 +679,7 @@ struct NoteEditorView: View {
             // off the edge, the note has to carry everything.
             if presentation == .detached {
                 Button(L("Delete"), action: onDelete)
-                    .buttonStyle(.plain)
+                    .buttonStyle(InkFocusButtonStyle(color: model.color))
                     .fixedSize()
                     .help(shortcuts.tooltip(L("Delete"), .note(.delete)))
                     .foregroundStyle(Color(nsColor: NSColor(srgbRed: 0.80, green: 0.24, blue: 0.22, alpha: 1)))
@@ -713,9 +713,46 @@ struct NoteFooterButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .strokeBorder(.black.opacity(0.10), lineWidth: 1)
             )
+            .modifier(InkFocusRing(color: color, shape: RoundedRectangle(cornerRadius: 6, style: .continuous)))
             .foregroundStyle(color.inkSwiftUI.opacity(0.85))
             .lineLimit(1)
             .fixedSize()
+    }
+}
+
+/// The plain look of the note's own buttons (close, Float Note, the pin,
+/// Tools, the swatches, the tag chips), with a ring while one has the
+/// keyboard focus.
+struct InkFocusButtonStyle<S: InsettableShape>: ButtonStyle {
+    let color: NoteColor
+    var shape: S
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .modifier(InkFocusRing(color: color, shape: shape))
+    }
+}
+
+extension InkFocusButtonStyle where S == RoundedRectangle {
+    init(color: NoteColor) {
+        self.init(color: color, shape: RoundedRectangle(cornerRadius: 5, style: .continuous))
+    }
+}
+
+/// The keyboard focus ring on paper: the note's ink, which is dark on every
+/// paper colour (the system's blue is faint on Sky), 2 pt, just outside.
+/// Tab reaches the buttons when System Settings > Keyboard > Keyboard
+/// navigation is on, as everywhere in macOS.
+struct InkFocusRing<S: InsettableShape>: ViewModifier {
+    let color: NoteColor
+    let shape: S
+    @Environment(\.isFocused) private var isFocused
+
+    func body(content: Content) -> some View {
+        content.overlay(
+            shape.inset(by: -3).strokeBorder(color.inkSwiftUI, lineWidth: 2).opacity(isFocused ? 1 : 0)
+        )
     }
 }
 
@@ -731,15 +768,17 @@ private struct TagChips: View {
     var body: some View {
         HStack(spacing: 5) {
             ForEach(tags, id: \.self) { tag in
-                Text("#" + tag)
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(color.inkSwiftUI)
-                    .lineLimit(1)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Capsule().fill(color.spineSwiftUI))
-                    .contentShape(Capsule())
-                    .onTapGesture { onTag(tag) }
+                Button { onTag(tag) } label: {
+                    Text("#" + tag)
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(color.inkSwiftUI)
+                        .lineLimit(1)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(color.spineSwiftUI))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(InkFocusButtonStyle(color: color, shape: Capsule()))
                     .help(DailyNotes.isReserved(tag) ? L("Earlier dailies") : L("Edit tags"))
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(L("Tag %@", tag))
@@ -786,7 +825,7 @@ struct NoteColorRow: View {
                         )
                         .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(InkFocusButtonStyle(color: selected, shape: Circle()))
                 .help(color.displayName)
                 .accessibilityLabel(L("%@ color", color.displayName))
                 .accessibilityValue(isSelected ? L("chosen") : "")

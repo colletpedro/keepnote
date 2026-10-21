@@ -349,6 +349,7 @@
 "The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text." = "The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text.";
 "These work from any app. KeepNote also lives in the menu bar, and in the Dock while one of its windows is open." = "These work from any app. KeepNote also lives in the menu bar, and in the Dock while one of its windows is open.";
 "This note could not be decrypted with the key on this Mac." = "This note could not be decrypted with the key on this Mac.";
+"Tick or untick the task" = "Tick or untick the task";
 "Title" = "Title";
 "To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back.";
 "To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back.";
@@ -380,6 +381,7 @@
 "When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed." = "When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed.";
 "Where new daily notes start" = "Where new daily notes start";
 "Window" = "Window";
+"With System Settings > Keyboard > Keyboard navigation on, Tab also moves between the buttons of notes, All Notes and Settings, each shown with a focus ring." = "With System Settings > Keyboard > Keyboard navigation on, Tab also moves between the buttons of notes, All Notes and Settings, each shown with a focus ring.";
 "Write what a new daily note should start with." = "Write what a new daily note should start with.";
 "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder." = "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder.";
 "Your notes live in a deck on the right edge of the screen — move the cursor there and the cards fan out." = "Your notes live in a deck on the right edge of the screen — move the cursor there and the cards fan out.";

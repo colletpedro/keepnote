@@ -349,6 +349,7 @@
 "The template is used only when a new daily note is created: from the calendar button on the deck, %@ or the menu. Adding the daily tag to a note you already have never changes its text." = "O modelo só é usado quando uma nova nota daily é criada: pelo botão de calendário na pilha, por %@ ou pelo menu. Adicionar a tag daily a uma nota que você já tem nunca muda o texto dela.";
 "These work from any app. KeepNote also lives in the menu bar, and in the Dock while one of its windows is open." = "Eles funcionam em qualquer app. O KeepNote também fica na barra de menus, e no Dock enquanto uma das janelas dele está aberta.";
 "This note could not be decrypted with the key on this Mac." = "Não foi possível decifrar esta nota com a chave deste Mac.";
+"Tick or untick the task" = "Marcar ou desmarcar a tarefa";
 "Title" = "Título";
 "To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back." = "Para manter uma nota na tela, use Flutuar nota na lombada (%@) ou arraste-a para longe da borda. Voltar à pilha a devolve.";
 "To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back." = "Para manter uma nota na tela, use Flutuar nota na lombada ou arraste-a para longe da borda. Voltar à pilha a devolve.";
@@ -380,6 +381,7 @@
 "When a new daily note is made, the checklist items left unticked in the dailies of the last day before it. Ask each time offers them at the top of the new note; they go at its end, under the day they came from. The earlier daily is never changed." = "Quando uma nova nota daily é criada, os itens de checklist que ficaram sem marcar nas dailies do último dia anterior. Perguntar sempre oferece esses itens no topo da nota nova; eles entram no fim dela, abaixo do dia de onde vieram. A daily anterior nunca muda.";
 "Where new daily notes start" = "Onde as novas notas daily começam";
 "Window" = "Janela";
+"With System Settings > Keyboard > Keyboard navigation on, Tab also moves between the buttons of notes, All Notes and Settings, each shown with a focus ring." = "Com Ajustes do Sistema > Teclado > Navegação pelo teclado ligada, Tab também passa pelos botões das notas, de Todas as notas e dos Ajustes, cada um com um anel de foco.";
 "Write what a new daily note should start with." = "Escreva com o que uma nova nota daily deve começar.";
 "Writes one plain-text file per note into a folder you choose. Turning it on asks for that folder." = "Grava um arquivo de texto simples por nota numa pasta que você escolhe. Ao ativar, a pasta é pedida.";
 "Your notes live in a deck on the right edge of the screen — move the cursor there and the cards fan out." = "Suas notas ficam numa pilha na borda direita da tela — leve o cursor até lá e os cartões se abrem em leque.";

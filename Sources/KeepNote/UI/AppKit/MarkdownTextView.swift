@@ -420,6 +420,33 @@ final class MarkdownTextView: NSTextView {
         return hit
     }
 
+    /// ⌘Return ticks or unticks the task the caret is on, so a checklist
+    /// needs no mouse.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        if window?.firstResponder === self, flags == .command, event.keyCode == 36 || event.keyCode == 76,
+           let box = checkboxOnCaretLine() {
+            toggleCheckboxForAccessibility(markerRange: box)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    /// The checkbox marker of the line the caret is on, if it has one.
+    func checkboxOnCaretLine() -> NSRange? {
+        guard let storage = textStorage, storage.length > 0 else { return nil }
+        let line = (storage.string as NSString).paragraphRange(for: NSRange(location: min(selectedRange().location, storage.length), length: 0))
+        var hit: NSRange?
+        storage.enumerateAttribute(MarkdownStyler.decorationKey, in: line) { value, range, stop in
+            guard let raw = value as? String,
+                  raw == MarkdownStyler.Decoration.checkbox.rawValue || raw == MarkdownStyler.Decoration.checkboxDone.rawValue
+            else { return }
+            hit = range
+            stop.pointee = true
+        }
+        return hit
+    }
+
     /// VoiceOver's press on a checklist box.
     func toggleCheckboxForAccessibility(markerRange: NSRange) {
         toggleCheckbox(markerRange: markerRange)

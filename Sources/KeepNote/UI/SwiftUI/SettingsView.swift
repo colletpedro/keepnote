@@ -427,10 +427,12 @@ struct ShortcutsSettingsPane: View {
             }
 
             Section(L("Lists")) {
+                row(L("Tick or untick the task"), "\u{2318}\u{21A9}")
                 row(L("Indent item"), "\u{21E5}")
                 row(L("Outdent item"), "\u{21E7}\u{21E5}")
                 row(L("End the list, or outdent when nested"), L("\u{21A9} on an empty item"))
                 HelpNote(text: L("Tab works anywhere inside an item, or on several selected items. Numbered items renumber themselves when you insert, remove, indent or paste."))
+                HelpNote(text: L("With System Settings > Keyboard > Keyboard navigation on, Tab also moves between the buttons of notes, All Notes and Settings, each shown with a focus ring."))
             }
         }
         .formStyle(.grouped)

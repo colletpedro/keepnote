@@ -231,6 +231,7 @@ enum ShortcutEditing {
         }
         fixed += [
             (key(kVK_ANSI_W, command), L("Close")),
+            (key(kVK_Return, command), L("Tick or untick the task")),
             (key(kVK_ANSI_Q, command), L("Quit KeepNote")),
             (key(kVK_ANSI_Comma, command), L("Settings\u{2026}")),
             (key(kVK_ANSI_H, command), L("Hide KeepNote")),

@@ -168,7 +168,7 @@ struct DailyTemplateCard: View {
                     Button(action: onShowTools) {
                         Image(systemName: "wrench.and.screwdriver").font(.system(size: 11))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(InkFocusButtonStyle(color: color))
                     .foregroundStyle(color.secondaryInkSwiftUI)
                     .help(L("Tools"))
                     .accessibilityLabel(L("Tools"))
