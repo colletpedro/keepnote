@@ -60,14 +60,14 @@ struct CarryOverBannerView: View {
 
     private var icon: some View {
         Image(systemName: "checklist")
-            .font(.system(size: 11, weight: .semibold))
+            .scaledFont(11, weight: .semibold)
             .foregroundStyle(color.secondaryInkSwiftUI)
             .accessibilityHidden(true)
     }
 
     private var message: some View {
         Text(banner.message)
-            .font(.system(size: 12))
+            .scaledFont(12)
             .foregroundStyle(color.inkSwiftUI)
     }
 

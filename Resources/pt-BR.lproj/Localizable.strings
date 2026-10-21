@@ -113,6 +113,7 @@
 "Daily notes" = "Notas daily";
 "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes." = "Notas daily. Adicione a tag daily a qualquer nota, quantas quiser por dia. As notas dos seus dois dias mais recentes ficam na pilha. As mais antigas são arquivadas automaticamente e guardadas aqui. Você pode definir um modelo para as novas notas daily.";
 "Deck" = "Pilha";
+"Default" = "Padrão";
 "Default color" = "Cor padrão";
 "Delete" = "Apagar";
 "Delete %d Notes" = "Apagar %d notas";
@@ -142,6 +143,7 @@
 "Export Notes" = "Exportar notas";
 "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Exportar grava Markdown, texto simples ou um arquivo que o KeepNote consegue ler de volta. Mostrar boas-vindas reabre a janela da primeira abertura. O KeepNote nunca busca atualizações sozinho; Buscar atualizações abre o site dele no navegador, e Relatar um problema abre as issues no GitHub.";
 "Export…" = "Exportar…";
+"Extra Large" = "Extragrande";
 "File" = "Arquivo";
 "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files." = "Os arquivos nessa pasta podem ser lidos sem o app. O banco de dados deste Mac guarda o texto das notas cifrado, e essa chave nunca sai deste Mac — por isso ela não pode ir junto com os arquivos.";
 "Find in note" = "Buscar na nota";
@@ -194,6 +196,7 @@
 "Keyboard Shortcuts" = "Atalhos de teclado";
 "Keychain error %d: %@" = "Erro do Keychain %d: %@";
 "Language" = "Idioma";
+"Large" = "Grande";
 "Launch at login" = "Abrir ao iniciar sessão";
 "Left" = "Esquerda";
 "Left Arrow" = "Seta para a esquerda";
@@ -318,6 +321,7 @@
 "Shows the earlier dailies" = "Mostra as dailies anteriores";
 "Single document — all selected notes" = "Documento único — todas as notas selecionadas";
 "Sky" = "Céu";
+"Small" = "Pequeno";
 "Space" = "Espaço";
 "Starts every new daily note" = "Começa toda nova nota daily";
 "Status" = "Estado";
@@ -333,6 +337,7 @@
 "Tag %@" = "Tag %@";
 "Tags" = "Tags";
 "Tags: %@" = "Tags: %@";
+"Text size" = "Tamanho do texto";
 "That file is not a KeepNote archive." = "Esse arquivo não é um arquivo do KeepNote.";
 "That file is not a KeepNote note." = "Esse arquivo não é uma nota do KeepNote.";
 "That note was deleted." = "Essa nota foi apagada.";
@@ -343,6 +348,7 @@
 "The notes themselves are kept." = "As notas em si são mantidas.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "A pausa entre um cartão deslizar para fora e o seguinte. Zero abre todos de uma vez.";
 "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "O lado da tela em que a pilha fica, em todos os monitores. As notas, as espiadas e o arrasto de volta para a pilha acompanham.";
+"The size of the text in notes, the peek and All Notes, titles included." = "O tamanho do texto nas notas, na espiada e em Todas as notas, títulos incluídos.";
 "The stored encryption key is not a valid 256-bit key." = "A chave de criptografia guardada não é uma chave de 256 bits válida.";
 "The sync folder could not be reopened: %@" = "Não foi possível reabrir a pasta de sincronização: %@";
 "The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text." = "O modelo só é usado quando uma nova nota daily é criada: pelo botão de calendário na pilha ou pelo menu. Adicionar a tag daily a uma nota que você já tem nunca muda o texto dela.";

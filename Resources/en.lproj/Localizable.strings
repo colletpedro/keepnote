@@ -113,6 +113,7 @@
 "Daily notes" = "Daily notes";
 "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes." = "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes.";
 "Deck" = "Deck";
+"Default" = "Default";
 "Default color" = "Default color";
 "Delete" = "Delete";
 "Delete %d Notes" = "Delete %d Notes";
@@ -142,6 +143,7 @@
 "Export Notes" = "Export Notes";
 "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub.";
 "Export…" = "Export…";
+"Extra Large" = "Extra Large";
 "File" = "File";
 "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files." = "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files.";
 "Find in note" = "Find in note";
@@ -194,6 +196,7 @@
 "Keyboard Shortcuts" = "Keyboard Shortcuts";
 "Keychain error %d: %@" = "Keychain error %d: %@";
 "Language" = "Language";
+"Large" = "Large";
 "Launch at login" = "Launch at login";
 "Left" = "Left";
 "Left Arrow" = "Left Arrow";
@@ -318,6 +321,7 @@
 "Shows the earlier dailies" = "Shows the earlier dailies";
 "Single document — all selected notes" = "Single document — all selected notes";
 "Sky" = "Sky";
+"Small" = "Small";
 "Space" = "Space";
 "Starts every new daily note" = "Starts every new daily note";
 "Status" = "Status";
@@ -333,6 +337,7 @@
 "Tag %@" = "Tag %@";
 "Tags" = "Tags";
 "Tags: %@" = "Tags: %@";
+"Text size" = "Text size";
 "That file is not a KeepNote archive." = "That file is not a KeepNote archive.";
 "That file is not a KeepNote note." = "That file is not a KeepNote note.";
 "That note was deleted." = "That note was deleted.";
@@ -343,6 +348,7 @@
 "The notes themselves are kept." = "The notes themselves are kept.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "The pause between one card sliding out and the next. Zero opens them all at once.";
 "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it.";
+"The size of the text in notes, the peek and All Notes, titles included." = "The size of the text in notes, the peek and All Notes, titles included.";
 "The stored encryption key is not a valid 256-bit key." = "The stored encryption key is not a valid 256-bit key.";
 "The sync folder could not be reopened: %@" = "The sync folder could not be reopened: %@";
 "The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text." = "The template is used only when a new daily note is created: from the calendar button on the deck or the menu. Adding the daily tag to a note you already have never changes its text.";

@@ -182,7 +182,7 @@ final class MarkdownTextView: NSTextView {
         // Centre on the text itself, not on the line box: with a tall line the
         // extra leading sits above the glyphs, and the box's middle would float
         // above the text. `location.y` is the baseline within the fragment.
-        let font = NSFont.systemFont(ofSize: MarkdownStyler.baseSize)
+        let font = self.font ?? NSFont.systemFont(ofSize: MarkdownStyler.baseSize)
         let centre = origin.y + line.minY + location.y - font.capHeight / 2
         return NSRect(
             x: origin.x + line.minX + location.x,

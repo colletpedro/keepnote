@@ -37,3 +37,30 @@ enum AccessibilityText {
         Lplural(count, L("1 more note"), L("%d more notes"))
     }
 }
+
+/// Settings > General > Text size: how large the text of notes, the peek
+/// and All Notes is drawn.
+enum TextSize: String, CaseIterable, Sendable {
+    case small
+    case standard
+    case large
+    case extraLarge
+
+    var scale: Double {
+        switch self {
+        case .small: return 0.88
+        case .standard: return 1
+        case .large: return 1.18
+        case .extraLarge: return 1.36
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .small: return L("Small")
+        case .standard: return L("Default")
+        case .large: return L("Large")
+        case .extraLarge: return L("Extra Large")
+        }
+    }
+}

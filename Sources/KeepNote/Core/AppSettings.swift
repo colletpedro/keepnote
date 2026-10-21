@@ -17,6 +17,7 @@ final class AppSettings: ObservableObject {
         static let openDelay = "openDelayMilliseconds"
         static let screenEdge = "screenEdge"
         static let carryOver = "dailyCarryOver"
+        static let textSize = "textSize"
         static let autosaveDelay = "autosaveDelayMilliseconds"
         static let undoWindow = "undoWindowSeconds"
         static let defaultNoteColor = "defaultNoteColor"
@@ -135,6 +136,12 @@ final class AppSettings: ObservableObject {
             defaults.set(screenEdge.rawValue, forKey: Key.screenEdge)
             NotificationCenter.default.post(name: .keepNoteWindowBehaviorChanged, object: nil)
         }
+    }
+
+    /// Settings > General > Text size, for notes, the peek and All Notes.
+    @Published var textSize: TextSize = UserDefaults.standard.string(forKey: Key.textSize)
+        .flatMap(TextSize.init(rawValue:)) ?? .standard {
+        didSet { defaults.set(textSize.rawValue, forKey: Key.textSize) }
     }
 
     /// What a new daily does with yesterday's unticked tasks. Ask by default.

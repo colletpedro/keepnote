@@ -82,6 +82,10 @@ struct AllNotesView: View {
     }
 
     var body: some View {
+        splitView.followsTextSize()
+    }
+
+    private var splitView: some View {
         NavigationSplitView {
             AllNotesSidebar(
                 index: index,
@@ -206,7 +210,7 @@ struct AllNotesView: View {
     private var listHeader: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(sidebarSelection.title)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(15, weight: .semibold)
                 .lineLimit(1)
             Spacer(minLength: 8)
             if isDailyList {
@@ -215,7 +219,7 @@ struct AllNotesView: View {
                     .help(L("Edit the text new daily notes start from"))
             }
             Text(countLabel)
-                .font(.system(size: 11.5).monospacedDigit())
+                .scaledFont(11.5, monospacedDigit: true)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)
@@ -406,14 +410,14 @@ private struct DailyTemplateRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "doc.plaintext")
-                .font(.system(size: 13))
+                .scaledFont(13)
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(DailyTemplateText.title)
-                    .font(.system(size: 13, weight: .medium))
+                    .scaledFont(13, weight: .medium)
                 Text(L("Where new daily notes start"))
-                    .font(.system(size: 11))
+                    .scaledFont(11)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
@@ -429,7 +433,7 @@ private struct DayHeader: View {
 
     var body: some View {
         Text(day.date().map { Self.formatter.string(from: $0) } ?? day.string)
-            .font(.system(size: 11.5, weight: .semibold))
+            .scaledFont(11.5, weight: .semibold)
             .foregroundStyle(.secondary)
             .textCase(nil)
     }
@@ -456,7 +460,7 @@ struct DailyIntro: View {
         VStack(alignment: .leading, spacing: 8) {
             Label {
                 Text(Self.text)
-                    .font(.system(size: 12))
+                    .scaledFont(12)
                     .foregroundStyle(.secondary)
             } icon: {
                 Image(systemName: "calendar")
@@ -479,13 +483,13 @@ private struct DailyEmptyState: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: "calendar")
-                .font(.system(size: 30))
+                .scaledFont(30)
                 .foregroundStyle(.tertiary)
             Text(L("No daily notes yet"))
-                .font(.system(size: 13))
+                .scaledFont(13)
                 .foregroundStyle(.secondary)
             Text(L("Add the daily tag to a note, or use Today\u{2019}s Daily."))
-                .font(.system(size: 11.5))
+                .scaledFont(11.5)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
         }
@@ -504,7 +508,7 @@ private struct SidebarRow<Title: View>: View {
                 .lineLimit(1)
             Spacer(minLength: 6)
             Text("\(count)")
-                .font(.system(size: 11).monospacedDigit())
+                .scaledFont(11, monospacedDigit: true)
                 .foregroundStyle(.secondary)
         }
     }
@@ -524,7 +528,7 @@ struct TagChipLinks: View {
             ForEach(tags, id: \.self) { tag in
                 Button { onTag(tag) } label: {
                     Text("#\(tag)")
-                        .font(.system(size: size, weight: .medium))
+                        .scaledFont(size, weight: .medium)
                         .foregroundStyle(color.inkSwiftUI)
                         .lineLimit(1)
                         .padding(.horizontal, 6)
@@ -562,29 +566,29 @@ private struct NoteRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(note.displayTitle)
-                        .font(.system(size: 13, weight: .semibold))
+                        .scaledFont(13, weight: .semibold)
                         .lineLimit(1)
                     if note.isDaily {
                         Image(systemName: "calendar")
-                            .font(.system(size: 9.5))
+                            .scaledFont(9.5)
                             .foregroundStyle(.secondary)
                             .help(L("Daily note"))
                     }
                     if note.state == .archived {
                         Image(systemName: "archivebox.fill")
-                            .font(.system(size: 9))
+                            .scaledFont(9)
                             .foregroundStyle(.secondary)
                             .help(DeckStatus.archivedLine(for: note) ?? L("Archived"))
                     }
                     Spacer(minLength: 4)
                     Text(Self.formatter.localizedString(for: note.editedAt, relativeTo: Date()))
-                        .font(.system(size: 10.5))
+                        .scaledFont(10.5)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                         .fixedSize()
                 }
                 Text(note.preview.isEmpty ? " " : note.preview)
-                    .font(.system(size: 11.5))
+                    .scaledFont(11.5)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 if !note.tags.isEmpty {
@@ -663,7 +667,7 @@ struct NoteReadingPane: View {
 
     private var dates: some View {
         Text(L("Created %@ \u{00B7} Edited %@", Self.day.string(from: note.createdAt), Self.day.string(from: note.editedAt)))
-            .font(.system(size: 11))
+            .scaledFont(11)
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.middle)
@@ -748,7 +752,7 @@ private struct NoteReadingCard: View {
     private var paper: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(note.displayTitle)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(15, weight: .semibold)
                 .foregroundStyle(note.color.inkSwiftUI)
                 .lineLimit(1)
                 .padding(.horizontal, 14)
@@ -778,7 +782,7 @@ private struct NoteReadingCard: View {
                         if !note.isLocked {
                             Button(action: startAddingTag) {
                                 Label(L("Add tag"), systemImage: "plus")
-                                    .font(.system(size: 11.5, weight: .medium))
+                                    .scaledFont(11.5, weight: .medium)
                             }
                             .buttonStyle(InkFocusButtonStyle(color: note.color))
                             .foregroundStyle(note.color.secondaryInkSwiftUI)
@@ -789,7 +793,7 @@ private struct NoteReadingCard: View {
             }
             if let line = DeckStatus.line(for: note) {
                 Text(line)
-                    .font(.system(size: 10.5))
+                    .scaledFont(10.5)
                     .foregroundStyle(note.color.secondaryInkSwiftUI)
                     .lineLimit(1)
                     .fixedSize()
@@ -854,10 +858,10 @@ private struct MultipleSelectionPane: View {
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "square.stack")
-                .font(.system(size: 34))
+                .scaledFont(34)
                 .foregroundStyle(.tertiary)
             Text(L("%d notes selected", notes.count))
-                .font(.system(size: 15, weight: .medium))
+                .scaledFont(15, weight: .medium)
             HStack(spacing: 10) {
                 Button(L("Export\u{2026}")) { actions.export(notes.map(\.id)) }
                 if notes.allSatisfy({ $0.state == .archived }) {
@@ -879,10 +883,10 @@ private struct ContentUnavailablePlaceholder: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 34))
+                .scaledFont(34)
                 .foregroundStyle(.tertiary)
             Text(L("Select a note to read it here"))
-                .font(.system(size: 13))
+                .scaledFont(13)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

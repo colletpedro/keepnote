@@ -347,6 +347,8 @@ struct NoteEditorView: View {
     @ObservedObject var model: NoteEditorModel
     /// Tooltips name the shortcuts as they are set now.
     @ObservedObject var shortcuts: ShortcutStore = .shared
+    /// Text size: past Default the status line goes under the title.
+    @ObservedObject var appSettings: AppSettings = .shared
     var presentation: NotePresentation
     var onClose: () -> Void
     var onDelete: () -> Void
@@ -379,6 +381,7 @@ struct NoteEditorView: View {
         .onChange(of: model.isFindBarVisible) { visible in
             findFieldFocused = visible
         }
+        .followsTextSize()
     }
 
     /// The note's own handle, carried over from the deck so the card stays the
@@ -412,7 +415,7 @@ struct NoteEditorView: View {
             VStack(spacing: Self.buttonGap) {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 9.5, weight: .bold))
+                        .scaledFont(9.5, weight: .bold)
                         .foregroundStyle(model.color.inkSwiftUI.opacity(0.75))
                         .frame(width: Self.closeDiameter, height: Self.closeDiameter)
                         .background(Circle().fill(model.color.surfaceSwiftUI.opacity(0.7)))
@@ -439,7 +442,7 @@ struct NoteEditorView: View {
         let floating = presentation == .detached
         return Button(action: onTogglePin) {
             Image(systemName: floating ? "arrow.right.to.line" : "arrow.up.left.and.arrow.down.right")
-                .font(.system(size: 9.5, weight: .bold))
+                .scaledFont(9.5, weight: .bold)
                 .foregroundStyle(model.color.surfaceSwiftUI)
                 .frame(width: Self.closeDiameter, height: Self.closeDiameter)
                 .background(Circle().fill(model.color.inkSwiftUI))
@@ -513,27 +516,45 @@ struct NoteEditorView: View {
 
     // MARK: - Header
 
+    /// Title, status, pin and Tools on one line; with a larger Text size the
+    /// status goes under the title, so the title keeps its room.
     private var header: some View {
-        HStack(spacing: 8) {
-            TextField(L("Title"), text: $model.title)
-                .textFieldStyle(.plain)
-                .disabled(model.isLocked)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(model.color.inkSwiftUI)
-
-            // Re-evaluated every 30 s, so "5 min ago" keeps counting while the
-            // note sits open.
-            TimelineView(.periodic(from: .now, by: 30)) { context in
-                Text(model.isLocked ? L("Locked \u{00B7} read-only") : model.statusLabel(now: context.date))
-                    .font(.system(size: 12))
-                    .foregroundStyle(model.color.secondaryInkSwiftUI)
-                    .lineLimit(1)
-                    .fixedSize()
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                TextField(L("Title"), text: $model.title)
+                    .textFieldStyle(.plain)
+                    .disabled(model.isLocked)
+                    .scaledFont(15, weight: .semibold)
+                    .foregroundStyle(model.color.inkSwiftUI)
+                if appSettings.textSize.scale <= 1 { status }
+                headerButtons
             }
+            if appSettings.textSize.scale > 1 { status }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .contentShape(Rectangle())
+        .gesture(windowDrag)
+    }
 
+    /// Re-evaluated every 30 s, so "5 min ago" keeps counting while the note
+    /// sits open.
+    private var status: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            Text(model.isLocked ? L("Locked \u{00B7} read-only") : model.statusLabel(now: context.date))
+                .scaledFont(12)
+                .foregroundStyle(model.color.secondaryInkSwiftUI)
+                .lineLimit(1)
+                .fixedSize()
+        }
+    }
+
+    @ViewBuilder
+    private var headerButtons: some View {
             Button(action: onToggleCenterPin) {
                 Image(systemName: model.isPinned ? "pin.fill" : "pin")
-                    .font(.system(size: 11))
+                    .scaledFont(11)
             }
             .buttonStyle(InkFocusButtonStyle(color: model.color))
             .foregroundStyle(model.color.secondaryInkSwiftUI)
@@ -543,20 +564,13 @@ struct NoteEditorView: View {
 
             Button(action: onShowTools) {
                 Image(systemName: "wrench.and.screwdriver")
-                    .font(.system(size: 11))
+                    .scaledFont(11)
             }
             .buttonStyle(InkFocusButtonStyle(color: model.color))
             .foregroundStyle(model.color.secondaryInkSwiftUI)
             .help(L("Tools"))
             .accessibilityLabel(L("Tools"))
             .accessibilityHint(L("Formatting, Pin to Center and Keep on Deck"))
-
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
-        .contentShape(Rectangle())
-        .gesture(windowDrag)
     }
 
     // MARK: - Find
@@ -564,17 +578,17 @@ struct NoteEditorView: View {
     private var findBar: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 10.5))
+                .scaledFont(10.5)
                 .foregroundStyle(model.color.inkSwiftUI.opacity(0.45))
             TextField(L("Find in note"), text: $model.findQuery)
                 .textFieldStyle(.plain)
-                .font(.system(size: 11.5))
+                .scaledFont(11.5)
                 .focused($findFieldFocused)
                 .onSubmit { model.advanceFind(by: 1) }
 
             if !model.findQuery.isEmpty {
                 Text(model.matchCount == 0 ? L("none") : "\(model.currentMatchNumber)/\(model.matchCount)")
-                    .font(.system(size: 10.5).monospacedDigit())
+                    .scaledFont(10.5, monospacedDigit: true)
                     .foregroundStyle(model.color.inkSwiftUI.opacity(0.5))
                 Button { model.advanceFind(by: -1) } label: { Image(systemName: "chevron.up") }
                     .buttonStyle(InkFocusButtonStyle(color: model.color))
@@ -587,7 +601,7 @@ struct NoteEditorView: View {
             Button { model.toggleFindBar() } label: { Image(systemName: "xmark") }
                 .buttonStyle(InkFocusButtonStyle(color: model.color))
         }
-        .font(.system(size: 10.5))
+        .scaledFont(10.5)
         .foregroundStyle(model.color.inkSwiftUI.opacity(0.6))
         .padding(.horizontal, 14)
         .padding(.vertical, 7)
@@ -615,7 +629,7 @@ struct NoteEditorView: View {
         return HStack(spacing: 6) {
             if !showChips {
                 Image(systemName: "number")
-                    .font(.system(size: 10, weight: .semibold))
+                    .scaledFont(10, weight: .semibold)
                     .foregroundStyle(model.color.secondaryInkSwiftUI)
             }
             ZStack(alignment: .leading) {
@@ -638,7 +652,7 @@ struct NoteEditorView: View {
             }
             if let line = model.deckLine {
                 Text(line)
-                    .font(.system(size: 10.5))
+                    .scaledFont(10.5)
                     .foregroundStyle(model.color.secondaryInkSwiftUI)
                     .lineLimit(1)
                     .fixedSize()
@@ -694,7 +708,7 @@ struct NoteEditorView: View {
                     .buttonStyle(NoteFooterButtonStyle(color: model.color))
             }
         }
-        .font(.system(size: 11.5))
+        .scaledFont(11.5)
     }
 }
 
@@ -770,7 +784,7 @@ private struct TagChips: View {
             ForEach(tags, id: \.self) { tag in
                 Button { onTag(tag) } label: {
                     Text("#" + tag)
-                        .font(.system(size: 11.5, weight: .medium))
+                        .scaledFont(11.5, weight: .medium)
                         .foregroundStyle(color.inkSwiftUI)
                         .lineLimit(1)
                         .padding(.horizontal, 8)

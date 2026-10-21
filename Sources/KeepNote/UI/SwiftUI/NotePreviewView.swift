@@ -16,6 +16,7 @@ struct NotePreviewView: View {
             content
         }
         .background(note.color.surfaceSwiftUI)
+        .followsTextSize()
     }
 
     private var spine: some View {
@@ -34,14 +35,14 @@ struct NotePreviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(note.displayTitle)
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(15, weight: .semibold)
                     .foregroundStyle(note.color.inkSwiftUI)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
 
             Text(note.preview)
-                .font(.system(size: 14))
+                .scaledFont(14)
                 .foregroundStyle(note.body.isEmpty ? note.color.secondaryInkSwiftUI : note.color.inkSwiftUI)
                 .lineSpacing(5.5)
                 .lineLimit(4)
@@ -51,7 +52,7 @@ struct NotePreviewView: View {
             // note has left.
             if let line = DeckStatus.line(for: note) {
                 Text(line)
-                    .font(.system(size: 10.5))
+                    .scaledFont(10.5)
                     .foregroundStyle(note.color.secondaryInkSwiftUI)
                     .lineLimit(1)
             }
@@ -95,7 +96,7 @@ struct SpineLabel: View {
         GeometryReader { proxy in
             let length = max(0, proxy.size.height - topInset - 2 * margin)
             Text(text)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(12, weight: .semibold)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .foregroundStyle(color)

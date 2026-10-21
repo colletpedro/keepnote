@@ -7,6 +7,11 @@ import SwiftUI
 MainActor.assumeIsolated {
     let outDir = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
     NSApplication.shared.setActivationPolicy(.prohibited)
+    // render.sh's third argument: the Text size to draw with.
+    if let size = ProcessInfo.processInfo.environment["KEEPNOTE_TEXT_SIZE"].flatMap(TextSize.init(rawValue:)) {
+        AppSettings.shared.textSize = size
+    }
+    defer { AppSettings.shared.textSize = .standard }
 
     let dbURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("keepnote-render-\(UUID().uuidString).sqlite")

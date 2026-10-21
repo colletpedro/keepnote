@@ -69,10 +69,14 @@ struct MarkdownStyler: Equatable {
     /// drawn near full ink instead of faded.
     var increaseContrast = false
 
+    /// Settings > General > Text size.
+    var scale: CGFloat = 1
+    var bodySize: CGFloat { Self.baseSize * scale }
+
     /// A faded text alpha, held up with Increase contrast.
     func faded(_ alpha: CGFloat) -> CGFloat { increaseContrast ? max(alpha, 0.78) : alpha }
 
-    var baseFont: NSFont { NSFont.systemFont(ofSize: Self.baseSize) }
+    var baseFont: NSFont { NSFont.systemFont(ofSize: bodySize) }
 
     var baseAttributes: [NSAttributedString.Key: Any] {
         [.font: baseFont, .foregroundColor: ink, .paragraphStyle: baseParagraph()]
@@ -83,7 +87,7 @@ struct MarkdownStyler: Equatable {
         let p = NSMutableParagraphStyle()
         // `lineHeightMultiple` scales the font's own line height (about 1.2 of
         // its size), so the factor is converted to land on 1.6 x the size.
-        p.lineHeightMultiple = Self.lineSpacing * Self.baseSize / lineHeight
+        p.lineHeightMultiple = Self.lineSpacing * bodySize / lineHeight
         return p
     }
 
@@ -243,7 +247,7 @@ struct MarkdownStyler: Equatable {
             let level = m.range(at: 1).length
             storage.addAttribute(
                 .font,
-                value: NSFont.systemFont(ofSize: Self.headingSizes[level - 1], weight: .bold),
+                value: NSFont.systemFont(ofSize: Self.headingSizes[level - 1] * scale, weight: .bold),
                 range: range
             )
             mark(abs(m.range), show: lineActive, in: storage)
@@ -276,7 +280,7 @@ struct MarkdownStyler: Equatable {
             if let c = Self.callout.firstMatch(in: lineString, range: rest) {
                 let title = NSRange(location: NSMaxRange(c.range), length: line.length - NSMaxRange(c.range))
                 storage.addAttributes([
-                    .font: NSFont.systemFont(ofSize: Self.baseSize, weight: .semibold),
+                    .font: NSFont.systemFont(ofSize: bodySize, weight: .semibold),
                     .foregroundColor: accent
                 ], range: abs(NSRange(location: contentStart, length: line.length - contentStart)))
                 if title.length > 0 { mark(abs(c.range), show: lineActive, in: storage) }
@@ -518,7 +522,7 @@ struct MarkdownStyler: Equatable {
         }
         // A column never squeezes below its longest word, so words are not cut.
         let longestWord: [CGFloat] = (0..<columns).map { column in
-            let font = NSFont.systemFont(ofSize: Self.tableFontSize, weight: .semibold)
+            let font = NSFont.systemFont(ofSize: Self.tableFontSize * scale, weight: .semibold)
             let widest = cells.map { row in
                 row[column].string.split(whereSeparator: \.isWhitespace)
                     .map { ceil(($0 as NSString).size(withAttributes: [.font: font]).width) }
@@ -560,7 +564,7 @@ struct MarkdownStyler: Equatable {
     }
 
     private func cellText(_ text: String, bold: Bool, alignment: NSTextAlignment) -> NSAttributedString {
-        let font = NSFont.systemFont(ofSize: Self.tableFontSize)
+        let font = NSFont.systemFont(ofSize: Self.tableFontSize * scale)
         let p = NSMutableParagraphStyle()
         p.alignment = alignment
         let storage = NSTextStorage(string: text, attributes: [

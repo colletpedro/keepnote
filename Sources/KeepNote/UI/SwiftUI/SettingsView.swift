@@ -35,7 +35,7 @@ enum SettingsTab: Int, CaseIterable {
     /// Each pane is a fixed size; the window animates between them.
     var paneHeight: CGFloat {
         switch self {
-        case .general: return 450
+        case .general: return 510
         case .notes: return 270
         case .deck: return 430
         case .daily: return 380
@@ -118,6 +118,13 @@ struct GeneralSettingsPane: View {
                 }
                 if settings.language != Localization.launchChoice {
                     relaunchRow
+                }
+                Option(help: L("The size of the text in notes, the peek and All Notes, titles included.")) {
+                    Picker(L("Text size"), selection: $settings.textSize) {
+                        ForEach(TextSize.allCases, id: \.self) { size in
+                            Text(size.title).tag(size)
+                        }
+                    }
                 }
             }
 
