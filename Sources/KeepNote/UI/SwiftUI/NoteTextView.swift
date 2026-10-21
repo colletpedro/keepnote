@@ -61,7 +61,9 @@ struct NoteTextView: NSViewRepresentable {
         textView.isRichText = false
         textView.allowsUndo = true
         textView.drawsBackground = false
-        textView.textContainerInset = NSSize(width: 14, height: 12)
+        // 9 + the container's 5 pt line padding = 14, the title's margin, so
+        // the body's first letter lines up with the title's.
+        textView.textContainerInset = NSSize(width: 9, height: 12)
         textView.font = NSFont.systemFont(ofSize: MarkdownStyler.baseSize)
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
@@ -76,7 +78,20 @@ struct NoteTextView: NSViewRepresentable {
         coordinator.styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine, increaseContrast: DisplayOptions.increaseContrast,
                                     scale: context.environment.textScale)
         textView.onWidthChange = { [weak coordinator] in coordinator?.restyle(force: true) }
+        // Setting the text leaves the selection at its end, and AppKit
+        // scrolls to it: a note whose last line is tall (an image) would open
+        // scrolled past its first lines. It starts at the top; whoever opens
+        // the note puts the caret where it belongs.
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
         coordinator.restyle(force: true)
+        textView.scroll(.zero)
+        // Laying the text out scrolls the caret's line to the very top,
+        // past the inset above it; once that has happened, back to the top
+        // — unless the caret has been put somewhere since.
+        DispatchQueue.main.async { [weak textView] in
+            guard let textView, textView.selectedRange().location == 0 else { return }
+            textView.scroll(.zero)
+        }
         return scrollView
     }
 
@@ -182,36 +197,42 @@ struct NoteTextView: NSViewRepresentable {
                 markdownView.accentColor = styler.accent
                 markdownView.inkColor = styler.ink
                 markdownView.textScale = styler.scale
+                markdownView.highlightColor = styler.highlight
                 markdownView.bodyFont = styler.baseFont
             }
             textView.needsDisplay = true
         }
 
-        /// Highlights every match, and marks the current one more strongly.
-        /// Temporary attributes live in the layout manager only, so nothing
-        /// here can end up in the encrypted body.
+        /// Every match, and the current one, drawn by the text view at the
+        /// text's height; nothing here touches the stored text.
         func applyHighlight(query: String, index: Int, accent: NSColor) {
-            guard let textView, let layoutManager = textView.layoutManager else { return }
-            let full = NSRange(location: 0, length: (textView.string as NSString).length)
-            layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: full)
-
+            guard let textView = textView as? MarkdownTextView else { return }
+            textView.highlightColor = accent
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-
-            let ranges = NoteTextView.matchRanges(in: textView.string, query: trimmed)
-            guard !ranges.isEmpty else { return }
-
-            for (offset, range) in ranges.enumerated() {
-                let isCurrent = offset == ((index % ranges.count) + ranges.count) % ranges.count
-                layoutManager.addTemporaryAttribute(
-                    .backgroundColor,
-                    value: accent.withAlphaComponent(isCurrent ? 0.55 : 0.22),
-                    forCharacterRange: range
-                )
+            let ranges = trimmed.isEmpty ? [] : NoteTextView.matchRanges(in: textView.string, query: trimmed)
+            textView.findMatches = ranges
+            guard !ranges.isEmpty else {
+                textView.currentFindMatch = nil
+                return
             }
+            let current = ((index % ranges.count) + ranges.count) % ranges.count
+            if textView.currentFindMatch != current || lastQuery != trimmed {
+                textView.scrollRangeToVisible(ranges[current])
+            }
+            lastQuery = trimmed
+            textView.currentFindMatch = current
+        }
 
-            let current = ranges[((index % ranges.count) + ranges.count) % ranges.count]
-            textView.scrollRangeToVisible(current)
+        private var lastQuery = ""
+
+        /// No spelling marks inside code: it is not prose.
+        func textView(_ textView: NSTextView, shouldSetSpellingState value: Int, range affectedCharRange: NSRange) -> Int {
+            guard value != 0, let storage = textView.textStorage, NSMaxRange(affectedCharRange) <= storage.length else { return value }
+            var inCode = false
+            storage.enumerateAttribute(.font, in: affectedCharRange) { font, _, stop in
+                if (font as? NSFont)?.isFixedPitch == true { inCode = true; stop.pointee = true }
+            }
+            return inCode ? 0 : value
         }
     }
 

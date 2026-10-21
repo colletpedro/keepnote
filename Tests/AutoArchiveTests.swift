@@ -188,7 +188,8 @@ func runAutoArchiveRuleTests() {
     expect("footer: kept", AutoArchive.footerLine(kept, today: today, days: 14), "Kept on deck")
     expect("footer: pinned", AutoArchive.footerLine(pinned, today: today, days: 14), "Pinned to center")
     var both = kept; both.isPinned = true
-    expect("footer: kept and pinned says kept", AutoArchive.footerLine(both, today: today, days: 14), "Kept on deck")
+    // Pinning turns Keep on Deck on as well; the pin is what the note says.
+    expect("footer: kept and pinned says pinned", AutoArchive.footerLine(both, today: today, days: 14), "Pinned to center")
     expect("footer: two days", AutoArchive.footerLine(opened(12), today: today, days: 14), "Archives in 2 days")
     expect("footer: tomorrow", AutoArchive.footerLine(opened(13), today: today, days: 14), "Archives tomorrow")
     expect("footer: nothing to say", AutoArchive.footerLine(opened(2), today: today, days: 14), nil)

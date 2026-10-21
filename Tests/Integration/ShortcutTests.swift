@@ -33,7 +33,7 @@ func runShortcutTests() {
            "Used by Float Note \u{00B7} Return to Deck")
     expect("conflict: a note command against a global", refusal(combo(kVK_ANSI_N, command | option), for: .note(.find)), "Used by New Note")
     expect("conflict: formatting is fixed", refusal(combo(kVK_ANSI_B, command), for: .note(.find)), "Used by Bold")
-    expect("conflict: and ⇧⌘7", refusal(combo(kVK_ANSI_7, command | shift), for: .note(.find)), "Used by Bulleted list")
+    expect("conflict: and ⇧⌘7", refusal(combo(kVK_ANSI_7, command | shift), for: .note(.find)), "Used by Bulleted List")
     expect("conflict: ⌘Q", refusal(combo(kVK_ANSI_Q, command), for: .global(.newNote)), "Used by Quit KeepNote")
     expect("conflict: ⌘W", refusal(combo(kVK_ANSI_W, command), for: .note(.float)), "Used by Close")
     expect("no conflict with itself", refusal(combo(kVK_ANSI_F, command), for: .note(.find)), "ok")

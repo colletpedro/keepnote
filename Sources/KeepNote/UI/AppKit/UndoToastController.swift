@@ -146,6 +146,7 @@ private struct UndoToastView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+            .accessibilityLabel(L("Dismiss"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

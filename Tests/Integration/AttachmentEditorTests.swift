@@ -129,7 +129,7 @@ func runAttachmentCardTests() {
     let bytes = Data((0..<150_000).map { UInt8(truncatingIfNeeded: $0 &* 31) })
     let info = try! store.addAttachment(bytes, name: "Invoice October.pdf", type: .pdf)
     expectTrue("card: a PDF is a file, not an image", !info.isImage)
-    expect("card: its size, as the Finder writes it", info.sizeText, ByteCountFormatter.string(fromByteCount: 150_000, countStyle: .file))
+    expect("card: its size, as the Finder writes it", info.sizeText, Lbytes(150_000))
     let token = AttachmentText.token(id: info.id, isImage: false, label: info.name)
     let note = try! store.create(title: "Bills", body: "\(token)\nPay by Friday")
     let window = NoteWindowController(note: note, store: store, originFrame: nil, cascadeIndex: 0, floating: true)

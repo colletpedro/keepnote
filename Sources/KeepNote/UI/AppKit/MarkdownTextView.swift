@@ -13,6 +13,11 @@ final class MarkdownTextView: NSTextView {
     var textScale: CGFloat = 1
     /// The body's font, for lines whose first character is hidden.
     var bodyFont: NSFont = .systemFont(ofSize: MarkdownStyler.baseSize)
+    /// The spine colour, for highlights and find matches.
+    var highlightColor: NSColor = .systemYellow
+    /// Find in note: every match, and which one is current.
+    var findMatches: [NSRange] = [] { didSet { if findMatches != oldValue { needsDisplay = true } } }
+    var currentFindMatch: Int? { didSet { if currentFindMatch != oldValue { needsDisplay = true } } }
     /// Tables are laid out for a width, so a resize has to restyle.
     var onWidthChange: (() -> Void)?
     /// Where the note's attachments are kept, for drawing and adding them.
@@ -55,6 +60,15 @@ final class MarkdownTextView: NSTextView {
         storage.enumerateAttribute(MarkdownStyler.tableKey, in: characters) { value, _, _ in
             if let table = value as? TableLayout { draw(table) }
         }
+        storage.enumerateAttribute(MarkdownStyler.inlineBoxKey, in: characters) { value, range, _ in
+            guard let raw = value as? String, let kind = MarkdownStyler.InlineBox(rawValue: raw) else { return }
+            let color = kind == .code ? inkColor.withAlphaComponent(0.09) : highlightColor.withAlphaComponent(0.42)
+            color.setFill()
+            for box in textBoxes(range) {
+                NSBezierPath(roundedRect: box, xRadius: 3, yRadius: 3).fill()
+            }
+        }
+        drawFindMatches(in: characters)
         attachmentLayouts(in: characters).forEach(drawAttachment)
     }
 
@@ -144,12 +158,9 @@ final class MarkdownTextView: NSTextView {
             path.fill()
 
         case .codeLine:
-            guard let layoutManager else { return }
-            let glyphs = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            guard let card = codeCardRect(range) else { return }
             inkColor.withAlphaComponent(0.07).setFill()
-            layoutManager.enumerateLineFragments(forGlyphRange: glyphs) { rect, _, _, _, _ in
-                rect.offsetBy(dx: self.textContainerOrigin.x, dy: self.textContainerOrigin.y).fill()
-            }
+            NSBezierPath(roundedRect: card, xRadius: 6, yRadius: 6).fill()
         }
     }
 
@@ -250,11 +261,84 @@ final class MarkdownTextView: NSTextView {
         }
         let joinsAbove = isQuote(paragraph.location - 1)
         let joinsBelow = isQuote(NSMaxRange(paragraph))
-        let top = union.minY + (joinsAbove ? 0 : 4 * textScale)
-        let bottom = union.maxY - (joinsBelow ? 0 : 4 * textScale)
+        // Free ends stop at the text's own top and bottom, so the bar is
+        // centred on the words, not on the line box (whose extra room is
+        // above). Measured with the quote's own font: the "> " before it is
+        // hidden in a near-zero one.
+        let font = textFont(after: range)
+        var firstBaseline: CGFloat?
+        var lastBaseline: CGFloat = union.maxY
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphs) { rect, _, _, lineGlyphs, _ in
+            let baseline = rect.minY + layoutManager.location(forGlyphAt: lineGlyphs.location).y
+            if firstBaseline == nil { firstBaseline = baseline }
+            lastBaseline = baseline
+        }
+        let top = joinsAbove ? union.minY : (firstBaseline ?? union.minY) - font.ascender
+        let bottom = joinsBelow ? union.maxY : lastBaseline - font.descender
         let rect = NSRect(x: textContainerOrigin.x + container.lineFragmentPadding,
                           y: textContainerOrigin.y + top, width: 3, height: max(0, bottom - top))
         return (rect, joinsAbove, joinsBelow)
+    }
+
+    /// A code block's card: the whole block (not only the part being
+    /// redrawn), from the text's left edge to the right margin, rounded.
+    func codeCardRect(_ range: NSRange) -> NSRect? {
+        guard let layoutManager, let container = textContainer, let storage = textStorage,
+              range.location < storage.length else { return nil }
+        var block = NSRange()
+        _ = storage.attribute(MarkdownStyler.decorationKey, at: range.location, longestEffectiveRange: &block,
+                              in: NSRange(location: 0, length: storage.length))
+        let glyphs = layoutManager.glyphRange(forCharacterRange: block, actualCharacterRange: nil)
+        var union = NSRect.null
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphs) { rect, _, _, _, _ in union = union.union(rect) }
+        guard !union.isNull else { return nil }
+        let left = textContainerOrigin.x + container.lineFragmentPadding
+        let right = textContainerOrigin.x + container.size.width - container.lineFragmentPadding
+        return NSRect(x: left, y: textContainerOrigin.y + union.minY, width: right - left, height: union.height)
+    }
+
+    /// The rectangles a run of text covers, one per line, as tall as its
+    /// font's letters rather than the whole line box.
+    func textBoxes(_ range: NSRange) -> [NSRect] {
+        guard let layoutManager, let container = textContainer, let storage = textStorage, range.length > 0,
+              NSMaxRange(range) <= storage.length else { return [] }
+        let glyphs = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+        var boxes: [NSRect] = []
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphs) { fragment, _, _, lineGlyphs, _ in
+            let part = NSIntersectionRange(lineGlyphs, glyphs)
+            guard part.length > 0 else { return }
+            var span = layoutManager.boundingRect(forGlyphRange: part, in: container)
+            // Without the line's trailing break.
+            let characters = layoutManager.characterRange(forGlyphRange: part, actualGlyphRange: nil)
+            if let last = (storage.string as NSString).substring(with: characters).last, last == "\n" {
+                span.size.width = max(0, layoutManager.location(forGlyphAt: NSMaxRange(part) - 1).x + fragment.minX - span.minX)
+            }
+            let baseline = fragment.minY + layoutManager.location(forGlyphAt: part.location).y
+            let font = (storage.attribute(.font, at: characters.location, effectiveRange: nil) as? NSFont) ?? self.bodyFont
+            let top = baseline - font.ascender - 1
+            let bottom = baseline - font.descender + 1
+            boxes.append(NSRect(x: span.minX - 2, y: top, width: span.width + 4, height: bottom - top)
+                .offsetBy(dx: self.textContainerOrigin.x, dy: self.textContainerOrigin.y))
+        }
+        return boxes
+    }
+
+    /// Every match, quietly; the current one stronger and outlined.
+    private func drawFindMatches(in characters: NSRange) {
+        guard !findMatches.isEmpty else { return }
+        for (index, match) in findMatches.enumerated() where NSIntersectionRange(match, characters).length > 0 {
+            let current = index == currentFindMatch
+            for box in textBoxes(match) {
+                let path = NSBezierPath(roundedRect: box, xRadius: 3, yRadius: 3)
+                highlightColor.withAlphaComponent(current ? 0.85 : 0.38).setFill()
+                path.fill()
+                if current {
+                    inkColor.withAlphaComponent(0.55).setStroke()
+                    path.lineWidth = 1
+                    path.stroke()
+                }
+            }
+        }
     }
 
     /// The font of the text that follows a marker on its line, or the body's

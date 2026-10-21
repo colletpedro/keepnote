@@ -612,7 +612,7 @@ struct TagChipLinks: View {
 
 /// One note in the list: a 4 pt bar in the spine colour, the title, one line
 /// of preview, the date and the tags.
-private struct NoteRow: View {
+struct NoteRow: View {
     let note: Note
     var onTag: (String) -> Void
 
@@ -655,7 +655,7 @@ private struct NoteRow: View {
                         stateMark("paperclip", L("Has attachments"))
                     }
                     Spacer(minLength: 4)
-                    Text(Self.formatter.localizedString(for: note.editedAt, relativeTo: Date()))
+                    Text(Self.age(of: note.editedAt))
                         .scaledFont(10.5)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
@@ -680,6 +680,14 @@ private struct NoteRow: View {
             .foregroundStyle(.secondary)
             .help(label)
             .accessibilityLabel(label)
+    }
+
+    /// "Just now" for the first minute (not "in 0 sec" for an edit a few
+    /// milliseconds ahead of the clock, nor seconds that count up), then
+    /// "5 min ago".
+    static func age(of date: Date, now: Date = Date()) -> String {
+        if abs(now.timeIntervalSince(date)) < 60 { return L("Just now") }
+        return formatter.localizedString(for: min(date, now), relativeTo: now)
     }
 
     private static let formatter: RelativeDateTimeFormatter = {

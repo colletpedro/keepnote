@@ -76,6 +76,9 @@ final class DailyTemplateModel: ObservableObject {
 enum DailyTemplateText {
     static var title: String { L("Daily Template") }
     static var placeholder: String { L("Write what a new daily note should start with.") }
+    /// Settings > Daily has no colour of its own to point at.
+    static var variablesHelp: String { L("Use {date} for today\u{2019}s date and {weekday} for the day of the week. They are filled in when a new daily note is created.") }
+
     static var help: String { L("Use {date} for today\u{2019}s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color.") }
 }
 
@@ -198,7 +201,7 @@ struct DailyTemplateCard: View {
                 .background(
                     ZStack(alignment: .top) {
                         color.surfaceSwiftUI
-                        Rectangle().fill(color.inkSwiftUI.opacity(0.12)).frame(height: 1)
+                        Rectangle().fill(color.inkSwiftUI.opacity(DisplayOptions.increaseContrast ? 0.4 : 0.12)).frame(height: 1)
                     }
                 )
             }

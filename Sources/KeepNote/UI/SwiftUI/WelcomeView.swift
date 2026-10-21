@@ -16,6 +16,7 @@ struct WelcomeView: View {
     private var allNotes: String { keys(.global(.allNotes)) }
     private var archive: String { keys(.global(.archive)) }
     private var daily: String { keys(.global(.todaysDaily)) }
+    private var focusDeck: String { keys(.global(.focusDeck)) }
     private var floatHint: String {
         if let keys = shortcuts.label(for: .note(.float)) {
             return L("To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back.", keys)
@@ -36,10 +37,12 @@ struct WelcomeView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 6) {
-                shortcut(L("New note"), newNote)
-                shortcut(L("All notes"), allNotes)
+                // Named as in the menus and in Settings > Shortcuts.
+                shortcut(L("New Note"), newNote)
+                shortcut(L("All Notes"), allNotes)
                 shortcut(L("[noun] Archive"), archive)
                 shortcut(L("Today\u{2019}s Daily"), daily)
+                shortcut(L("Focus Deck"), focusDeck)
             }
             .padding(12)
             .frame(maxWidth: .infinity)

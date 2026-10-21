@@ -111,8 +111,9 @@ enum AutoArchive {
     /// or pinned, or that it is about to be archived. Nothing otherwise.
     static func footerLine(_ item: some AutoArchiveItem, today: DailyDay, days: Int) -> String? {
         if item.isArchived { return nil }
-        if item.keepOnDeck { return L("Kept on deck") }
+        // Pinning turns Keep on Deck on too, so the pin is said first.
         if item.isPinned { return L("Pinned to center") }
+        if item.keepOnDeck { return L("Kept on deck") }
         return daysLeft(item, today: today, days: days).map(warning(daysLeft:))
     }
 

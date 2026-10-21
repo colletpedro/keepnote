@@ -56,8 +56,6 @@
 "Add the daily tag to a note, or use Today’s Daily." = "Add the daily tag to a note, or use Today’s Daily.";
 "All" = "All";
 "All Notes" = "All Notes";
-"All Notes…" = "All Notes…";
-"All notes" = "All notes";
 "Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu." = "Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu.";
 "Archive" = "Archive";
 "Archive %d Notes" = "Archive %d Notes";
@@ -67,7 +65,6 @@
 "Archives in %d days" = "Archives in %d days";
 "Archives soon" = "Archives soon";
 "Archives tomorrow" = "Archives tomorrow";
-"Archive…" = "Archive…";
 "Ask each time" = "Ask each time";
 "Automatic" = "Automatic";
 "Autosave after" = "Autosave after";
@@ -76,7 +73,7 @@
 "Bring" = "Bring";
 "Bring All to Front" = "Bring All to Front";
 "Bring automatically" = "Bring automatically";
-"Bulleted list" = "Bulleted list";
+"Bulleted List" = "Bulleted List";
 "Butter" = "Butter";
 "Cancel" = "Cancel";
 "Cascade delay" = "Cascade delay";
@@ -92,7 +89,7 @@
 "Close (esc)" = "Close (esc)";
 "Close find" = "Close find";
 "Closes the note. What you wrote is saved." = "Closes the note. What you wrote is saved.";
-"Code block" = "Code block";
+"Code Block" = "Code Block";
 "Colors, states and dates came across unchanged." = "Colors, states and dates came across unchanged.";
 "Command" = "Command";
 "Continue" = "Continue";
@@ -148,7 +145,7 @@
 "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files." = "Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac — which is why it cannot travel with the files.";
 "Find in note" = "Find in note";
 "Float Note" = "Float Note";
-"Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it." = "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it.";
+"Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note’s spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck’s edge returns it." = "Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note’s spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck’s edge returns it.";
 "Float Note · Return to Deck" = "Float Note · Return to Deck";
 "Floating" = "Floating";
 "Focus Deck" = "Focus Deck";
@@ -180,7 +177,7 @@
 "Import…" = "Import…";
 "In use by another app" = "In use by another app";
 "Indent item" = "Indent item";
-"Inline code" = "Inline code";
+"Inline Code" = "Inline Code";
 "Inside a note" = "Inside a note";
 "Inside a note: %@." = "Inside a note: %@.";
 "It is the tag daily notes are made with, so it keeps its name." = "It is the tag daily notes are made with, so it keeps its name.";
@@ -243,10 +240,9 @@
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,";
 "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date." = "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date.";
 "Nothing archived yet" = "Nothing archived yet";
-"Numbered list" = "Numbered list";
+"Numbered List" = "Numbered List";
 "Off" = "Off";
 "On the Deck" = "On the Deck";
-"One plain-text file per note, written where you choose — iCloud Drive by default. The folder's own provider moves the files between Macs; KeepNote has no server and uses no CloudKit." = "One plain-text file per note, written where you choose — iCloud Drive by default. The folder's own provider moves the files between Macs; KeepNote has no server and uses no CloudKit.";
 "Only notes on the deck can be pinned" = "Only notes on the deck can be pinned";
 "Open" = "Open";
 "Open Login Items…" = "Open Login Items…";
@@ -254,7 +250,7 @@
 "Open source, MIT License" = "Open source, MIT License";
 "Opens All Notes" = "Opens All Notes";
 "Opens KeepNote when you log in, so the deck is always there." = "Opens KeepNote when you log in, so the deck is always there.";
-"Opens KeepNote's issues on GitHub in your browser" = "Opens KeepNote's issues on GitHub in your browser";
+"Opens KeepNote’s issues on GitHub in your browser" = "Opens KeepNote’s issues on GitHub in your browser";
 "Opens the KeepNote site in your browser" = "Opens the KeepNote site in your browser";
 "Opens the deck" = "Opens the deck";
 "Opens the note. The actions menu has its other commands." = "Opens the note. The actions menu has its other commands.";
@@ -279,11 +275,11 @@
 "Quit" = "Quit";
 "Quit KeepNote" = "Quit KeepNote";
 "Quote" = "Quote";
-"Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set." = "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.";
+"Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app’s window set." = "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app’s window set.";
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Reads notes, or a KeepNote archive, from files on this Mac.";
 "Recording" = "Recording";
 "Redo" = "Redo";
-"Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.";
+"Registered through the system’s hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registered through the system’s hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.";
 "Relaunch Now" = "Relaunch Now";
 "Remove Tag" = "Remove Tag";
 "Remove Tag…" = "Remove Tag…";
@@ -341,7 +337,7 @@
 "That file is not a KeepNote note." = "That file is not a KeepNote note.";
 "That note was deleted." = "That note was deleted.";
 "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes." = "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes.";
-"The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note." = "The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note.";
+"The color a new note starts with. Automatic takes the color after the previous note’s. You can still change it inside the note." = "The color a new note starts with. Automatic takes the color after the previous note’s. You can still change it inside the note.";
 "The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac." = "The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac.";
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.";
 "The notes themselves are kept." = "The notes themselves are kept.";
@@ -358,7 +354,7 @@
 "Title" = "Title";
 "To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine (%@), or drag it off the edge. Return to Deck puts it back.";
 "To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back." = "To keep a note on screen, use Float Note on its spine, or drag it off the edge. Return to Deck puts it back.";
-"Today's date" = "Today's date";
+"Today’s Date" = "Today’s Date";
 "Today’s Daily" = "Today’s Daily";
 "Today’s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there." = "Today’s Daily opens the latest daily of today, or makes one titled with the day and month. Any note becomes a daily when it has the daily tag, as many as you like per day. The dailies of your two most recent days stay on the deck; older ones are archived (never deleted) and kept under Daily in All Notes. One you bring back to the deck yourself stays there.";
 "Today’s Daily, from the deck" = "Today’s Daily, from the deck";
@@ -376,7 +372,7 @@
 "Untitled" = "Untitled";
 "Up Arrow" = "Up Arrow";
 "Up to %d pinned notes" = "Up to %d pinned notes";
-"Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule." = "Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule.";
+"Up to five notes can be pinned. They stay in the middle of the deck’s height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule." = "Up to five notes can be pinned. They stay in the middle of the deck’s height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule.";
 "Use This Folder" = "Use This Folder";
 "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color." = "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created. New daily notes use this color.";
 "Used by %@" = "Used by %@";
@@ -406,11 +402,10 @@
 "floating" = "floating";
 "just now" = "just now";
 "kept on deck" = "kept on deck";
-"none" = "none";
 "note tab" = "note tab";
 "pinned to center" = "pinned to center";
 "the calendar button beside +" = "the calendar button beside +";
-"the pin in a note's header · Tools · right-click a tab · All Notes" = "the pin in a note's header · Tools · right-click a tab · All Notes";
+"the pin in a note’s header · Tools · right-click a tab · All Notes" = "the pin in a note’s header · Tools · right-click a tab · All Notes";
 "unknown error" = "unknown error";
 "yesterday" = "yesterday";
 "“#%1$@” already exists. %2$@ tagged #%3$@ will be tagged #%1$@ instead, and #%3$@ will be gone." = "“#%1$@” already exists. %2$@ tagged #%3$@ will be tagged #%1$@ instead, and #%3$@ will be gone.";
@@ -491,3 +486,9 @@
 "1 backup" = "1 backup";
 "%d backups" = "%d backups";
 "Click to open" = "Click to open";
+"Just now" = "Just now";
+"No matches" = "No matches";
+"%d of %d" = "%d of %d";
+"Dismiss" = "Dismiss";
+"Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created." = "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created.";
+"One plain-text file per note, written where you choose — iCloud Drive by default, with the notes’ images and files as plain copies in its Attachments folder. The folder’s own provider moves them between Macs; KeepNote has no server and uses no CloudKit." = "One plain-text file per note, written where you choose — iCloud Drive by default, with the notes’ images and files as plain copies in its Attachments folder. The folder’s own provider moves them between Macs; KeepNote has no server and uses no CloudKit.";

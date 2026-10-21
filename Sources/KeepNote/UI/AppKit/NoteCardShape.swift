@@ -55,17 +55,19 @@ enum NoteCardShape {
             textLength: ceil(size.width), tabHeight: tabRect.height, slice: slice, markerZone: markerZone
         ) else { return }
         var width = zone.length
-        // Too little room for letters and an ellipsis both: the first
-        // letters that fit whole, with nothing after them.
+        // Little room: as many first letters as fit with an ellipsis after
+        // them — never letters cut off bare, which read as another word
+        // ("Rea" for "Reading list"). Not even one letter and the ellipsis:
+        // no label.
         if width < ceil(size.width), width < 28 {
             var prefix = ""
             for character in text {
-                let longer = NSAttributedString(string: prefix + String(character), attributes: attributes)
+                let longer = NSAttributedString(string: prefix + String(character) + "\u{2026}", attributes: attributes)
                 guard longer.size().width <= width else { break }
                 prefix.append(character)
             }
             guard !prefix.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-            label = NSAttributedString(string: prefix, attributes: attributes)
+            label = NSAttributedString(string: prefix.trimmingCharacters(in: .whitespaces) + "\u{2026}", attributes: attributes)
             width = ceil(label.size().width)
         }
         let midY = tabRect.minY + (zone.minY + zone.maxY) / 2

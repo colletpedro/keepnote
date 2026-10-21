@@ -43,7 +43,7 @@ struct AttachmentInfo: Equatable, Sendable {
 
     /// "1.2 MB".
     var sizeText: String {
-        ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+        Lbytes(size)
     }
 }
 
@@ -55,7 +55,7 @@ enum AttachmentError: LocalizedError, Equatable {
         switch self {
         case .tooLarge(let name, let size):
             return L("\u{201C}%@\u{201D} is %@, more than the 25 MB an attachment can be.", name,
-                     ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                     Lbytes(size))
         case .unreadable(let name):
             return L("\u{201C}%@\u{201D} could not be read.", name)
         }

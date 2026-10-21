@@ -35,11 +35,11 @@ enum SettingsTab: Int, CaseIterable {
     /// Each pane is a fixed size; the window animates between them.
     var paneHeight: CGFloat {
         switch self {
-        case .general: return 670
+        case .general: return 600
         case .notes: return 270
-        case .deck: return 430
-        case .daily: return 380
-        case .sync: return 440
+        case .deck: return 370
+        case .daily: return 330
+        case .sync: return 430
         case .shortcuts: return 740
         case .about: return 424
         }
@@ -137,7 +137,7 @@ struct GeneralSettingsPane: View {
                 Option(help: L("The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.")) {
                     Toggle(L("Show in menu bar"), isOn: $settings.showInMenuBar)
                 }
-                Option(help: L("Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app's window set.")) {
+                Option(help: L("Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app\u{2019}s window set.")) {
                     Toggle(L("Show over full-screen apps"), isOn: $settings.showOverFullScreen)
                 }
                 HelpNote(text: L("KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay."))
@@ -201,11 +201,12 @@ private struct BackupsSection: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
+            // Leading, like the buttons of the other panes.
             HStack(spacing: 8) {
-                Spacer(minLength: 0)
                 Button(L("Back Up Now"), action: actions.backUpNow)
                 Button(L("Restore\u{2026}"), action: actions.restoreBackup)
                     .disabled(store.lastBackup == nil)
+                Spacer(minLength: 0)
             }
         }
     }
@@ -213,7 +214,7 @@ private struct BackupsSection: View {
     /// "3 backups · 1.2 MB".
     private var spaceLine: String {
         let summary = store.backupSummary
-        let size = ByteCountFormatter.string(fromByteCount: Int64(summary.bytes), countStyle: .file)
+        let size = Lbytes(summary.bytes)
         return L("%@ \u{00B7} %@", Lplural(summary.count, L("1 backup"), L("%d backups")), size)
     }
 
@@ -241,7 +242,7 @@ struct NotesSettingsPane: View {
     var body: some View {
         Form {
             Section {
-                Option(help: L("The color a new note starts with. Automatic takes the color after the previous note's. You can still change it inside the note.")) {
+                Option(help: L("The color a new note starts with. Automatic takes the color after the previous note\u{2019}s. You can still change it inside the note.")) {
                     Picker(L("Default color"), selection: $settings.defaultNoteColor) {
                         Text(L("Automatic")).tag(NoteColor?.none)
                         Divider()
@@ -316,7 +317,7 @@ struct DailySettingsPane: View {
                 Option(help: L("New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.")) {
                     Button(L("Edit Daily Template\u{2026}"), action: actions.editDailyTemplate)
                 }
-                HelpNote(text: DailyTemplateText.help)
+                HelpNote(text: DailyTemplateText.variablesHelp)
                 HelpNote(text: templateHelp)
             }
 
@@ -343,13 +344,17 @@ struct DeckSettingsPane: View {
         Form {
             Section {
                 Option(help: L("The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it.")) {
-                    Picker(L("Screen edge"), selection: $settings.screenEdge) {
-                        ForEach(ScreenEdge.allCases, id: \.self) { edge in
-                            Text(edge.title).tag(edge)
+                    // At the trailing edge, where every other control sits.
+                    LabeledContent(L("Screen edge")) {
+                        Picker(L("Screen edge"), selection: $settings.screenEdge) {
+                            ForEach(ScreenEdge.allCases, id: \.self) { edge in
+                                Text(edge.title).tag(edge)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .fixedSize()
                     }
-                    .pickerStyle(.segmented)
-                    .fixedSize()
                 }
             }
 
@@ -421,7 +426,7 @@ struct SyncSettingsPane: View {
             }
 
             Section {
-                HelpNote(text: L("One plain-text file per note, written where you choose \u{2014} iCloud Drive by default. The folder's own provider moves the files between Macs; KeepNote has no server and uses no CloudKit."))
+                HelpNote(text: L("One plain-text file per note, written where you choose \u{2014} iCloud Drive by default, with the notes\u{2019} images and files as plain copies in its Attachments folder. The folder\u{2019}s own provider moves them between Macs; KeepNote has no server and uses no CloudKit."))
                 HelpNote(text: L("Files in that folder are readable without the app. The database on this Mac keeps note bodies encrypted, and that key never leaves this Mac \u{2014} which is why it cannot travel with the files."))
             }
 
@@ -466,7 +471,7 @@ struct ShortcutsSettingsPane: View {
                     globalRow(command)
                 }
                 HelpNote(text: L("Click a shortcut and press the new combination; it needs \u{2318}, \u{2325} or \u{2303}. Esc cancels, Delete leaves the command without one."))
-                HelpNote(text: L("Registered through the system's hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved."))
+                HelpNote(text: L("Registered through the system\u{2019}s hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved."))
             }
 
             Section(L("Daily notes")) {
@@ -476,9 +481,9 @@ struct ShortcutsSettingsPane: View {
             }
 
             Section(L("Pinned and kept notes")) {
-                row(L("Pin to Center"), L("the pin in a note's header \u{00B7} Tools \u{00B7} right-click a tab \u{00B7} All Notes"))
+                row(L("Pin to Center"), L("the pin in a note\u{2019}s header \u{00B7} Tools \u{00B7} right-click a tab \u{00B7} All Notes"))
                 row(L("Keep on Deck"), L("Tools \u{00B7} right-click a tab \u{00B7} All Notes"))
-                HelpNote(text: L("Up to five notes can be pinned. They stay in the middle of the deck's height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule."))
+                HelpNote(text: L("Up to five notes can be pinned. They stay in the middle of the deck\u{2019}s height, always whole and never overlapped: the first pinned in the middle, the second above it, the third below, the fourth above and the fifth below. Pinning also turns on Keep on Deck; unpinning leaves it on. A kept or pinned note is never archived by the time rule."))
                 HelpNote(text: L("Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says \u{201C}Archives in 2 days\u{201D} or \u{201C}Archives tomorrow\u{201D}. Daily notes follow their own rule. In the Archive such notes say \u{201C}Archived automatically\u{201D} and the date."))
             }
 
@@ -487,7 +492,7 @@ struct ShortcutsSettingsPane: View {
                 ForEach(NoteCommand.allCases) { command in
                     recorderRow(.note(command))
                 }
-                HelpNote(text: L("Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note's spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck's edge returns it."))
+                HelpNote(text: L("Float Note lifts the note off the deck so it stays on the desk; Return to Deck puts it back. Both are the round button under Close on the note\u{2019}s spine. Dragging the spine or the header more than a short way from the edge floats the note too, and dragging a floating note to the deck\u{2019}s edge returns it."))
             }
 
             Section(L("Formatting")) {
@@ -586,11 +591,10 @@ struct AboutSettingsPane: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button(L("Check for Updates\u{2026}")) { NSWorkspace.shared.open(AppInfo.siteURL) }
-                .controlSize(.small)
                 .help(L("Opens the KeepNote site in your browser"))
             Link(L("Report a problem"), destination: AppInfo.issuesURL)
                 .font(.callout)
-                .help(L("Opens KeepNote's issues on GitHub in your browser"))
+                .help(L("Opens KeepNote\u{2019}s issues on GitHub in your browser"))
             Text(L("Sticky notes on the edge of your screen."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -603,7 +607,11 @@ struct AboutSettingsPane: View {
                 Button(L("Show Welcome\u{2026}"), action: actions.showWelcome)
             }
             HelpNote(text: L("Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub."))
+                .multilineTextAlignment(.center)
+                .padding(.top, 6)
         }
+        // The same margins as the other panes' content.
+        .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

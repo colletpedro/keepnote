@@ -638,11 +638,16 @@ struct NoteEditorView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
+                // An empty title shows its prompt in the quiet ink (the
+                // field draws the prompt in its own colour), so it does not
+                // read as a note called "Title"; a long one ends in "…".
                 TextField(L("Title"), text: $model.title)
                     .textFieldStyle(.plain)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .disabled(model.isLocked)
                     .scaledFont(15, weight: .semibold)
-                    .foregroundStyle(model.color.inkSwiftUI)
+                    .foregroundStyle(model.title.isEmpty ? model.color.secondaryInkSwiftUI : model.color.inkSwiftUI)
                 if appSettings.textSize.scale <= 1 { status }
                 headerButtons
             }
@@ -704,7 +709,7 @@ struct NoteEditorView: View {
                 .onSubmit { model.advanceFind(by: 1) }
 
             if !model.findQuery.isEmpty {
-                Text(model.matchCount == 0 ? L("none") : "\(model.currentMatchNumber)/\(model.matchCount)")
+                Text(model.matchCount == 0 ? L("No matches") : L("%d of %d", model.currentMatchNumber, model.matchCount))
                     .scaledFont(10.5, monospacedDigit: true)
                     .foregroundStyle(model.color.inkSwiftUI.opacity(0.5))
                 Button { model.advanceFind(by: -1) } label: { Image(systemName: "chevron.up") }
@@ -796,7 +801,7 @@ struct NoteEditorView: View {
             ZStack(alignment: .top) {
                 model.color.surfaceSwiftUI
                 Rectangle()
-                    .fill(model.color.inkSwiftUI.opacity(0.12))
+                    .fill(model.color.inkSwiftUI.opacity(DisplayOptions.increaseContrast ? 0.4 : 0.12))
                     .frame(height: 1)
             }
         )

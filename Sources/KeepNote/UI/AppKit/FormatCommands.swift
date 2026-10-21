@@ -30,19 +30,19 @@ enum FormatCommand: CaseIterable {
         case .italic: return L("Italic")
         case .strikethrough: return L("Strikethrough")
         case .highlight: return L("Highlight")
-        case .inlineCode: return L("Inline code")
+        case .inlineCode: return L("Inline Code")
         case .link: return L("Link")
         case .heading1: return L("Heading 1")
         case .heading2: return L("Heading 2")
         case .heading3: return L("Heading 3")
-        case .bulletList: return L("Bulleted list")
-        case .numberedList: return L("Numbered list")
+        case .bulletList: return L("Bulleted List")
+        case .numberedList: return L("Numbered List")
         case .checklist: return L("Checklist")
         case .quote: return L("Quote")
-        case .codeBlock: return L("Code block")
+        case .codeBlock: return L("Code Block")
         case .table: return L("Table")
         case .divider: return L("Divider")
-        case .date: return L("Today's date")
+        case .date: return L("Today\u{2019}s Date")
         }
     }
 
@@ -209,6 +209,12 @@ enum FormatCommand: CaseIterable {
     static func makeMenu() -> NSMenu {
         let menu = NSMenu(title: L("Format"))
         for item in menuItems() { menu.addItem(item) }
+        // The same additions as Tools, sent to whichever note has the keyboard.
+        menu.addItem(.separator())
+        menu.addItem(insertImageItem(target: nil))
+        let attach = NSMenuItem(title: L("Attach File\u{2026}"), action: #selector(MarkdownTextView.attachFile(_:)), keyEquivalent: "")
+        attach.image = icon("paperclip")
+        menu.addItem(attach)
         return menu
     }
 }

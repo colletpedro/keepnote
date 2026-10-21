@@ -1248,8 +1248,9 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         add(L("New Note"), #selector(menuNewNote), global: .newNote)
         add(L("Today\u{2019}s Daily"), #selector(menuTodaysDaily), global: .todaysDaily)
         add(L("Edit Daily Template\u{2026}"), #selector(menuEditDailyTemplate))
-        add(L("All Notes\u{2026}"), #selector(menuAllNotes), global: .allNotes)
-        add(L("Archive\u{2026}"), #selector(menuArchive), global: .archive)
+        // Opening a window asks nothing more, so no ellipsis, as in File.
+        add(L("All Notes"), #selector(menuAllNotes), global: .allNotes)
+        add(L("[noun] Archive"), #selector(menuArchive), global: .archive)
         menu.addItem(.separator())
         add(L("Import\u{2026}"), #selector(menuImport))
         add(L("Settings\u{2026}"), #selector(menuSettings), ",")

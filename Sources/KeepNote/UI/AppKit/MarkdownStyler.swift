@@ -87,6 +87,14 @@ struct MarkdownStyler: Equatable {
     static let linkKey = NSAttributedString.Key("KeepNote.link")
     static let tableKey = NSAttributedString.Key("KeepNote.table")
     static let attachmentKey = NSAttributedString.Key("KeepNote.attachment")
+    /// A box drawn behind a run of text at the text's own height — inline
+    /// code, a highlight — rather than TextKit's background, which fills the
+    /// whole line box and runs into the lines around it.
+    static let inlineBoxKey = NSAttributedString.Key("KeepNote.inlineBox")
+
+    enum InlineBox: String {
+        case code, highlight
+    }
 
     enum Decoration: String {
         case bullet, checkbox, checkboxDone, quote, rule, codeLine
@@ -116,6 +124,8 @@ struct MarkdownStyler: Equatable {
     /// Settings > General > Text size.
     var scale: CGFloat = 1
     var bodySize: CGFloat { Self.baseSize * scale }
+    /// Code is a little smaller than the text around it, at every Text size.
+    var codeSize: CGFloat { (12.5 * scale).rounded(.toNearestOrEven) }
 
     /// A faded text alpha, held up with Increase contrast.
     func faded(_ alpha: CGFloat) -> CGFloat { increaseContrast ? max(alpha, 0.78) : alpha }
@@ -236,15 +246,53 @@ struct MarkdownStyler: Equatable {
         }
         let blockActive = blocks.map { Self.touches(selection, $0) }
 
+        // A numbered list's items all leave room for its widest number, so
+        // "1." and "10." start their text in the same place.
+        var orderedWidth = [CGFloat?](repeating: nil, count: lines.count)
+        var run: [Int] = []
+        var runLeading: String?
+        func closeRun() {
+            let widest = run.map { orderedMarkerWidth(string($0)) ?? 0 }.max() ?? 0
+            for i in run { orderedWidth[i] = widest }
+            run = []
+            runLeading = nil
+        }
+        for i in lines.indices {
+            guard case .text = roles[i], let leading = orderedLeading(string(i)) else {
+                // Deeper items inside the list do not break it.
+                if case .text = roles[i], let current = runLeading, let deeper = listLeading(string(i)),
+                   deeper.count > current.count { continue }
+                closeRun()
+                continue
+            }
+            if let current = runLeading, current != leading {
+                if leading.count > current.count { continue }
+                closeRun()
+            }
+            runLeading = leading
+            run.append(i)
+        }
+        closeRun()
+
         // Pass 2: style every line.
         for (i, line) in lines.enumerated() {
             let active = blockOf[i].map { blockActive[$0] } ?? false
             switch roles[i] {
             case .fence:
                 storage.addAttributes(codeAttributes(dim: true), range: line.enclosing)
-                if !active { storage.addAttribute(.foregroundColor, value: NSColor.clear, range: line.enclosing) }
+                if !active {
+                    // At rest a fence is only the card's top or bottom margin.
+                    let p = NSMutableParagraphStyle()
+                    p.minimumLineHeight = (8 * scale).rounded()
+                    p.maximumLineHeight = (8 * scale).rounded()
+                    storage.addAttributes([.foregroundColor: NSColor.clear, .font: Self.hiddenFont, .paragraphStyle: p],
+                                          range: line.enclosing)
+                } else {
+                    storage.addAttribute(.paragraphStyle, value: codeParagraph(), range: line.enclosing)
+                }
             case .code:
                 storage.addAttributes(codeAttributes(dim: false), range: line.enclosing)
+                storage.addAttribute(.paragraphStyle, value: codeParagraph(), range: line.enclosing)
             case .table(let t):
                 // A table is styled once, from its first line.
                 guard i == tables[t].rows[0] else { continue }
@@ -260,7 +308,7 @@ struct MarkdownStyler: Equatable {
                    let reference = AttachmentText.references(in: lineText).first {
                     styleAttachment(reference, line: line.range, attachments: attachments, width: tableWidth, in: storage)
                 } else {
-                    styleText(line: line.range, in: storage, text: text, selection: selection)
+                    styleText(line: line.range, in: storage, text: text, selection: selection, orderedWidth: orderedWidth[i])
                 }
             }
         }
@@ -269,7 +317,32 @@ struct MarkdownStyler: Equatable {
 
     // MARK: - Text lines
 
-    private func styleText(line range: NSRange, in storage: NSTextStorage, text: NSString, selection: NSRange) {
+    /// The leading whitespace of a numbered item, or nil for any other line.
+    private func orderedLeading(_ line: String) -> String? {
+        let ns = line as NSString
+        guard let m = Self.list.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)),
+              m.range(at: 4).location == NSNotFound,
+              ns.substring(with: m.range(at: 2)).first?.isNumber == true else { return nil }
+        return ns.substring(with: m.range(at: 1))
+    }
+
+    /// The leading whitespace of any list item.
+    private func listLeading(_ line: String) -> String? {
+        let ns = line as NSString
+        guard let m = Self.list.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { return nil }
+        return ns.substring(with: m.range(at: 1))
+    }
+
+    /// The width of a numbered item's "12. ".
+    private func orderedMarkerWidth(_ line: String) -> CGFloat? {
+        let ns = line as NSString
+        guard let m = Self.list.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { return nil }
+        let leading = m.range(at: 1)
+        return width(of: ns.substring(with: NSRange(location: leading.length, length: m.range.length - leading.length)))
+    }
+
+    private func styleText(line range: NSRange, in storage: NSTextStorage, text: NSString, selection: NSRange,
+                           orderedWidth: CGFloat? = nil) {
         let line = text.substring(with: range) as NSString
         let lineString = line as String
         let whole = NSRange(location: 0, length: line.length)
@@ -361,8 +434,12 @@ struct MarkdownStyler: Equatable {
                     ], range: abs(NSRange(location: m.range.length, length: line.length - m.range.length)))
                 }
             } else if isOrdered {
-                reserved = width(of: line.substring(with: marker))
+                let own = width(of: line.substring(with: marker))
+                reserved = max(own, orderedWidth ?? own)
                 storage.addAttribute(.foregroundColor, value: accent, range: abs(marker))
+                if reserved > own, marker.length > 0 {
+                    storage.addAttribute(.kern, value: reserved - own, range: abs(NSRange(location: NSMaxRange(marker) - 1, length: 1)))
+                }
             } else {
                 reserved = Self.bulletWidth * scale
                 hide(abs(marker), reserve: reserved, in: storage)
@@ -406,9 +483,21 @@ struct MarkdownStyler: Equatable {
         storage.addAttribute(.kern, value: size.width, range: NSRange(location: NSMaxRange(line) - 1, length: 1))
     }
 
+    /// Code sits inside its card, a little in from the card's edge.
+    private func codeParagraph() -> NSMutableParagraphStyle {
+        let p = baseParagraph()
+        p.firstLineHeadIndent = Self.codeInset * scale
+        p.headIndent = Self.codeInset * scale
+        p.tailIndent = -Self.codeInset * scale
+        return p
+    }
+
+    /// Room between a code card's edge and its text.
+    static let codeInset: CGFloat = 10
+
     private func codeAttributes(dim: Bool) -> [NSAttributedString.Key: Any] {
         [
-            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
+            .font: NSFont.monospacedSystemFont(ofSize: codeSize, weight: .regular),
             .foregroundColor: dim ? ink.withAlphaComponent(faded(0.45)) : ink,
             Self.decorationKey: Decoration.codeLine.rawValue
         ]
@@ -463,8 +552,8 @@ struct MarkdownStyler: Equatable {
             protected.append(m.range)
             let show = revealed(m.range)
             storage.addAttributes([
-                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
-                .backgroundColor: ink.withAlphaComponent(0.09)
+                .font: NSFont.monospacedSystemFont(ofSize: codeSize, weight: .regular),
+                Self.inlineBoxKey: InlineBox.code.rawValue
             ], range: abs(m.range(at: 1)))
             marker(NSRange(location: m.range.location, length: 1), show: show)
             marker(NSRange(location: NSMaxRange(m.range) - 1, length: 1), show: show)
@@ -525,7 +614,7 @@ struct MarkdownStyler: Equatable {
             storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: $0)
         }
         pairs(Self.highlight) {
-            storage.addAttribute(.backgroundColor, value: highlight.withAlphaComponent(0.3), range: $0)
+            storage.addAttribute(Self.inlineBoxKey, value: InlineBox.highlight.rawValue, range: $0)
         }
 
         // `#tag` in the body is plain text: tags live in the footer field only.
@@ -549,7 +638,7 @@ struct MarkdownStyler: Equatable {
             for i in allLines {
                 let range = lines[i].1
                 storage.addAttributes(
-                    [.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)],
+                    [.font: NSFont.monospacedSystemFont(ofSize: codeSize, weight: .regular)],
                     range: range
                 )
                 var search = NSRange(location: lines[i].0.location, length: lines[i].0.length)
