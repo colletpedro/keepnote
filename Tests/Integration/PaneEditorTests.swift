@@ -78,3 +78,51 @@ func runPaneEditorTests() {
 
     window.close()
 }
+
+/// Archived notes and archived dailies are edited in the pane and stay
+/// archived; a locked note is shown read-only, with the reason.
+@MainActor
+func runPaneArchiveTests() {
+    let directory = scratchDirectory()
+    let url = directory.appendingPathComponent("archived.sqlite")
+    let key = SymmetricKey(size: .bits256)
+    let store = reopened(url, key: key)
+    let actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in },
+                                  delete: { _ in }, export: { _ in })
+
+    let archived = try! store.create(title: "Old", body: "kept")
+    try! store.archive(id: archived.id)
+    let daily = try! store.create(title: "Daily 01/10", body: "- [ ] call", tags: [DailyNotes.tag])
+    try! store.archive(id: daily.id)
+
+    for (name, id, sidebar) in [("archived note", archived.id, NoteSelection.library(.archived)),
+                                ("archived daily", daily.id, NoteSelection.library(.daily))] {
+        let (window, hosting) = hostAllNotes(store, actions: actions, sidebar: sidebar, selecting: [id])
+        expectTrue("pane: an \(name) can be edited", textView(in: hosting)?.isEditable == true)
+        _ = type(" more", into: window)
+        spin(0.6)
+        expectTrue("pane: the \(name)'s edit is saved", store.note(id: id)?.body.hasSuffix(" more") == true)
+        expectTrue("pane: and it stays archived", store.note(id: id)?.state == .archived)
+        // The rules that archive notes leave it where it is.
+        _ = try! store.archiveDailies()
+        _ = try! store.archiveStale(days: AutoArchive.defaultDays)
+        expectTrue("pane: the \(name) is still archived after the rules run", store.note(id: id)?.state == .archived)
+        window.close()
+    }
+    expectTrue("pane: the archived daily is still a daily", store.note(id: daily.id)?.isDaily == true)
+
+    // A locked note: the key on this Mac cannot open it.
+    store.waitUntilSaved()
+    let locked = reopened(url, key: SymmetricKey(size: .bits256))
+    let id = archived.id
+    expectTrue("pane: the note is locked with another key", locked.note(id: id)?.isLocked == true)
+    let before = rawBody(url, id: id)!
+    let (window, hosting) = hostAllNotes(locked, actions: actions, sidebar: .library(.archived), selecting: [id])
+    expectTrue("pane: a locked note's body is read-only", textView(in: hosting)?.isEditable == false)
+    expectTrue("pane: a locked note's title is read-only", titleField(in: hosting)?.isEnabled == false)
+    _ = type("typed", into: window)
+    spin(0.6)
+    locked.waitUntilSaved()
+    expectTrue("pane: nothing typed reaches the locked note", rawBody(url, id: id)?.ciphertext == before.ciphertext)
+    window.close()
+}

@@ -652,6 +652,11 @@ struct NoteReadingPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             infoBar
+            if model.isLocked {
+                paneNotice("lock.fill", Self.lockedReason)
+            } else if model.state == .archived {
+                paneNotice("archivebox", L("Archived \u{00B7} editing it keeps it in the archive"))
+            }
             NoteEditorView(
                 model: model,
                 presentation: .pane,
@@ -674,6 +679,27 @@ struct NoteReadingPane: View {
         .onAppear(perform: wireEditor)
         .onReceive(store.changes) { _ in model.refreshFromStore() }
         .onDisappear { model.flush() }
+    }
+
+    /// Why a locked note cannot be changed here.
+    static var lockedReason: String {
+        L("Read-only: this note could not be decrypted with the key on this Mac. Its text is kept as it is, so the right key can still open it.")
+    }
+
+    /// A quiet line above the paper: why the note is read-only, or that it
+    /// stays archived.
+    private func paneNotice(_ symbol: String, _ text: String) -> some View {
+        Label {
+            Text(text)
+                .scaledFont(11.5)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: symbol)
+                .scaledFont(11)
+        }
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     private func wireEditor() {
