@@ -91,6 +91,7 @@ MainActor.assumeIsolated {
     runPaneOpenFloatingTests()
     runPaneNewNoteTests()
     runPaneKeyboardTests()
+    runBackupTests()
     runRestoreFlowTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
