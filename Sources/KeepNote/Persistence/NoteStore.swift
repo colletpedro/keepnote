@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import os
 
 /// How a change reached the store. Sync echoes are tagged so the folder writer
 /// does not bounce a file back to the machine it came from.
@@ -79,18 +80,54 @@ final class NoteStore: ObservableObject {
 
     private let writer: StoreWriter
     private var tombstones: [UUID: Date] = [:]
+
+    /// Where the database's copies go: `Backups`, beside it.
+    let backupDirectory: URL
+    /// The newest copy, for Settings; refreshed after every backup.
+    @Published private(set) var lastBackup: Backup?
     private var purgeTimers: [UUID: Timer] = [:]
 
     /// `now` is the clock the store reads from the start — launching on a
     /// given day settles the notes it finds with that day.
     init(databaseURL: URL = AppPaths.databaseURL, cipher: BodyCipher, now: @escaping () -> Date = { Date() }) throws {
         self.now = now
-        self.writer = try StoreWriter(databaseURL: databaseURL, cipher: cipher)
+        self.backupDirectory = Backups.directory(for: databaseURL)
+        self.writer = try StoreWriter(databaseURL: databaseURL, cipher: cipher, backupDirectory: backupDirectory, now: now())
         writer.onFailure = { [weak self] error in
             Task { @MainActor in self?.writeFailures.send(error) }
         }
         try reload()
         purgeExpiredDeletions()
+        lastBackup = Backups.list(in: backupDirectory).first
+    }
+
+    // MARK: - Backups
+
+    /// A copy of the database now, made after every change already queued.
+    @discardableResult
+    func backUp(kind: Backup.Kind) throws -> Backup {
+        let backup = try writer.backUp(kind: kind, into: backupDirectory, now: now())
+        lastBackup = Backups.list(in: backupDirectory).first
+        return backup
+    }
+
+    /// Today's copy, if there is none yet. Off the main thread; `done` hears
+    /// whether one was made.
+    func backUpIfDue(done: @escaping @MainActor (Backup?) -> Void = { _ in }) {
+        let date = now()
+        guard Backups.isDailyDue(in: backupDirectory, now: date) else { return done(nil) }
+        writer.backUpLater(kind: .daily, into: backupDirectory, now: date) { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
+                self.lastBackup = Backups.list(in: self.backupDirectory).first
+                switch result {
+                case .success(let backup): done(backup)
+                case .failure(let error):
+                    self.writeFailures.send(error)
+                    done(nil)
+                }
+            }
+        }
     }
 
     /// The note with its daily fields the way its tags say they should be,
@@ -719,9 +756,22 @@ final class StoreWriter: @unchecked Sendable {
     private let cipher: BodyCipher
     private let hasFTS: Bool
 
-    init(databaseURL: URL, cipher: BodyCipher) throws {
+    init(databaseURL: URL, cipher: BodyCipher, backupDirectory: URL, now: Date) throws {
         db = try SQLiteDatabase(path: databaseURL.path)
         self.cipher = cipher
+        // A database from an earlier KeepNote is copied as it is before its
+        // layout changes. A new, empty one has nothing to keep.
+        let version = db.userVersion
+        if version > 0 && version < NoteSchema.currentVersion {
+            do {
+                try Backups.make(from: db, kind: .migration, in: backupDirectory, now: now)
+            } catch {
+                // The update itself only adds columns and tables; a copy that
+                // cannot be written (a full disk) does not stop the app.
+                Logger(subsystem: "com.keepnote.KeepNote", category: "backups")
+                    .error("backup before migration failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
         try NoteSchema.migrate(db)
         hasFTS = NoteSchema.hasFullTextIndex(db)
     }
@@ -742,6 +792,18 @@ final class StoreWriter: @unchecked Sendable {
 
     func waitUntilIdle() {
         queue.sync {}
+    }
+
+    /// A copy of the database once everything queued before has landed.
+    func backUp(kind: Backup.Kind, into directory: URL, now: Date) throws -> Backup {
+        try queue.sync { try Backups.make(from: db, kind: kind, in: directory, now: now) }
+    }
+
+    func backUpLater(kind: Backup.Kind, into directory: URL, now: Date,
+                     done: @escaping @Sendable (Result<Backup, Error>) -> Void) {
+        queue.async { [self] in
+            done(Result { try Backups.make(from: db, kind: kind, in: directory, now: now) })
+        }
     }
 
     /// Every row, bodies opened, once the queue has caught up.

@@ -119,6 +119,19 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             .sink { [weak self] _ in self?.scheduleArchiveRules() }
             .store(in: &cancellables)
         runArchiveRules()
+
+        // Today's copy of the database: at launch, when the Mac wakes and when
+        // the day turns.
+        store.backUpIfDue()
+        NSWorkspace.shared.notificationCenter
+            .publisher(for: NSWorkspace.didWakeNotification)
+            .sink { [weak self] _ in self?.store.backUpIfDue() }
+            .store(in: &cancellables)
+        NotificationCenter.default
+            .publisher(for: .NSCalendarDayChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.store.backUpIfDue() }
+            .store(in: &cancellables)
     }
 
     // MARK: - Daily notes

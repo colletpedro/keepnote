@@ -85,6 +85,9 @@ private enum LeftInEnglish {
         "English": "a language's name in itself",
         "above \\(": "an internal signature",
         "pinned \\(": "an internal signature",
+        "Backups": "the backups folder's name on disk",
+        "VACUUM INTO": "SQL",
+        "backup ": "unified log, for development",
     ]
 
     static func covers(_ raw: String) -> Bool {

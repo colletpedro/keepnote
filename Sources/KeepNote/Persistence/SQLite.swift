@@ -39,8 +39,25 @@ final class SQLiteDatabase {
         try execute("PRAGMA busy_timeout = 3000;")
     }
 
+    /// Opens a database only to read it — a backup being listed or checked:
+    /// nothing is written, not even a journal.
+    init(readOnlyPath path: String) throws {
+        let result = sqlite3_open_v2(path, &handle, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil)
+        guard result == SQLITE_OK, handle != nil else {
+            let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unable to open database"
+            if handle != nil { sqlite3_close_v2(handle) }
+            handle = nil
+            throw SQLiteError(code: result, message: message, sql: nil)
+        }
+    }
+
     deinit {
         if handle != nil { sqlite3_close_v2(handle) }
+    }
+
+    /// The first column of the first row, as text.
+    func scalarString(_ sql: String) throws -> String? {
+        try query(sql) { $0.string(at: 0) }.first
     }
 
     var userVersion: Int32 {

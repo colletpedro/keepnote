@@ -431,3 +431,7 @@
 "Created" = "Created";
 "Sort By" = "Sort By";
 "Sort by %@" = "Sort by %@";
+"The backup could not be restored: %@. Your notes are as they were." = "The backup could not be restored: %@. Your notes are as they were.";
+"it cannot be opened" = "it cannot be opened";
+"it is damaged" = "it is damaged";
+"it is not a KeepNote database" = "it is not a KeepNote database";
