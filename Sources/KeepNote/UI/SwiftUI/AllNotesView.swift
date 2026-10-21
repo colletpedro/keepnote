@@ -53,6 +53,8 @@ struct AllNotesView: View {
 
     /// A note just made here: the pane puts the caret in its title.
     @State private var titleFocus: UUID?
+    /// ↑ ↓ in the list, Return into the note, Esc back.
+    @StateObject private var keyboard = AllNotesKeyboard()
 
     init(store: NoteStore, actions: NoteListActions, initialSidebar: NoteSelection? = nil,
          initialSelection: Set<UUID> = [], focusTitleOf: UUID? = nil) {
@@ -132,6 +134,7 @@ struct AllNotesView: View {
             actions.select(paneNoteID)
         }
         .onChange(of: paneNoteID) { actions.select($0) }
+        .onAppear { keyboard.hasSingleNote = { [weak keyboard] in keyboard?.pane != nil } }
         .onChange(of: index.tags.map(\.name)) { _ in dropMissingTag() }
         // "Show All Dailies" and the like, while the window is already open.
         .onReceive(NotificationCenter.default.publisher(for: .keepNoteShowNotesSelection)) { note in
@@ -184,6 +187,7 @@ struct AllNotesView: View {
                 DailyEmptyState()
             } else {
                 dayOrFlatList
+                    .background(AllNotesListAnchor(keyboard: keyboard))
             }
         }
     }
@@ -267,7 +271,7 @@ struct AllNotesView: View {
             DailyTemplatePane(store: store)
         } else if selectedNotes.count == 1, let note = selectedNotes.first {
             NoteReadingPane(note: note, store: store, actions: actions, onTag: showTag,
-                            focusTitle: titleFocus == note.id) { titleFocus = nil }
+                            focusTitle: titleFocus == note.id, keyboard: keyboard) { titleFocus = nil }
                 .id(note.id)
         } else if selectedNotes.count > 1 {
             MultipleSelectionPane(notes: selectedNotes, actions: actions) {
@@ -698,10 +702,13 @@ struct NoteReadingPane: View {
 
     /// The note was just made: the caret goes to its title.
     var focusTitle = false
+    /// Return in the list comes here; Esc here goes back to the list.
+    var keyboard: AllNotesKeyboard?
     var onTitleFocused: () -> Void = {}
 
     init(note: Note, store: NoteStore, actions: NoteListActions, onTag: @escaping (String) -> Void,
-         focusTitle: Bool = false, onTitleFocused: @escaping () -> Void = {}) {
+         focusTitle: Bool = false, keyboard: AllNotesKeyboard? = nil, onTitleFocused: @escaping () -> Void = {}) {
+        self.keyboard = keyboard
         self.note = note
         self.store = store
         self.actions = actions
@@ -786,6 +793,10 @@ struct NoteReadingPane: View {
         editor.onSetKeepOnDeck = { actions.setKeepOnDeck([id], $0) }
         editor.onDelete = { actions.delete([id]) }
         editor.onOpen = { actions.open(id) }
+        if let keyboard {
+            keyboard.pane = editor
+            editor.onEscape = { [weak keyboard] in keyboard?.focusList() ?? false }
+        }
     }
 
     /// The dates beside the buttons when the pane is wide enough; above them,

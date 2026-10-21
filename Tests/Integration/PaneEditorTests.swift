@@ -243,3 +243,58 @@ func runPaneNewNoteTests() {
     titleHasCaret(coordinator.allNotesWindowForTesting, "archived")
     coordinator.allNotesWindowForTesting?.close()
 }
+
+/// ↑ and ↓ in the list, Return into the note's text, Esc back to the list.
+@MainActor
+func runPaneKeyboardTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("keys.sqlite"), key: SymmetricKey(size: .bits256))
+    let first = try! store.create(title: "First", body: "first body")
+    Thread.sleep(forTimeInterval: 0.01)
+    let second = try! store.create(title: "Second", body: "second body")
+    let actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in },
+                                  delete: { _ in }, export: { _ in })
+    // Edited first: Second, then First.
+    let savedSort = AppSettings.shared.allNotesSort
+    AppSettings.shared.allNotesSort = .edited
+    defer { AppSettings.shared.allNotesSort = savedSort }
+    let (window, hosting) = hostAllNotes(store, actions: actions, selecting: [second.id])
+
+    func tables(in view: NSView) -> [NSTableView] {
+        ((view as? NSTableView).map { [$0] } ?? []) + view.subviews.flatMap(tables(in:))
+    }
+    // The list is the table right of the sidebar.
+    let list = tables(in: hosting).max { $0.convert($0.bounds, to: nil).minX < $1.convert($1.bounds, to: nil).minX }
+    guard let list else { expectTrue("keys: the list is there", false); return }
+    func settle() { hosting.layoutSubtreeIfNeeded(); spin(0.2); hosting.layoutSubtreeIfNeeded() }
+
+    // Arrows go to the key window's responder; this window is never key,
+    // so they are handed to the list the way AppKit would.
+    func arrow(_ code: UInt16, _ character: String) {
+        list.keyDown(with: NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+                                            windowNumber: window.windowNumber, context: nil, characters: character,
+                                            charactersIgnoringModifiers: character, isARepeat: false, keyCode: code)!)
+    }
+    window.makeFirstResponder(list)
+    arrow(125, "\u{F701}")    // ↓
+    settle()
+    expect("keys: ↓ selects the next note", textView(in: hosting)?.string, "first body")
+    arrow(126, "\u{F700}")    // ↑
+    settle()
+    expect("keys: ↑ the one before", textView(in: hosting)?.string, "second body")
+
+    press(36, "\r", in: window)            // Return
+    settle()
+    let body = textView(in: hosting)
+    expectTrue("keys: Return puts the caret in the note's text", body != nil && window.firstResponder === body)
+    expect("keys: at the end of it", String(body?.selectedRange().location ?? -1), String(("second body" as NSString).length))
+    _ = type(" typed", into: window)
+    expect("keys: and typing goes into the note", textView(in: hosting)?.string, "second body typed")
+
+    press(53, "\u{1b}", in: window)        // Esc
+    settle()
+    expectTrue("keys: Esc goes back to the list", window.firstResponder === list)
+    expect("keys: leaving writes what was typed", store.note(id: second.id)?.body, "second body typed")
+    expect("keys: the same note stays selected", textView(in: hosting)?.string, "second body typed")
+    _ = first
+    window.close()
+}

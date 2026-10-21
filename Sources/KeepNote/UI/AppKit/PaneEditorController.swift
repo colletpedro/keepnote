@@ -16,6 +16,8 @@ final class PaneEditorController: ObservableObject {
     var onSetKeepOnDeck: (Bool) -> Void = { _ in }
     var onDelete: () -> Void = {}
     var onOpen: () -> Void = {}
+    /// Esc with nothing else to close: the keyboard goes back to the list.
+    var onEscape: () -> Bool = { false }
 
     fileprivate(set) weak var anchor: NSView?
     private var keyMonitor: Any?
@@ -158,10 +160,15 @@ final class PaneEditorController: ObservableObject {
         guard let window, event.window === window, let model, hasFocus else { return false }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
-        // Esc closes the tag suggestions, as in a note.
-        if event.keyCode == 53, flags.isEmpty, model.isTagListVisible {
-            model.dismissTagList()
-            return true
+        // Esc closes the tag suggestions, as in a note; with none open it
+        // goes back to the list.
+        if event.keyCode == 53, flags.isEmpty {
+            if model.isTagListVisible {
+                model.dismissTagList()
+                return true
+            }
+            model.flush()
+            return onEscape()
         }
 
         // Return or Tab in the title moves on to the body.
@@ -215,6 +222,106 @@ struct PaneEditorAnchor: NSViewRepresentable {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if window != nil { controller?.attach(self) } else { controller?.detach() }
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+}
+
+/// The keyboard between All Notes' list and its pane: ↑ and ↓ move through
+/// the list as in any list, Return takes the caret to the selected note's
+/// text, and Esc in the note (`PaneEditorController`) brings it back here.
+///
+/// Like the pane, the list is known by an anchor laid out under it, which
+/// tells its table apart from the sidebar's.
+@MainActor
+final class AllNotesKeyboard: ObservableObject {
+    /// The pane's editor while a single note is in it.
+    weak var pane: PaneEditorController?
+    /// Whether one note, and only one, is selected: Return has somewhere to go.
+    var hasSingleNote: () -> Bool = { false }
+
+    fileprivate weak var anchor: NSView?
+    private var keyMonitor: Any?
+
+    deinit {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+    }
+
+    fileprivate func attach(_ view: NSView) {
+        anchor = view
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            return self.handle(event) ? nil : event
+        }
+    }
+
+    fileprivate func detach() {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
+    }
+
+    /// The list's table: the one inside the anchor's rectangle.
+    var listTable: NSTableView? {
+        guard let anchor, let window = anchor.window, let content = window.contentView else { return nil }
+        let rect = anchor.convert(anchor.bounds, to: nil)
+        func tables(in view: NSView) -> [NSTableView] {
+            ((view as? NSTableView).map { [$0] } ?? []) + view.subviews.flatMap(tables(in:))
+        }
+        return tables(in: content).first { table in
+            let visible = table.convert(table.visibleRect, to: nil)
+            return rect.contains(NSPoint(x: visible.midX, y: visible.midY))
+        }
+    }
+
+    var listHasFocus: Bool {
+        guard let table = listTable else { return false }
+        return table.window?.firstResponder === table
+    }
+
+    /// Esc in the note: the keyboard goes back to the list, on the same row.
+    @discardableResult
+    func focusList() -> Bool {
+        guard let table = listTable, let window = table.window else { return false }
+        return window.makeFirstResponder(table)
+    }
+
+    func handle(_ event: NSEvent) -> Bool {
+        guard let window = anchor?.window, event.window === window else { return false }
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        // Return on the list: into the note's text, the caret at its end.
+        if flags.isEmpty, event.keyCode == 36 || event.keyCode == 76, listHasFocus, hasSingleNote() {
+            return pane?.focusBody() ?? false
+        }
+        return false
+    }
+}
+
+/// Lays out under All Notes' list for `AllNotesKeyboard`; never takes a click.
+struct AllNotesListAnchor: NSViewRepresentable {
+    let keyboard: AllNotesKeyboard
+
+    func makeNSView(context: Context) -> AnchorView {
+        let view = AnchorView()
+        view.keyboard = keyboard
+        return view
+    }
+
+    func updateNSView(_ view: AnchorView, context: Context) {
+        view.keyboard = keyboard
+    }
+
+    static func dismantleNSView(_ view: AnchorView, coordinator: ()) {
+        view.keyboard?.detach()
+    }
+
+    final class AnchorView: NSView {
+        weak var keyboard: AllNotesKeyboard?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window != nil { keyboard?.attach(self) } else { keyboard?.detach() }
         }
 
         override func hitTest(_ point: NSPoint) -> NSView? { nil }
