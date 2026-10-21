@@ -191,3 +191,55 @@ func runPaneOpenFloatingTests() {
     anchored?.close()
     AppSettings.shared.setFloating(false, noteID: note.id)
 }
+
+/// New Note in All Notes: made for the list on show, selected, the caret in
+/// its title inside the pane.
+@MainActor
+func runPaneNewNoteTests() {
+    let url = scratchDirectory().appendingPathComponent("new.sqlite")
+    let store = reopened(url, key: SymmetricKey(size: .bits256))
+    let coordinator = AppCoordinator(store: store)
+    _ = try! store.create(title: "Tagged", body: "x", tags: ["work"])
+    let savedSelection = AppSettings.shared.allNotesSelection
+    defer { AppSettings.shared.allNotesSelection = savedSelection }
+
+    func titleHasCaret(_ window: NSWindow?, _ name: String) {
+        guard let window else { expectTrue("new: \(name): All Notes is open", false); return }
+        var editing = false
+        for _ in 0..<20 {
+            window.contentView?.layoutSubtreeIfNeeded()
+            spin(0.05)
+            if let editor = window.firstResponder as? NSTextView, editor.isFieldEditor,
+               (editor.delegate as? NSTextField)?.placeholderString == L("Title") {
+                editing = true
+                break
+            }
+        }
+        expectTrue("new: \(name): the caret is in the pane's title", editing)
+    }
+
+    // On a tag's list: the note has the tag.
+    AppSettings.shared.allNotesSelection = NoteSelection.tag("work").storageValue
+    let tagged = coordinator.newNoteInAllNotes()!
+    expect("new: on a tag's list it has the tag", store.note(id: tagged)?.tags.joined(separator: ","), "work")
+    titleHasCaret(coordinator.allNotesWindowForTesting, "tag")
+    expect("new: the pane edits it", coordinator.paneNoteID?.uuidString, tagged.uuidString)
+
+    // On Daily, with All Notes already open: today's daily.
+    AppSettings.shared.allNotesSelection = NoteSelection.library(.daily).storageValue
+    let daily = coordinator.newNoteInAllNotes()!
+    let made = store.note(id: daily)
+    expectTrue("new: on Daily it is a daily", made?.isDaily == true)
+    expect("new: of today", made?.dailyDay?.string, store.today.string)
+    expectTrue("new: titled as dailies are", made?.title.hasPrefix(L("Daily")) == true)
+    titleHasCaret(coordinator.allNotesWindowForTesting, "daily")
+    expect("new: the pane edits the daily", coordinator.paneNoteID?.uuidString, daily.uuidString)
+
+    // On Archived: a new note is on the deck, so All Notes shows it.
+    AppSettings.shared.allNotesSelection = NoteSelection.library(.archived).storageValue
+    let plain = coordinator.newNoteInAllNotes()!
+    expectTrue("new: from Archived it is on the deck", store.note(id: plain)?.state == .active)
+    expect("new: and the list moves to All Notes", AppSettings.shared.allNotesSelection, NoteSelection.default.storageValue)
+    titleHasCaret(coordinator.allNotesWindowForTesting, "archived")
+    coordinator.allNotesWindowForTesting?.close()
+}

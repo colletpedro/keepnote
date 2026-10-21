@@ -160,6 +160,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// For Tests/Integration.
     func noteWindowForTesting(_ id: UUID) -> NoteWindowController? { noteWindows[id] }
     var undoToastForTesting: UndoToastController { undoToast }
+    var allNotesWindowForTesting: NSWindow? { allNotesWindow?.window }
 
     /// What the new daily `note` is offered from the last day before it with
     /// a daily, or nothing (Settings > Daily says not to, or there is none).
@@ -181,11 +182,12 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     /// Undo in Bring automatically: the tasks come out of the daily again, as
     /// long as their block is still as it was brought.
+    /// (Through the editors' buffer when one is open, like `bring`.)
     func unbring(_ offer: DailyCarryOver.Offer, from id: UUID) {
         guard let note = store.note(id: id), !note.isLocked else { return }
         let heading = DailyCarryOver.heading(for: offer.day)
-        if let window = noteWindows[id] {
-            window.editBody { DailyCarryOver.removing(offer, from: $0, heading: heading) }
+        if let buffer = NoteBuffer.existing(for: id, store: store) {
+            buffer.editText { DailyCarryOver.removing(offer, from: $0, heading: heading) }
             return
         }
         do {
@@ -196,13 +198,14 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     }
 
     /// Puts the tasks at the end of the daily, under the day they came from.
-    /// An editor already showing the note takes the new text too.
+    /// Every editor showing the note takes the new text too, on top of what
+    /// was typed there.
     func bring(_ offer: DailyCarryOver.Offer, into id: UUID) {
         guard let note = store.note(id: id), !note.isLocked else { return }
         Announcer.say(Self.broughtMessage(offer))
         let heading = DailyCarryOver.heading(for: offer.day)
-        if let window = noteWindows[id] {
-            window.editBody { DailyCarryOver.inserting(offer, into: $0, heading: heading) }
+        if let buffer = NoteBuffer.existing(for: id, store: store) {
+            buffer.editText { DailyCarryOver.inserting(offer, into: $0, heading: heading) }
             return
         }
         do {
@@ -808,6 +811,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     func allNotesDidSelect(_ id: UUID?) {
         guard id != paneNoteID else { return }
         if let previous = paneNoteID { try? store.markOpened(id: previous) }
+        if heldBuffer?.noteID != id { heldBuffer = nil }
         paneNoteID = id
         if let id { try? store.markOpened(id: id) }
         scheduleArchiveRules()
@@ -835,22 +839,87 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         )
     }
 
-    /// All Notes' actions: Open there opens the note floating.
+    /// All Notes' actions: Open there opens the note floating, and New Note
+    /// makes the note inside the pane.
     private func allNotesActions() -> NoteListActions {
         var actions = listActions()
         actions.open = { [weak self] id in self?.openFloating(noteID: id) }
+        actions.newNote = { [weak self] in self?.newNoteInAllNotes() }
         return actions
+    }
+
+    /// The buffer of a daily just made in All Notes, holding its "Bring them?"
+    /// offer until the pane picks it up.
+    private var heldBuffer: NoteBuffer?
+
+    /// New Note in All Notes: the note is made for the list on show — with its
+    /// tag on a tag's list, as today's daily on Daily — then selected, with
+    /// the caret in its title, in the pane. A list that would not show it
+    /// (Archived) gives way to All Notes.
+    @discardableResult
+    func newNoteInAllNotes() -> UUID? {
+        let current = settings.allNotesSelection.flatMap(NoteSelection.init(storageValue:)) ?? .default
+        let note: Note
+        var list = current
+        do {
+            switch current {
+            case .tag(let name):
+                note = try store.create(color: settings.defaultNoteColor, tags: [name])
+            case .library(.daily):
+                let made = try store.createDaily()
+                note = made.note
+                startCarryOver(for: made.note) { [weak self] offer in
+                    guard let self else { return }
+                    let buffer = NoteBuffer.shared(for: made.note, store: self.store)
+                    buffer.carryOverOffer = CarryOverBanner(
+                        count: offer.count, weekday: DailyCarryOver.weekday(of: offer.day)
+                    ) { [weak self] yes in if yes { self?.bring(offer, into: made.note.id) } }
+                    self.heldBuffer = buffer
+                }
+            case .library(.archived):
+                note = try store.create(color: settings.defaultNoteColor)
+                list = .default
+            default:
+                note = try store.create(color: settings.defaultNoteColor)
+            }
+        } catch {
+            present(error)
+            return nil
+        }
+        Announcer.say(L("New note"))
+        showAllNotes(selecting: list, note: note.id)
+        return note.id
+    }
+
+    /// What a new daily does with the last day's unfinished tasks: brings
+    /// them with a notice to undo (Bring automatically), or hands the offer to
+    /// `ask` (Ask each time).
+    private func startCarryOver(for note: Note, ask: (DailyCarryOver.Offer) -> Void) {
+        guard let offer = carryOverOffer(for: note) else { return }
+        switch settings.carryOverMode {
+        case .automatic:
+            bring(offer, into: note.id)
+            let id = note.id
+            undoToast.show(message: Self.broughtMessage(offer), duration: settings.undoWindow) { [weak self] in
+                self?.unbring(offer, from: id)
+            }
+        case .ask:
+            ask(offer)
+        case .never:
+            break
+        }
     }
 
     /// All Notes, in front. `selecting` picks what the sidebar shows: kept for
     /// the next opening, and sent to the window if it is already open.
     /// `template` also selects the daily template's row, on the Daily list.
-    func showAllNotes(selecting selection: NoteSelection? = nil, template: Bool = false) {
+    /// `note` selects that note too, with the caret in its title.
+    func showAllNotes(selecting selection: NoteSelection? = nil, template: Bool = false, note: UUID? = nil) {
         if let selection {
             settings.allNotesSelection = selection.storageValue
-            NotificationCenter.default.post(
-                name: .keepNoteShowNotesSelection, object: nil,
-                userInfo: ["selection": selection.storageValue, "template": template])
+            var info: [String: Any] = ["selection": selection.storageValue, "template": template]
+            if let note { info["note"] = note.uuidString }
+            NotificationCenter.default.post(name: .keepNoteShowNotesSelection, object: nil, userInfo: info)
         }
         if let allNotesWindow {
             allNotesWindow.show()
@@ -863,7 +932,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             minSize: NSSize(width: 900, height: 480),
             rootView: AllNotesView(
                 store: store, actions: allNotesActions(),
-                initialSelection: template ? [DailyTemplatePane.rowID] : [])
+                initialSelection: template ? [DailyTemplatePane.rowID] : note.map { [$0] } ?? [],
+                focusTitleOf: note)
         )
         controller.onClose = { [weak self] in
             self?.allNotesWindow = nil

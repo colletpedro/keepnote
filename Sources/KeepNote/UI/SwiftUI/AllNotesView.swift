@@ -49,13 +49,17 @@ struct AllNotesView: View {
     /// The Daily introduction has been dismissed with "Got it".
     @State private var introSeen = AppSettings.shared.dailyIntroSeen
 
+    /// A note just made here: the pane puts the caret in its title.
+    @State private var titleFocus: UUID?
+
     init(store: NoteStore, actions: NoteListActions, initialSidebar: NoteSelection? = nil,
-         initialSelection: Set<UUID> = []) {
+         initialSelection: Set<UUID> = [], focusTitleOf: UUID? = nil) {
         self.store = store
         self.actions = actions
         let stored = AppSettings.shared.allNotesSelection.flatMap(NoteSelection.init(storageValue:))
         _sidebarSelection = State(initialValue: initialSidebar ?? stored ?? .default)
         _selection = State(initialValue: initialSelection)
+        _titleFocus = State(initialValue: focusTitleOf)
     }
 
     private var index: TagLibrary.Index { TagLibrary.index(store.notes) }
@@ -131,11 +135,19 @@ struct AllNotesView: View {
         // "Show All Dailies" and the like, while the window is already open.
         .onReceive(NotificationCenter.default.publisher(for: .keepNoteShowNotesSelection)) { note in
             if let value = note.userInfo?["selection"] as? String, let wanted = NoteSelection(storageValue: value) {
+                let made = (note.userInfo?["note"] as? String).flatMap(UUID.init(uuidString:))
+                // A new note matches no search: the search goes so it shows.
+                if made != nil { query = "" }
                 sidebarSelection = wanted
-                // Changing the list clears the selection, so the template is
-                // selected a beat later.
+                // Changing the list clears the selection, so the template, or
+                // the note just made, is selected a beat later.
                 if note.userInfo?["template"] as? Bool == true {
                     DispatchQueue.main.async { selection = [DailyTemplatePane.rowID] }
+                } else if let made {
+                    DispatchQueue.main.async {
+                        titleFocus = made
+                        selection = [made]
+                    }
                 }
             }
         }
@@ -253,7 +265,8 @@ struct AllNotesView: View {
         if templateSelected && selectedNotes.isEmpty {
             DailyTemplatePane(store: store)
         } else if selectedNotes.count == 1, let note = selectedNotes.first {
-            NoteReadingPane(note: note, store: store, actions: actions, onTag: showTag)
+            NoteReadingPane(note: note, store: store, actions: actions, onTag: showTag,
+                            focusTitle: titleFocus == note.id) { titleFocus = nil }
                 .id(note.id)
         } else if selectedNotes.count > 1 {
             MultipleSelectionPane(notes: selectedNotes, actions: actions) {
@@ -670,11 +683,18 @@ struct NoteReadingPane: View {
     @StateObject private var model: NoteEditorModel
     @StateObject private var editor = PaneEditorController()
 
-    init(note: Note, store: NoteStore, actions: NoteListActions, onTag: @escaping (String) -> Void) {
+    /// The note was just made: the caret goes to its title.
+    var focusTitle = false
+    var onTitleFocused: () -> Void = {}
+
+    init(note: Note, store: NoteStore, actions: NoteListActions, onTag: @escaping (String) -> Void,
+         focusTitle: Bool = false, onTitleFocused: @escaping () -> Void = {}) {
         self.note = note
         self.store = store
         self.actions = actions
         self.onTag = onTag
+        self.focusTitle = focusTitle
+        self.onTitleFocused = onTitleFocused
         _model = StateObject(wrappedValue: NoteEditorModel(note: note, store: store))
     }
 
@@ -705,7 +725,10 @@ struct NoteReadingPane: View {
                 .shadow(color: .black.opacity(0.14), radius: 8, y: 2)
         }
         .padding(16)
-        .onAppear(perform: wireEditor)
+        .onAppear {
+            wireEditor()
+            if focusTitle { placeCaretInTitle(tries: 5) }
+        }
         .onReceive(store.changes) { _ in model.refreshFromStore() }
         .onDisappear { model.flush() }
     }
@@ -729,6 +752,17 @@ struct NoteReadingPane: View {
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Once SwiftUI has built the editor: its title field takes the caret.
+    private func placeCaretInTitle(tries: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            if editor.focusTitle() || tries <= 1 {
+                onTitleFocused()
+            } else {
+                placeCaretInTitle(tries: tries - 1)
+            }
+        }
     }
 
     private func wireEditor() {

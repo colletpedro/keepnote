@@ -586,14 +586,6 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     var carryOverOfferForTesting: CarryOverBanner? { model.carryOverOffer }
     func answerCarryOverForTesting(bring: Bool) { model.answerCarryOver(bring: bring) }
 
-    /// Changes the note's text in the editor itself — what is typed there so
-    /// far included — and writes it at once.
-    func editBody(_ change: (String) -> String) {
-        guard !model.isLocked else { return }
-        model.text = change(model.text)
-        model.flush()
-    }
-
     /// Where the caret goes when a note opens: the title field when there is
     /// nothing written yet (title and body both empty), the end of the body in
     /// every other case.

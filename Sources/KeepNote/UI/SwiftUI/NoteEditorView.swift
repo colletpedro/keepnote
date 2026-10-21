@@ -97,6 +97,19 @@ final class NoteBuffer: ObservableObject {
         return buffer
     }
 
+    /// The note's buffer if an editor holds one.
+    static func existing(for id: UUID, store: NoteStore) -> NoteBuffer? {
+        open.object(forKey: id as NSUUID).flatMap { $0.store === store ? $0 : nil }
+    }
+
+    /// Changes the text from outside the editors — tasks brought from the last
+    /// daily — on top of whatever has been typed, and writes it at once.
+    func editText(_ change: (String) -> String) {
+        guard !isLocked else { return }
+        text = change(text)
+        flush()
+    }
+
     /// Writes what every editor still holds: leaving the app, quitting.
     static func flushAll() {
         open.objectEnumerator()?.allObjects.compactMap { $0 as? NoteBuffer }.forEach { $0.flush() }
