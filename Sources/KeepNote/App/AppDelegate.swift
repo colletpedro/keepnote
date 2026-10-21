@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A restore chosen in Settings: the backup goes in place of the
         // database now, before anything opens it.
         let restoreError = Self.applyPendingRestore(to: AppPaths.databaseURL, settings: .shared)
+        NoteStore.removeTemporaryFiles()
 
         do {
             let cipher = try BodyCipher.makeDefault()
@@ -130,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Anything still sitting in a 250 ms autosave timer is written now,
         // and the process waits until it is on disk.
         coordinator?.finishWriting()
+        NoteStore.removeTemporaryFiles()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

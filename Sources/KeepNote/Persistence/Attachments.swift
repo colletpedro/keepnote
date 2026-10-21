@@ -192,13 +192,23 @@ extension NoteStore {
         return orphans
     }
 
+    /// Where Open and Quick Look find their copies: the container's own
+    /// temporary folder.
+    nonisolated static var temporaryFolder: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("attachments", isDirectory: true)
+    }
+
+    /// The copies made for Open and Quick Look go at launch and at quit:
+    /// the bytes stay sealed in the database, not lying about in the clear.
+    nonisolated static func removeTemporaryFiles() {
+        try? FileManager.default.removeItem(at: temporaryFolder)
+    }
+
     /// A copy in the container's temporary folder, for Open and Quick Look:
     /// the bytes never leave the container in the clear otherwise.
     func temporaryFile(for id: String) -> URL? {
         guard let info = attachments[id], let data = attachmentData(id) else { return nil }
-        let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("attachments", isDirectory: true)
-            .appendingPathComponent(id, isDirectory: true)
+        let folder = Self.temporaryFolder.appendingPathComponent(id, isDirectory: true)
         let url = folder.appendingPathComponent(info.fileName)
         if FileManager.default.fileExists(atPath: url.path) { return url }
         do {

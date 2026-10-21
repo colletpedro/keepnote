@@ -183,6 +183,10 @@ enum FormatCommand: CaseIterable {
         }
         menu.addItem(.separator())
         menu.addItem(insertImageItem(target: target))
+        let attach = NSMenuItem(title: L("Attach File\u{2026}"), action: #selector(MarkdownTextView.attachFile(_:)), keyEquivalent: "")
+        attach.image = icon("paperclip")
+        attach.target = target
+        menu.addItem(attach)
         return menu
     }
 

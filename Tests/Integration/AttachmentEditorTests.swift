@@ -1,3 +1,4 @@
+import Quartz
 import AppKit
 import CryptoKit
 
@@ -117,5 +118,61 @@ func runAttachmentEditorTests() {
     // Everything typed reached the note.
     window.flush()
     expectTrue("image: the text is saved", AttachmentText.references(in: store.note(id: note.id)!.body).count == 1)
+    window.close()
+}
+
+// MARK: - Files as cards
+
+@MainActor
+func runAttachmentCardTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("cards.sqlite"), key: SymmetricKey(size: .bits256))
+    let bytes = Data((0..<150_000).map { UInt8(truncatingIfNeeded: $0 &* 31) })
+    let info = try! store.addAttachment(bytes, name: "Invoice October.pdf", type: .pdf)
+    expectTrue("card: a PDF is a file, not an image", !info.isImage)
+    expect("card: its size, as the Finder writes it", info.sizeText, ByteCountFormatter.string(fromByteCount: 150_000, countStyle: .file))
+    let token = AttachmentText.token(id: info.id, isImage: false, label: info.name)
+    let note = try! store.create(title: "Bills", body: "\(token)\nPay by Friday")
+    let window = NoteWindowController(note: note, store: store, originFrame: nil, cascadeIndex: 0, floating: true)
+    window.window.contentView?.layoutSubtreeIfNeeded()
+    spin(0.2)
+    guard let body = window.window.contentView.flatMap(textView(in:)) as? MarkdownTextView,
+          let layout = body.allAttachmentLayouts.first, let rect = body.attachmentRect(layout) else {
+        expectTrue("card: drawn", false)
+        return
+    }
+    expectTrue("card: drawn as a card", !layout.showsImage)
+    expectTrue("card: a fixed height (\(rect.height))", abs(rect.height - 46) < 0.5)
+    let labels = body.attachmentElements().map { $0.accessibilityLabel() ?? "" }
+    expect("card: VoiceOver hears its name and size", labels.first, "File, Invoice October.pdf, \(info.sizeText)")
+    expectTrue("card: VoiceOver hears a button", body.attachmentElements().first?.accessibilityRole() == .button)
+
+    // Open and Quick Look use a copy in the container's temporary folder.
+    let copy = store.temporaryFile(for: info.id)
+    expect("card: the copy has the file's name", copy?.lastPathComponent, "Invoice October.pdf")
+    expectTrue("card: inside the container's temporary folder", copy?.path.hasPrefix(NoteStore.temporaryFolder.path) == true)
+    expectTrue("card: with the bytes", copy.flatMap { try? Data(contentsOf: $0) } == bytes)
+    NoteStore.removeTemporaryFiles()
+    expectTrue("card: the copies are cleared", copy.map { !FileManager.default.fileExists(atPath: $0.path) } == true)
+
+    // Space on the selected card: Quick Look is pointed at the copy.
+    body.select(layout)
+    expectTrue("card: selected", body.selectedAttachment != nil)
+    body.quickLook(layout)
+    expect("card: Quick Look shows the copy", body.quickLookURL?.lastPathComponent, "Invoice October.pdf")
+    QLPreviewPanel.shared()?.orderOut(nil)
+    body.endPreviewPanelControl(QLPreviewPanel.shared())
+    expectTrue("card: Quick Look let go of the note", !NoteFocusHold.isHolding)
+
+    // A card for a file this Mac does not have yet.
+    let unknown = String(repeating: "c", count: 64)
+    body.string = "[Later.zip](attachment:\(unknown))"
+    body.didChangeText()
+    spin(0.1)
+    let waiting = body.allAttachmentLayouts.first
+    expectTrue("card: a file still to arrive is a card", waiting != nil && waiting?.info == nil)
+    expect("card: and says so", body.attachmentElements().first?.accessibilityLabel(), "File, Later.zip, not on this Mac yet")
+
+    // Attach File… is in Tools.
+    expectTrue("tools: Attach File…", FormatCommand.makeToolsMenu(target: body).items.contains { $0.title == L("Attach File\u{2026}") })
     window.close()
 }

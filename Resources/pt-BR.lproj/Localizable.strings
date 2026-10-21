@@ -480,3 +480,6 @@
 "Save As…" = "Salvar como…";
 "“%@” could not be read." = "Não foi possível ler “%@”.";
 "“%@” is %@, more than the 25 MB an attachment can be." = "“%@” tem %@, mais que os 25 MB que um anexo pode ter.";
+"Attach File…" = "Anexar arquivo…";
+"Attach" = "Anexar";
+"Choose the files to attach to the note. Each can be up to 25 MB." = "Escolha os arquivos para anexar à nota. Cada um pode ter até 25 MB.";

@@ -284,6 +284,21 @@ extension MarkdownTextView {
         insertAttachments(candidates, at: selectedRange())
     }
 
+    /// Attach File…: any files, shown as cards (pictures as pictures).
+    @objc func attachFile(_ sender: Any?) {
+        guard isEditable else { NSSound.beep(); return }
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.prompt = L("Attach")
+        panel.message = L("Choose the files to attach to the note. Each can be up to 25 MB.")
+        guard NoteFocusHold.during({ panel.runModal() }) == .OK else { return }
+        let candidates = panel.urls.compactMap(Self.candidate(fromFile:))
+        window?.makeKeyAndOrderFront(nil)
+        window?.makeFirstResponder(self)
+        insertAttachments(candidates, at: selectedRange())
+    }
+
     static func candidate(fromFile url: URL) -> AttachmentCandidate? {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), !isDirectory.boolValue else { return nil }
