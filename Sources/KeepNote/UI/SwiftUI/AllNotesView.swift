@@ -651,6 +651,9 @@ private struct NoteRow: View {
                     if note.state != .archived, DeckStatus.isExpiring(note), let line = DeckStatus.line(for: note) {
                         stateMark("clock", line)
                     }
+                    if note.hasAttachments {
+                        stateMark("paperclip", L("Has attachments"))
+                    }
                     Spacer(minLength: 4)
                     Text(Self.formatter.localizedString(for: note.editedAt, relativeTo: Date()))
                         .scaledFont(10.5)

@@ -141,6 +141,8 @@ MainActor.assumeIsolated {
                NoteEditorView(model: model, presentation: .detached, onClose: {}, onDelete: {}, onTogglePin: {}))
         render("editor-attachments-anchored", size: EdgeMetrics.anchoredSize,
                NoteEditorView(model: model, presentation: .anchored, onClose: {}, onDelete: {}, onTogglePin: {}))
+        render("preview-attachment", size: EdgeMetrics.previewSize,
+               NotePreviewView(note: store.note(id: note.id)!, thumbnail: store.attachmentImage(picture.id)))
     }
 
     // MARK: All Notes, in a real titled window so the toolbar draws too.

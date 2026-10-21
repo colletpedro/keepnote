@@ -176,3 +176,32 @@ func runAttachmentCardTests() {
     expectTrue("tools: Attach File…", FormatCommand.makeToolsMenu(target: body).items.contains { $0.title == L("Attach File\u{2026}") })
     window.close()
 }
+
+// MARK: - Where else attachments show
+
+@MainActor
+func runAttachmentDisplayTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("display.sqlite"), key: SymmetricKey(size: .bits256))
+    let picture = try! store.addAttachment(samplePNG(width: 600, height: 300), name: "Beach.png")
+    let file = try! store.addAttachment(Data(repeating: 3, count: 4000), name: "Ticket.pdf", type: .pdf)
+    let body = AttachmentText.token(id: file.id, isImage: false, label: "Ticket.pdf") + "\n"
+        + AttachmentText.token(id: picture.id, isImage: true, label: "") + "\nPack the bag"
+    let untitled = try! store.create(title: "", body: body)
+    let plain = try! store.create(title: "Plain", body: "no files")
+    let note = store.note(id: untitled.id)!
+
+    expectTrue("list: a note with attachments is marked", note.hasAttachments)
+    expectTrue("list: one without is not", !store.note(id: plain.id)!.hasAttachments)
+    expect("labels: the title skips the attachments", note.displayTitle, "Pack the bag")
+    expect("labels: the deck's label too", note.spineLabel, "Pack the bag")
+    expect("search: a file's name is not searched as text", String(store.search("Ticket").count), "0")
+    expect("search: the text still is", String(store.search("bag").count), "1")
+
+    // The peek shows the first image, small.
+    let provider: (Note) -> NSImage? = { note in
+        AttachmentText.references(in: note.body).lazy.filter(\.isImage).compactMap { store.attachmentImage($0.id) }.first
+    }
+    let thumbnail = provider(note)
+    expectTrue("peek: the first image", thumbnail != nil && thumbnail!.size.width == 300)
+    expectTrue("peek: none for a note without", provider(store.note(id: plain.id)!) == nil)
+}

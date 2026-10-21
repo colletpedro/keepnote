@@ -109,6 +109,10 @@ final class NotePreviewController {
 
     /// Slides out from under the deck, vertically centred on the tab it belongs
     /// to — the same motion the editor makes, just shorter.
+    /// The note's first image, small, for the peek. Set by the coordinator,
+    /// which has the store.
+    static var thumbnail: (Note) -> NSImage? = { _ in nil }
+
     func show(note: Note, tabFrame: NSRect, deckWidth: CGFloat, on screen: NSScreen?) {
         // Visible includes a peek that is still fading out: it is picked up
         // where it is rather than restarted.
@@ -116,7 +120,7 @@ final class NotePreviewController {
         visibleNoteID = note.id
         applyBehavior()
 
-        let view = NotePreviewView(note: note)
+        let view = NotePreviewView(note: note, thumbnail: Self.thumbnail(note))
         if let hosting {
             hosting.rootView = view
         } else {

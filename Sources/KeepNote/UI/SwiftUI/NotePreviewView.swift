@@ -9,6 +9,8 @@ import SwiftUI
 /// title — so nothing is said twice.
 struct NotePreviewView: View {
     let note: Note
+    /// The note's first image, if it has one: shown small under the text.
+    var thumbnail: NSImage? = nil
 
     var body: some View {
         HStack(spacing: 0) {
@@ -45,8 +47,21 @@ struct NotePreviewView: View {
                 .scaledFont(14)
                 .foregroundStyle(note.body.isEmpty ? note.color.secondaryInkSwiftUI : note.color.inkSwiftUI)
                 .lineSpacing(5.5)
-                .lineLimit(4)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .lineLimit(thumbnail == nil ? 4 : 1)
+                .frame(maxWidth: .infinity, maxHeight: thumbnail == nil ? .infinity : nil, alignment: .topLeading)
+
+            if let thumbnail {
+                // The picture takes the room the text leaves.
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(note.color.inkSwiftUI.opacity(0.12), lineWidth: 1))
+                    .accessibilityLabel(L("Image"))
+            }
 
             // A look does not count as opening, so the peek says how long the
             // note has left.

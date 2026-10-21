@@ -47,6 +47,11 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     // MARK: - Lifecycle
 
     func start() {
+        NotePreviewController.thumbnail = { [weak store] note in
+            guard let store else { return nil }
+            return AttachmentText.references(in: note.body).lazy
+                .filter(\.isImage).compactMap { store.attachmentImage($0.id) }.first
+        }
         rebuildPanels()
         registerHotkeys()
         restoreFloatingNotes()

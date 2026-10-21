@@ -485,3 +485,4 @@
 "Choose the files to attach to the note. Each can be up to 25 MB." = "Escolha os arquivos para anexar à nota. Cada um pode ter até 25 MB.";
 "File: %@" = "Arquivo: %@";
 "Image: %@" = "Imagem: %@";
+"Has attachments" = "Tem anexos";

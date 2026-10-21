@@ -102,6 +102,9 @@ struct Note: Identifiable, Hashable, Sendable {
         self.text = DerivedText(title: title, body: body)
     }
 
+    /// The body refers to at least one attachment.
+    var hasAttachments: Bool { !AttachmentText.references(in: body).isEmpty }
+
     /// The body as it reads, without markdown syntax. Display only.
     var plainBody: String { text.plainBody }
 
