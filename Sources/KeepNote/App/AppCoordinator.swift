@@ -19,6 +19,9 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// the note is on screen beside it.
     private var noteOrigins: [UUID: CGDirectDisplayID] = [:]
     private var allNotesWindow: HostingWindowController<AllNotesView>?
+    /// The note All Notes' pane is editing: open, for the time rule, as a
+    /// note window is.
+    private(set) var paneNoteID: UUID?
     private var archiveWindow: HostingWindowController<ArchiveView>?
     private var settingsWindow: SettingsWindowController?
     private var welcomeWindow: HostingWindowController<WelcomeView>?
@@ -225,7 +228,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// those are caught when the window closes. A note still open today counts
     /// as opened today, so the day turning under it does not start its clock.
     func runArchiveRules() {
-        let open = Set(noteWindows.keys)
+        let open = Set(noteWindows.keys).union(paneNoteID.map { [$0] } ?? [])
         do {
             for id in open { try store.markOpened(id: id) }
             let archived = try store.archiveDailies(open: open).count
@@ -783,6 +786,17 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     // MARK: - Auxiliary windows
 
+    /// All Notes' pane shows `id` now, or nothing. Selecting a note is opening
+    /// it: its time starts again, and it is not archived while it is there.
+    /// The note it showed before was in use until now, as a closing window is.
+    func allNotesDidSelect(_ id: UUID?) {
+        guard id != paneNoteID else { return }
+        if let previous = paneNoteID { try? store.markOpened(id: previous) }
+        paneNoteID = id
+        if let id { try? store.markOpened(id: id) }
+        scheduleArchiveRules()
+    }
+
     private func listActions() -> NoteListActions {
         NoteListActions(
             open: { [weak self] id in self?.open(noteID: id, from: nil) },
@@ -800,7 +814,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             newNoteWithTag: { [weak self] name in self?.newNote(tags: [name]) },
             addTagToNotes: { [weak self] ids in self?.promptAddTag(to: ids) },
             removeTagFromNotes: { [weak self] ids in self?.promptRemoveTag(from: ids) },
-            tagNotes: { [weak self] name, ids in self?.addTag(name, to: ids) }
+            tagNotes: { [weak self] name, ids in self?.addTag(name, to: ids) },
+            select: { [weak self] id in self?.allNotesDidSelect(id) }
         )
     }
 
@@ -829,6 +844,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         )
         controller.onClose = { [weak self] in
             self?.allNotesWindow = nil
+            self?.allNotesDidSelect(nil)
             self?.standardWindowDidClose()
         }
         allNotesWindow = controller

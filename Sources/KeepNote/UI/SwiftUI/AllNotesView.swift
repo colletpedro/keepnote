@@ -27,6 +27,9 @@ struct NoteListActions {
     var removeTagFromNotes: ([UUID]) -> Void = { _ in }
     /// Notes dropped on a tag in the sidebar get that tag.
     var tagNotes: (String, [UUID]) -> Void = { _, _ in }
+    /// The note in the pane now, or `nil`: selecting a note opens it, for the
+    /// time rule as for everything else.
+    var select: (UUID?) -> Void = { _ in }
 }
 
 /// The full list: a sidebar of libraries and tags, the notes in the selected
@@ -65,6 +68,12 @@ struct AllNotesView: View {
     }
 
     private var isDailyList: Bool { sidebarSelection == .library(.daily) }
+
+    /// The one note the pane is editing, if it is editing one.
+    private var paneNoteID: UUID? {
+        let notes = selectedNotes
+        return notes.count == 1 ? notes[0].id : nil
+    }
 
     /// The template's fixed row tops the Daily list — except while searching:
     /// it is not a note, so no search finds it.
@@ -111,7 +120,11 @@ struct AllNotesView: View {
             AppSettings.shared.allNotesSelection = newValue.storageValue
             selection.removeAll()
         }
-        .onAppear(perform: dropMissingTag)
+        .onAppear {
+            dropMissingTag()
+            actions.select(paneNoteID)
+        }
+        .onChange(of: paneNoteID) { actions.select($0) }
         .onChange(of: index.tags.map(\.name)) { _ in dropMissingTag() }
         // "Show All Dailies" and the like, while the window is already open.
         .onReceive(NotificationCenter.default.publisher(for: .keepNoteShowNotesSelection)) { note in

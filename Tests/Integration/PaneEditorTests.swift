@@ -126,3 +126,45 @@ func runPaneArchiveTests() {
     expectTrue("pane: nothing typed reaches the locked note", rawBody(url, id: id)?.ciphertext == before.ciphertext)
     window.close()
 }
+
+/// Selecting a note in All Notes is opening it, for the time rule.
+@MainActor
+func runPaneOpenedTests() {
+    final class Clock { var date = Date() }
+    let clock = Clock()
+    clock.date = Date(timeIntervalSince1970: 1_790_000_000)
+    let url = scratchDirectory().appendingPathComponent("opened.sqlite")
+    let store = try! NoteStore(databaseURL: url, cipher: BodyCipher(key: SymmetricKey(size: .bits256)), now: { clock.date })
+    let coordinator = AppCoordinator(store: store)
+    let note = try! store.create(title: "Quiet", body: "x")
+    let other = try! store.create(title: "Other", body: "y")
+    let days = AutoArchive.defaultDays
+
+    // The view says which note the pane shows.
+    var selected: [UUID?] = []
+    var actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in },
+                                  delete: { _ in }, export: { _ in })
+    actions.select = { selected.append($0) }
+    let (window, _) = hostAllNotes(store, actions: actions, selecting: [note.id])
+    expectTrue("opened: the pane reports the note it shows", selected.last == .some(note.id))
+    window.close()
+
+    // Weeks later the note is selected: it counts as opened today.
+    clock.date = clock.date.addingTimeInterval(Double(days + 5) * 86_400)
+    coordinator.allNotesDidSelect(note.id)
+    expect("opened: selecting it opens it today", store.note(id: note.id)?.lastOpenedDay?.string, store.today.string)
+    coordinator.runArchiveRules()
+    expectTrue("opened: so the rule leaves it on the deck", store.note(id: note.id)?.state == .active)
+    expectTrue("opened: the note nobody selected is archived", store.note(id: other.id)?.state == .archived)
+
+    // While it stays selected, the days going by do not archive it.
+    clock.date = clock.date.addingTimeInterval(Double(days + 5) * 86_400)
+    coordinator.runArchiveRules()
+    expectTrue("opened: while it is in the pane it is not archived", store.note(id: note.id)?.state == .active)
+
+    // Selecting another one: the first counts as used until now.
+    let third = try! store.create(title: "Third", body: "z")
+    coordinator.allNotesDidSelect(third.id)
+    expect("opened: leaving the pane counts as its last opening", store.note(id: note.id)?.lastOpenedDay?.string, store.today.string)
+    coordinator.allNotesDidSelect(nil)
+}
