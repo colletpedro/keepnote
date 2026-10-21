@@ -5,7 +5,10 @@
 # actually apply. The identity is KEEPNOTE_SIGN_ID (default "KeepNote Dev", a
 # self-signed Code Signing certificate). On a fresh clone that certificate does
 # not exist: the build then signs ad-hoc, with a warning, so one command works.
-# A KEEPNOTE_SIGN_ID that is set and missing is an error.
+# A KEEPNOTE_SIGN_ID that is set and missing is an error. An "Apple
+# Development" identity, if the keychain has one, is used before "KeepNote
+# Dev": its Team ID is what keeps the Keychain from asking for the notes key
+# after every rebuild.
 #
 #   ./Scripts/build.sh                 debug build into ./build
 #   ./Scripts/build.sh --release       optimised build
@@ -191,16 +194,25 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 #   xcrun notarytool submit ... && xcrun stapler staple build/KeepNote.app
 
 # A stable identity keeps the app's designated requirement the same across
-# rebuilds, so the Keychain item holding the notes key does not ask for
-# permission again after every build (an ad-hoc signature changes with each
-# binary). The identity is KEEPNOTE_SIGN_ID, "KeepNote Dev" by default — a
-# self-signed Code Signing certificate is enough.
+# rebuilds. The identity is KEEPNOTE_SIGN_ID; by default an "Apple Development"
+# identity (it has a Team ID, which keeps the Keychain from asking for the
+# notes key after every build), else "KeepNote Dev", a self-signed Code Signing
+# certificate, with which the Keychain asks again after each rebuild.
 #
 # Ad-hoc is used when KEEPNOTE_ALLOW_ADHOC=1, and also when the default identity
 # simply is not in the keychain (a fresh clone): then with a loud warning rather
 # than a failure. A named KEEPNOTE_SIGN_ID that is missing, or an identity that
 # exists and still fails to sign, stays an error.
-SIGN_ID="${KEEPNOTE_SIGN_ID:-KeepNote Dev}"
+#
+# An identity with a Team ID ("Apple Development: …", which Xcode makes for
+# any Apple ID, free) is preferred when there is one. The Keychain keeps the
+# notes key's permission by partition: for an app with a Team ID that is the
+# team, the same for every build; for a self-signed certificate like
+# "KeepNote Dev", which has none, it is the binary's own hash (cdhash), new
+# with every build — so each rebuild asked for the key again.
+TEAM_ID_IDENTITY="$(security find-identity -p codesigning -v 2>/dev/null \
+    | sed -n 's/.*"\(Apple Development: [^"]*([A-Z0-9]\{10\})\)".*/\1/p' | head -1)"
+SIGN_ID="${KEEPNOTE_SIGN_ID:-${TEAM_ID_IDENTITY:-KeepNote Dev}}"
 ADHOC_REASON=""
 if [ "${KEEPNOTE_ALLOW_ADHOC:-0}" = "1" ]; then
     ADHOC_REASON="KEEPNOTE_ALLOW_ADHOC=1"

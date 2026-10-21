@@ -168,6 +168,13 @@ final class PaneEditorController: ObservableObject {
                 model.dismissTagList()
                 return true
             }
+            // The find bar first: Esc closes it and puts the caret back in
+            // the text, as in any find bar; the next Esc goes to the list.
+            if model.isFindBarVisible {
+                model.toggleFindBar()
+                focusBody()
+                return true
+            }
             model.flush()
             return onEscape()
         }

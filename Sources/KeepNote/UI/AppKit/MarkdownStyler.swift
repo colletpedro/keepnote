@@ -350,7 +350,7 @@ struct MarkdownStyler: Equatable {
             var reserved: CGFloat
             if hasBox {
                 let done = line.substring(with: m.range(at: 5)) != " "
-                reserved = Self.checkboxWidth
+                reserved = Self.checkboxWidth * scale
                 hide(abs(marker), reserve: reserved, in: storage)
                 let kind: Decoration = done ? .checkboxDone : .checkbox
                 storage.addAttribute(Self.decorationKey, value: kind.rawValue, range: abs(marker))
@@ -364,7 +364,7 @@ struct MarkdownStyler: Equatable {
                 reserved = width(of: line.substring(with: marker))
                 storage.addAttribute(.foregroundColor, value: accent, range: abs(marker))
             } else {
-                reserved = Self.bulletWidth
+                reserved = Self.bulletWidth * scale
                 hide(abs(marker), reserve: reserved, in: storage)
                 storage.addAttribute(Self.decorationKey, value: Decoration.bullet.rawValue, range: abs(marker))
             }

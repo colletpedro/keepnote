@@ -726,6 +726,10 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         if event.keyCode == 53, flags.isEmpty {
             if model.isTagListVisible {
                 model.dismissTagList()
+            } else if model.isFindBarVisible {
+                // Esc closes the find bar first, the note on the next one.
+                model.toggleFindBar()
+                focusBody()
             } else {
                 close()
             }

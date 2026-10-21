@@ -181,6 +181,8 @@ struct NoteTextView: NSViewRepresentable {
             if let markdownView = textView as? MarkdownTextView {
                 markdownView.accentColor = styler.accent
                 markdownView.inkColor = styler.ink
+                markdownView.textScale = styler.scale
+                markdownView.bodyFont = styler.baseFont
             }
             textView.needsDisplay = true
         }

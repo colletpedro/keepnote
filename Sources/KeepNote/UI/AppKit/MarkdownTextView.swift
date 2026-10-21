@@ -9,6 +9,10 @@ final class MarkdownTextView: NSTextView {
     /// Set by the coordinator whenever the note's colour changes.
     var accentColor: NSColor = .controlAccentColor
     var inkColor: NSColor = .labelColor
+    /// Settings > General > Text size: the marks grow with the text.
+    var textScale: CGFloat = 1
+    /// The body's font, for lines whose first character is hidden.
+    var bodyFont: NSFont = .systemFont(ofSize: MarkdownStyler.baseSize)
     /// Tables are laid out for a width, so a resize has to restyle.
     var onWidthChange: (() -> Void)?
     /// Where the note's attachments are kept, for drawing and adding them.
@@ -54,22 +58,40 @@ final class MarkdownTextView: NSTextView {
         attachmentLayouts(in: characters).forEach(drawAttachment)
     }
 
+    /// Where a list mark is drawn, in view coordinates: the bullet's dot or
+    /// the checkbox, centred on the middle of the capitals of the line's
+    /// text — which is also the middle of a numbered item's digits, so the
+    /// three kinds line up with each other and with the words.
+    func markRect(_ kind: MarkdownStyler.Decoration, range: NSRange) -> NSRect? {
+        switch kind {
+        case .bullet:
+            guard let frame = markerFrame(range, width: MarkdownStyler.bulletWidth * textScale) else { return nil }
+            let side = (5 * textScale).rounded(.toNearestOrEven)
+            return NSRect(x: frame.minX + 3 * textScale, y: frame.midY - side / 2, width: side, height: side)
+        case .checkbox, .checkboxDone:
+            guard let frame = markerFrame(range, width: MarkdownStyler.checkboxWidth * textScale) else { return nil }
+            let side = (13 * textScale).rounded()
+            return NSRect(x: frame.minX + 1 * textScale, y: frame.midY - side / 2, width: side, height: side)
+        default:
+            return nil
+        }
+    }
+
     private func draw(_ kind: MarkdownStyler.Decoration, range: NSRange) {
         switch kind {
         case .bullet:
-            guard let frame = markerFrame(range, width: MarkdownStyler.bulletWidth) else { return }
+            guard let bullet = markRect(kind, range: range) else { return }
             // • on the first level, ◦ on the second, ▪ on the third, by how far
             // the line is indented.
             let paragraph = (string as NSString).paragraphRange(for: range)
             let leading = (string as NSString).substring(with: NSRange(location: paragraph.location, length: range.location - paragraph.location))
-            let bullet = NSRect(x: frame.minX + 3, y: frame.midY - 2.5, width: 5, height: 5)
             switch ListEditing.bulletKind(level: ListEditing.level(ofLeading: leading)) {
             case .disc:
                 accentColor.setFill()
                 NSBezierPath(ovalIn: bullet).fill()
             case .ring:
                 accentColor.setStroke()
-                let ring = NSBezierPath(ovalIn: bullet.insetBy(dx: 0.3, dy: 0.3))
+                let ring = NSBezierPath(ovalIn: bullet.insetBy(dx: 0.65, dy: 0.65))
                 ring.lineWidth = 1.3
                 ring.stroke()
             case .square:
@@ -78,17 +100,17 @@ final class MarkdownTextView: NSTextView {
             }
 
         case .checkbox, .checkboxDone:
-            guard let frame = markerFrame(range, width: MarkdownStyler.checkboxWidth) else { return }
-            let box = NSRect(x: frame.minX + 1, y: frame.midY - 6.5, width: 13, height: 13)
-            let path = NSBezierPath(roundedRect: box.insetBy(dx: 0.7, dy: 0.7), xRadius: 3, yRadius: 3)
+            guard let box = markRect(kind, range: range) else { return }
+            let s = box.width / 13
+            let path = NSBezierPath(roundedRect: box.insetBy(dx: 0.7, dy: 0.7), xRadius: 3 * s, yRadius: 3 * s)
             if kind == .checkboxDone {
                 accentColor.setFill()
                 path.fill()
                 let tick = NSBezierPath()
-                tick.move(to: NSPoint(x: box.minX + 3.2, y: box.minY + 6.8))
-                tick.line(to: NSPoint(x: box.minX + 5.6, y: box.minY + 9.2))
-                tick.line(to: NSPoint(x: box.minX + 9.8, y: box.minY + 4.2))
-                tick.lineWidth = 1.8
+                tick.move(to: NSPoint(x: box.minX + 3.2 * s, y: box.minY + 6.8 * s))
+                tick.line(to: NSPoint(x: box.minX + 5.6 * s, y: box.minY + 9.2 * s))
+                tick.line(to: NSPoint(x: box.minX + 9.8 * s, y: box.minY + 4.2 * s))
+                tick.lineWidth = 1.8 * s
                 tick.lineCapStyle = .round
                 tick.lineJoinStyle = .round
                 NSColor.white.setStroke()
@@ -112,11 +134,14 @@ final class MarkdownTextView: NSTextView {
             line.stroke()
 
         case .quote:
-            guard let bounds = paragraphBounds(containing: range), let container = textContainer else { return }
+            guard let (bar, above, below) = quoteBar(range) else { return }
             accentColor.withAlphaComponent(0.7).setFill()
-            let x = textContainerOrigin.x + container.lineFragmentPadding
-            NSBezierPath(roundedRect: NSRect(x: x, y: bounds.minY, width: 3, height: bounds.height),
-                         xRadius: 1.5, yRadius: 1.5).fill()
+            // Square where it joins the next quote line, so the bar reads as one.
+            let path = NSBezierPath(roundedRect: bar, xRadius: 1.5, yRadius: 1.5)
+            if above { path.append(NSBezierPath(rect: NSRect(x: bar.minX, y: bar.minY, width: bar.width, height: min(2, bar.height)))) }
+            if below { path.append(NSBezierPath(rect: NSRect(x: bar.minX, y: bar.maxY - min(2, bar.height), width: bar.width, height: min(2, bar.height)))) }
+            path.windingRule = .nonZero
+            path.fill()
 
         case .codeLine:
             guard let layoutManager else { return }
@@ -190,7 +215,10 @@ final class MarkdownTextView: NSTextView {
         // Centre on the text itself, not on the line box: with a tall line the
         // extra leading sits above the glyphs, and the box's middle would float
         // above the text. `location.y` is the baseline within the fragment.
-        let font = self.font ?? NSFont.systemFont(ofSize: MarkdownStyler.baseSize)
+        // The font is the item's own text's — not `self.font`, which is the
+        // first character's, a hidden marker's near-zero font when the note
+        // starts with a list, which put the box on the baseline, low and cut.
+        let font = textFont(after: characters)
         let centre = origin.y + line.minY + location.y - font.capHeight / 2
         return NSRect(
             x: origin.x + line.minX + location.x,
@@ -200,18 +228,51 @@ final class MarkdownTextView: NSTextView {
         )
     }
 
-    /// The vertical extent of the paragraph a marker belongs to, wrapped lines
-    /// included, so a quote's bar runs the whole way down.
-    private func paragraphBounds(containing characters: NSRange) -> NSRect? {
-        guard let layoutManager, let storage = textStorage else { return nil }
-        let paragraph = (storage.string as NSString).paragraphRange(for: characters)
+    /// A quote's bar: down the whole paragraph, wrapped lines included, and
+    /// inside its lines — joined to the quote lines just above and below, so
+    /// a quote of several lines has one bar, rounded only at its two ends.
+    func quoteBarRect(_ range: NSRange) -> NSRect? { quoteBar(range)?.rect }
+
+    func quoteBar(_ range: NSRange) -> (rect: NSRect, joinsAbove: Bool, joinsBelow: Bool)? {
+        guard let layoutManager, let container = textContainer, let storage = textStorage else { return nil }
+        let text = storage.string as NSString
+        let paragraph = text.paragraphRange(for: range)
         let glyphs = layoutManager.glyphRange(forCharacterRange: paragraph, actualCharacterRange: nil)
         var union = NSRect.null
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphs) { _, used, _, _, _ in
-            union = union.union(used)
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphs) { rect, _, _, _, _ in
+            union = union.union(rect)
         }
         guard !union.isNull else { return nil }
-        return union.offsetBy(dx: textContainerOrigin.x, dy: textContainerOrigin.y)
+        func isQuote(_ location: Int) -> Bool {
+            guard location >= 0, location < storage.length else { return false }
+            let other = text.paragraphRange(for: NSRange(location: location, length: 0))
+            return (text.substring(with: other) as String).trimmingCharacters(in: .whitespaces).hasPrefix(">")
+        }
+        let joinsAbove = isQuote(paragraph.location - 1)
+        let joinsBelow = isQuote(NSMaxRange(paragraph))
+        let top = union.minY + (joinsAbove ? 0 : 4 * textScale)
+        let bottom = union.maxY - (joinsBelow ? 0 : 4 * textScale)
+        let rect = NSRect(x: textContainerOrigin.x + container.lineFragmentPadding,
+                          y: textContainerOrigin.y + top, width: 3, height: max(0, bottom - top))
+        return (rect, joinsAbove, joinsBelow)
+    }
+
+    /// The font of the text that follows a marker on its line, or the body's
+    /// when the item is empty.
+    func textFont(after marker: NSRange) -> NSFont {
+        guard let storage = textStorage else { return bodyFont }
+        let text = storage.string as NSString
+        let line = text.paragraphRange(for: marker)
+        var index = NSMaxRange(marker)
+        while index < NSMaxRange(line) {
+            let character = text.character(at: index)
+            if character == 0x0A { break }
+            if let font = storage.attribute(.font, at: index, effectiveRange: nil) as? NSFont, font.pointSize > 1 {
+                return font
+            }
+            index += 1
+        }
+        return bodyFont
     }
 
     // MARK: - Hidden list markers
@@ -523,8 +584,9 @@ final class MarkdownTextView: NSTextView {
             guard let raw = value as? String,
                   raw == MarkdownStyler.Decoration.checkbox.rawValue
                     || raw == MarkdownStyler.Decoration.checkboxDone.rawValue,
-                  let frame = markerFrame(range, width: MarkdownStyler.checkboxWidth) else { return }
-            if frame.insetBy(dx: -2, dy: -2).contains(point) {
+                  let frame = markRect(.checkbox, range: range) else { return }
+            // A little larger than the box, so a click near its edge counts.
+            if frame.insetBy(dx: -4, dy: -4).contains(point) {
                 hit = range
                 stop.pointee = true
             }
@@ -747,7 +809,7 @@ extension MarkdownTextView {
         storage.enumerateAttribute(MarkdownStyler.decorationKey, in: NSRange(location: 0, length: storage.length)) { value, range, _ in
             guard let raw = value as? String,
                   let kind = MarkdownStyler.Decoration(rawValue: raw), kind == .checkbox || kind == .checkboxDone,
-                  let frame = markerFrame(range, width: MarkdownStyler.checkboxWidth) else { return }
+                  let frame = markRect(kind, range: range) else { return }
             let line = text.paragraphRange(for: range)
             let label = text.substring(with: NSRange(location: NSMaxRange(range), length: max(0, NSMaxRange(line) - NSMaxRange(range))))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
