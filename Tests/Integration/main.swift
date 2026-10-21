@@ -96,6 +96,8 @@ MainActor.assumeIsolated {
     runAttachmentEditorTests()
     runAttachmentCardTests()
     runAttachmentDisplayTests()
+    runLinkHoverTests()
+    runNoNetworkSourceTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }

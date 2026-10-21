@@ -577,8 +577,87 @@ final class MarkdownTextView: NSTextView {
         replaceText(state, with: current == " " ? "x" : " ")
     }
 
-    private func link(at point: NSPoint) -> URL? {
+    // MARK: - Hover
+
+    /// What the pointer over a link or a file's card is told, and shown.
+    static var linkHint: String { L("\u{2318}-click to open") }
+
+    /// The hint for the point, if it is over a link: "⌘-click to open".
+    func hoverHint(at point: NSPoint) -> String? {
+        link(at: point) == nil ? nil : Self.linkHint
+    }
+
+    /// A hand over a link and over a file's card, which a click opens; the
+    /// text's I-beam everywhere else.
+    func hoverCursor(at point: NSPoint) -> NSCursor? {
+        if link(at: point) != nil { return .pointingHand }
+        if let layout = attachment(at: point), !layout.showsImage, layout.info != nil { return .pointingHand }
+        return nil
+    }
+
+    private var hoverArea: NSTrackingArea?
+    /// The link the hint is set for, so moving inside it changes nothing.
+    private var hintedLink: NSRect?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let hoverArea { removeTrackingArea(hoverArea) }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeAlways, .inVisibleRect, .mouseEnteredAndExited],
+                                  owner: self, userInfo: nil)
+        addTrackingArea(area)
+        hoverArea = area
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        let point = convert(event.locationInWindow, from: nil)
+        hoverCursor(at: point)?.set()
+        // The hint is a tooltip on the link's own rectangle, so it comes and
+        // goes with the pointer the way the system's tooltips do.
+        if let rect = linkRect(at: point) {
+            if hintedLink != rect {
+                removeAllToolTips()
+                addToolTip(rect, owner: Self.linkHint as NSString, userData: nil)
+                hintedLink = rect
+            }
+        } else if hintedLink != nil {
+            removeAllToolTips()
+            hintedLink = nil
+        }
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        if hintedLink != nil {
+            removeAllToolTips()
+            hintedLink = nil
+        }
+    }
+
+    /// The rectangle of the link under the point, in view coordinates.
+    private func linkRect(at point: NSPoint) -> NSRect? {
+        guard link(at: point) != nil, let storage = textStorage, let layoutManager, let textContainer else { return nil }
+        let index = characterIndexForInsertion(at: point)
+        for candidate in [index, index - 1] where candidate >= 0 && candidate < storage.length {
+            var run = NSRange()
+            guard storage.attribute(MarkdownStyler.linkKey, at: candidate, effectiveRange: &run) != nil else { continue }
+            let glyphs = layoutManager.glyphRange(forCharacterRange: run, actualCharacterRange: nil)
+            return layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
+                .offsetBy(dx: textContainerOrigin.x, dy: textContainerOrigin.y)
+        }
+        return nil
+    }
+
+    func link(at point: NSPoint) -> URL? {
         guard let storage = textStorage, storage.length > 0 else { return nil }
+        // Over the text itself, not past the end of a line.
+        let glyph = layoutManager?.glyphIndex(for: NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y),
+                                              in: textContainer!, fractionOfDistanceThroughGlyph: nil) ?? 0
+        if let layoutManager, let textContainer {
+            let box = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: textContainer)
+                .offsetBy(dx: textContainerOrigin.x, dy: textContainerOrigin.y)
+            guard box.insetBy(dx: -1, dy: -1).contains(point) else { return nil }
+        }
         let index = characterIndexForInsertion(at: point)
         for candidate in [index, index - 1] where candidate >= 0 && candidate < storage.length {
             guard let raw = storage.attribute(MarkdownStyler.linkKey, at: candidate, effectiveRange: nil) as? String,
