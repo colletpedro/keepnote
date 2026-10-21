@@ -26,7 +26,11 @@ final class UndoToastController {
         messageForTesting = message
         undoForTesting = onUndo
 
-        let panel = NSPanel(
+        // With VoiceOver the notice can take the keyboard, so its Undo is one
+        // step away, and it stays longer: it is read before it can be used.
+        let voiceOver = Announcer.isVoiceOverRunning
+        let duration = voiceOver ? max(duration, 20) : duration
+        let panel = ToastPanel(
             contentRect: NSRect(x: 0, y: 0, width: 300, height: 46),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
@@ -74,6 +78,7 @@ final class UndoToastController {
 
         panel.alphaValue = 0
         panel.orderFrontRegardless()
+        if voiceOver, onUndo != nil { panel.makeKey() }
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.16
             panel.animator().alphaValue = 1
@@ -154,4 +159,10 @@ private struct UndoToastView: View {
             withAnimation(.linear(duration: duration)) { progress = 0 }
         }
     }
+}
+
+/// The notice's window: it can take the keyboard (for VoiceOver's sake), and
+/// gives it back by closing.
+final class ToastPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
 }

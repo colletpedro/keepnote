@@ -196,6 +196,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// An editor already showing the note takes the new text too.
     func bring(_ offer: DailyCarryOver.Offer, into id: UUID) {
         guard let note = store.note(id: id), !note.isLocked else { return }
+        Announcer.say(Self.broughtMessage(offer))
         let heading = DailyCarryOver.heading(for: offer.day)
         if let window = noteWindows[id] {
             window.editBody { DailyCarryOver.inserting(offer, into: $0, heading: heading) }
@@ -227,8 +228,11 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         let open = Set(noteWindows.keys)
         do {
             for id in open { try store.markOpened(id: id) }
-            try store.archiveDailies(open: open)
-            try store.archiveStale(open: open, days: settings.archiveAfterDays)
+            let archived = try store.archiveDailies(open: open).count
+                + store.archiveStale(open: open, days: settings.archiveAfterDays).count
+            if archived > 0 {
+                Announcer.say(Lplural(archived, L("1 note was archived automatically"), L("%d notes were archived automatically")))
+            }
         } catch {
             present(error)
         }
@@ -385,6 +389,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         do {
             let note = try store.create(color: settings.defaultNoteColor, tags: tags)
             open(noteID: note.id, from: nil)
+            Announcer.say(L("New note"))
         } catch {
             present(error)
         }
@@ -460,6 +465,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         controller.onPresentationChange = { [weak self] id, presentation in
             guard let self else { return }
             self.settings.setFloating(presentation == .detached, noteID: id)
+            Announcer.say(presentation == .detached ? L("Note floating") : L("Note back on the deck"))
             // Floated off the deck it came from: that deck no longer holds
             // itself open for it.
             if presentation == .detached, let displayID = self.noteOrigins.removeValue(forKey: id) {
@@ -482,9 +488,11 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     }
 
     func archive(ids: [UUID]) {
+        var done = 0
         for id in ids {
-            do { try store.archive(id: id) } catch { present(error) }
+            do { try store.archive(id: id); done += 1 } catch { present(error) }
         }
+        if done > 0 { Announcer.say(Lplural(done, L("Note archived"), L("%d notes archived"))) }
     }
 
     func setKeepOnDeck(_ on: Bool, ids: [UUID]) {
@@ -511,15 +519,21 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         if refused {
             undoToast.notice(PinnedDeck.limitMessage)
+            Announcer.say(PinnedDeck.limitMessage)
         } else if archived {
             undoToast.notice(L("Only notes on the deck can be pinned"))
+            Announcer.say(L("Only notes on the deck can be pinned"))
+        } else if !ids.isEmpty {
+            Announcer.say(on ? L("Pinned to center") : L("Unpinned from center"))
         }
     }
 
     func unarchive(ids: [UUID]) {
+        var done = 0
         for id in ids {
-            do { try store.unarchive(id: id) } catch { present(error) }
+            do { try store.unarchive(id: id); done += 1 } catch { present(error) }
         }
+        if done > 0 { Announcer.say(Lplural(done, L("Note back on the deck"), L("%d notes back on the deck"))) }
     }
 
     /// Delete is never immediate. The rows leave the UI, a toast counts down,
@@ -539,6 +553,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         guard !deleted.isEmpty else { return }
 
         let message = Lplural(deleted.count, L("Note deleted"), L("%d notes deleted"))
+        Announcer.say(message + ". " + L("Undo is in the notice at the bottom of the screen."))
         undoToast.show(message: message, duration: settings.undoWindow) { [weak self] in
             guard let self else { return }
             for id in deleted {

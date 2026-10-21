@@ -167,7 +167,10 @@ final class NoteEditorModel: ObservableObject {
     /// the deck and keeps everything else.
     func toggleComplete() {
         try? store.toggleArchive(id: noteID)
-        if let refreshed = store.note(id: noteID) { state = refreshed.state }
+        if let refreshed = store.note(id: noteID) {
+            state = refreshed.state
+            Announcer.say(state == .archived ? L("Note archived") : L("Note back on the deck"))
+        }
     }
 
     /// What the footer says about the note's place on the deck: kept, pinned,

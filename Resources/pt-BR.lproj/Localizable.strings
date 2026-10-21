@@ -24,8 +24,11 @@
 "%d min ago" = "há %d min";
 "%d more notes" = "mais %d notas";
 "%d notes" = "%d notas";
+"%d notes archived" = "%d notas arquivadas";
+"%d notes back on the deck" = "%d notas de volta à pilha";
 "%d notes deleted" = "%d notas apagadas";
 "%d notes selected" = "%d notas selecionadas";
+"%d notes were archived automatically" = "%d notas foram arquivadas automaticamente";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notas vão perder esta tag. As notas em si são mantidas.";
 "%d of %@" = "%d de %@";
 "%d tasks brought from %@" = "%d tarefas trazidas de %@";
@@ -34,6 +37,7 @@
 "1 locked note was skipped" = "1 nota bloqueada foi ignorada";
 "1 more note" = "mais 1 nota";
 "1 note" = "1 nota";
+"1 note was archived automatically" = "1 nota foi arquivada automaticamente";
 "1 note will lose this tag. The notes themselves are kept." = "1 nota vai perder esta tag. A nota em si é mantida.";
 "1 task brought from %@" = "1 tarefa trazida de %@";
 "1 unfinished task from %@. Bring it?" = "1 tarefa pendente de %@. Trazer?";
@@ -227,7 +231,10 @@
 "None" = "Nenhum";
 "None chosen" = "Nenhuma escolhida";
 "Not now" = "Agora não";
+"Note archived" = "Nota arquivada";
+"Note back on the deck" = "Nota de volta à pilha";
 "Note deleted" = "Nota apagada";
+"Note floating" = "Nota flutuando";
 "Notes" = "Notas";
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "As notas são markdown: # títulos, **negrito**, - listas, - [ ] tarefas,";
 "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date." = "Notas não abertas pelo tempo definido em Pilha (7, 14 ou 30 dias; 14 por padrão) são arquivadas sozinhas, nunca apagadas. Abrir uma nota, presa à pilha ou flutuando, recomeça a contagem; uma espiada pela pilha não. Nos dois últimos dias, um relógio aparece na aba e a nota diz “Arquiva em 2 dias” ou “Arquiva amanhã”. As notas daily seguem uma regra própria. Em Arquivadas, essas notas dizem “Arquivada automaticamente” e a data.";
@@ -354,8 +361,10 @@
 "Type a shortcut" = "Digite o atalho";
 "Undo" = "Desfazer";
 "Undo a delete for" = "Desfazer uma exclusão por";
+"Undo is in the notice at the bottom of the screen." = "O Desfazer está no aviso na parte de baixo da tela.";
 "Unfinished tasks from your last daily" = "Tarefas pendentes da última daily";
 "Unpin from Center" = "Desafixar do centro";
+"Unpinned from center" = "Desafixada do centro";
 "Untagged" = "Sem tag";
 "Untitled" = "Sem título";
 "Up Arrow" = "Seta para cima";

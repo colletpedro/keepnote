@@ -24,8 +24,11 @@
 "%d min ago" = "%d min ago";
 "%d more notes" = "%d more notes";
 "%d notes" = "%d notes";
+"%d notes archived" = "%d notes archived";
+"%d notes back on the deck" = "%d notes back on the deck";
 "%d notes deleted" = "%d notes deleted";
 "%d notes selected" = "%d notes selected";
+"%d notes were archived automatically" = "%d notes were archived automatically";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notes will lose this tag. The notes themselves are kept.";
 "%d of %@" = "%d of %@";
 "%d tasks brought from %@" = "%d tasks brought from %@";
@@ -34,6 +37,7 @@
 "1 locked note was skipped" = "1 locked note was skipped";
 "1 more note" = "1 more note";
 "1 note" = "1 note";
+"1 note was archived automatically" = "1 note was archived automatically";
 "1 note will lose this tag. The notes themselves are kept." = "1 note will lose this tag. The notes themselves are kept.";
 "1 task brought from %@" = "1 task brought from %@";
 "1 unfinished task from %@. Bring it?" = "1 unfinished task from %@. Bring it?";
@@ -227,7 +231,10 @@
 "None" = "None";
 "None chosen" = "None chosen";
 "Not now" = "Not now";
+"Note archived" = "Note archived";
+"Note back on the deck" = "Note back on the deck";
 "Note deleted" = "Note deleted";
+"Note floating" = "Note floating";
 "Notes" = "Notes";
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,";
 "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date." = "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date.";
@@ -354,8 +361,10 @@
 "Type a shortcut" = "Type a shortcut";
 "Undo" = "Undo";
 "Undo a delete for" = "Undo a delete for";
+"Undo is in the notice at the bottom of the screen." = "Undo is in the notice at the bottom of the screen.";
 "Unfinished tasks from your last daily" = "Unfinished tasks from your last daily";
 "Unpin from Center" = "Unpin from Center";
+"Unpinned from center" = "Unpinned from center";
 "Untagged" = "Untagged";
 "Untitled" = "Untitled";
 "Up Arrow" = "Up Arrow";
