@@ -37,6 +37,8 @@ struct NoteListActions {
 /// selected note.
 struct AllNotesView: View {
     @ObservedObject var store: NoteStore
+    /// The list's order, from the toolbar.
+    @ObservedObject var settings: AppSettings = .shared
     var actions: NoteListActions
 
     @State private var query = ""
@@ -65,8 +67,7 @@ struct AllNotesView: View {
     private var index: TagLibrary.Index { TagLibrary.index(store.notes) }
 
     private var results: [Note] {
-        TagLibrary.filter(store.search(query), by: sidebarSelection)
-            .sorted { $0.editedAt > $1.editedAt }
+        settings.allNotesSort.sorted(TagLibrary.filter(store.search(query), by: sidebarSelection))
     }
 
     private var selectedNotes: [Note] {
@@ -197,7 +198,7 @@ struct AllNotesView: View {
                 // Day by day, the latest day first.
                 ForEach(DailyNotes.groups(results), id: \.day) { group in
                     Section {
-                        ForEach(group.items) { noteRow($0) }
+                        ForEach(settings.allNotesSort.sorted(group.items)) { noteRow($0) }
                     } header: {
                         DayHeader(day: group.day)
                     }
@@ -345,6 +346,18 @@ struct AllNotesView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
+            Menu {
+                Picker(L("Sort By"), selection: $settings.allNotesSort) {
+                    ForEach(NoteSort.allCases, id: \.self) { sort in
+                        Text(sort.title).tag(sort)
+                    }
+                }
+                .pickerStyle(.inline)
+            } label: {
+                Label(L("Sort By"), systemImage: "arrow.up.arrow.down")
+            }
+            .help(L("Sort by %@", settings.allNotesSort.title))
+
             Button(action: actions.newNote) {
                 Label(L("New Note"), systemImage: "square.and.pencil")
             }

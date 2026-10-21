@@ -29,6 +29,7 @@ final class AppSettings: ObservableObject {
         static let floatingNotes = "floatingNotes"
         static let dailyIntroSeen = "dailyIntroSeen"
         static let archiveAfterDays = "archiveAfterDays"
+        static let allNotesSort = "allNotesSort"
     }
 
     private let defaults: UserDefaults
@@ -198,6 +199,12 @@ final class AppSettings: ObservableObject {
     var allNotesSelection: String? {
         get { defaults.string(forKey: Key.allNotesSelection) }
         set { defaults.set(newValue, forKey: Key.allNotesSelection) }
+    }
+
+    /// The order of All Notes' list, kept between openings.
+    @Published var allNotesSort: NoteSort = UserDefaults.standard.string(forKey: Key.allNotesSort)
+        .flatMap(NoteSort.init(rawValue:)) ?? .default {
+        didSet { defaults.set(allNotesSort.rawValue, forKey: Key.allNotesSort) }
     }
 
     /// Notes that were floating when the app last ran, in the order they were

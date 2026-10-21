@@ -269,3 +269,6 @@ struct EncryptedNoteRecord: Sendable {
     var dailyKept: Bool
     var keepOnDeck: Bool
 }
+
+/// All Notes sorts notes by their dates and title.
+extension Note: SortableNote {}
