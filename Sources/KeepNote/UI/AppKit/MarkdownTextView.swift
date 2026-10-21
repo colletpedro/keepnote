@@ -620,6 +620,14 @@ final class MarkdownTextView: NSTextView {
                 addToolTip(rect, owner: Self.linkHint as NSString, userData: nil)
                 hintedLink = rect
             }
+        } else if let layout = attachment(at: point), let rect = attachmentRect(layout),
+                  let hint = attachmentHint(layout) {
+            // An image says its description; a card, what a click does.
+            if hintedLink != rect {
+                removeAllToolTips()
+                addToolTip(rect, owner: hint as NSString, userData: nil)
+                hintedLink = rect
+            }
         } else if hintedLink != nil {
             removeAllToolTips()
             hintedLink = nil
@@ -632,6 +640,16 @@ final class MarkdownTextView: NSTextView {
             removeAllToolTips()
             hintedLink = nil
         }
+    }
+
+    /// The tooltip of an attachment: an image's description, or for a file
+    /// "Click to open".
+    func attachmentHint(_ layout: AttachmentLayout) -> String? {
+        if layout.reference.isImage {
+            let label = layout.reference.label.trimmingCharacters(in: .whitespaces)
+            return label.isEmpty ? nil : label
+        }
+        return layout.info == nil ? nil : L("Click to open")
     }
 
     /// The rectangle of the link under the point, in view coordinates.
@@ -697,6 +715,14 @@ extension MarkdownTextView {
         return allAttachmentLayouts.compactMap { layout -> NSAccessibilityElement? in
             guard let rect = attachmentRect(layout) else { return nil }
             let element = ChecklistBoxElement()
+            // The right click's commands, as actions VoiceOver lists.
+            element.setAccessibilityCustomActions(menu(for: layout).items.filter { !$0.isSeparatorItem && $0.isEnabled }.map { item in
+                // The item (and the closure it carries) lives as long as the action.
+                NSAccessibilityCustomAction(name: item.title) {
+                    guard let action = item.action else { return false }
+                    return NSApp.sendAction(action, to: item.target, from: item)
+                }
+            })
             element.setAccessibilityParent(self)
             element.setAccessibilityFrame(window.convertToScreen(convert(rect, to: nil)))
             element.setAccessibilityLabel(AccessibilityText.attachment(isImage: layout.reference.isImage,

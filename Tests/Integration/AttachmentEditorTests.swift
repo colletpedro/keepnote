@@ -205,3 +205,47 @@ func runAttachmentDisplayTests() {
     expectTrue("peek: the first image", thumbnail != nil && thumbnail!.size.width == 300)
     expectTrue("peek: none for a note without", provider(store.note(id: plain.id)!) == nil)
 }
+
+// MARK: - Attachments with VoiceOver
+
+@MainActor
+func runAttachmentAccessibilityTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("a11y.sqlite"), key: SymmetricKey(size: .bits256))
+    let picture = try! store.addAttachment(samplePNG(width: 200, height: 100), name: "Barn.png")
+    let file = try! store.addAttachment(Data(repeating: 5, count: 3000), name: "Deed.pdf", type: .pdf)
+    let note = try! store.create(title: "Farm", body: AttachmentText.token(id: picture.id, isImage: true, label: "A red barn")
+                                 + "\n" + AttachmentText.token(id: file.id, isImage: false, label: "Deed.pdf"))
+    let window = NoteWindowController(note: note, store: store, originFrame: nil, cascadeIndex: 0, floating: true)
+    window.window.contentView?.layoutSubtreeIfNeeded()
+    spin(0.2)
+    guard let body = window.window.contentView.flatMap(textView(in:)) as? MarkdownTextView else {
+        expectTrue("a11y: the editor is there", false)
+        return
+    }
+    let elements = body.attachmentElements()
+    expect("a11y: both are elements", String(elements.count), "2")
+    expect("a11y: the image reads its description", elements.first?.accessibilityLabel(), "Image, A red barn")
+    expectTrue("a11y: as an image", elements.first?.accessibilityRole() == .image)
+    expect("a11y: the file reads its name and size", elements.last?.accessibilityLabel(), "File, Deed.pdf, \(file.sizeText)")
+    let imageActions = elements.first?.accessibilityCustomActions()?.map(\.name) ?? []
+    expectTrue("a11y: Edit Description… among the image's actions (\(imageActions))", imageActions.contains(L("Edit Description\u{2026}")))
+    expectTrue("a11y: and Remove", imageActions.contains(L("Remove")))
+    let fileActions = elements.last?.accessibilityCustomActions()?.map(\.name) ?? []
+    expectTrue("a11y: a file has no description to edit", !fileActions.contains(L("Edit Description\u{2026}")))
+    // Remove through VoiceOver's action.
+    if let remove = elements.last?.accessibilityCustomActions()?.first(where: { $0.name == L("Remove") }) {
+        _ = remove.handler?()
+        expect("a11y: VoiceOver's Remove takes the file out", String(AttachmentText.references(in: body.string).count), "1")
+    }
+    // The description is the image's tooltip; a card says a click opens it.
+    if let image = body.allAttachmentLayouts.first {
+        expect("a11y: the description as a tooltip", body.attachmentHint(image), "A red barn")
+    }
+    // Edit Description… changes the line's description, which is what is read.
+    if let image = body.allAttachmentLayouts.first {
+        body.replaceText(image.reference.range, with: AttachmentText.token(id: picture.id, isImage: true, label: "A barn at dusk"))
+        spin(0.05)
+        expect("a11y: a new description is read", body.attachmentElements().first?.accessibilityLabel(), "Image, A barn at dusk")
+    }
+    window.close()
+}

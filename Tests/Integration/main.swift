@@ -97,6 +97,7 @@ MainActor.assumeIsolated {
     runAttachmentEditorTests()
     runAttachmentCardTests()
     runAttachmentDisplayTests()
+    runAttachmentAccessibilityTests()
     runLinkHoverTests()
     runNoNetworkSourceTests()
     removeScratch()
