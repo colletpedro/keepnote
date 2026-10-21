@@ -80,6 +80,7 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 | `⌥⌘A` | All Notes |
 | `⌥⌘E` | Archive |
 | `⌥⌘Y` | Today's Daily |
+| `⌃⌥⌘D` | Focus Deck (arrows, Return, Space, Esc) |
 
 | In a note | What it does |
 |---|---|
@@ -90,6 +91,7 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 | `⌥⌘P` | Float Note / Return to Deck |
 | `⇧⌘E` | Archive / bring back |
 | `⇧⌘⌫` | Delete (undoable) |
+| `⌘↩` | Tick or untick the task |
 | `⇥` / `⇧⇥` | Indent / outdent a list item |
 
 | Formatting | What it does |
@@ -104,6 +106,12 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 | `⌥⌘K` | Code block |
 | `⌥⌘T` `⌥⌘R` | Table, divider |
 | `⇧⌘D` | Today's date |
+
+## Accessibility
+
+- **VoiceOver.** The resting stripe is a button that opens the deck. Each tab reads as the note's title, then its colour and states (pinned, kept on deck, floating, daily, archives in N days), in the order the tabs are drawn; its actions menu (VO-Shift-M) has the right-click commands. Every icon-only control in a note has a label and a hint, checklist items are checkboxes VoiceOver can tick, tag chips have a *Remove tag* action, and the colour swatches say which one is chosen. KeepNote announces what changes away from the cursor: a note made, archived, deleted (the notice then takes the keyboard, so Undo is one step away), pinned, floated or back on the deck, tasks brought into a daily, and notes archived by the time rule.
+- **Keyboard.** **Focus Deck** (`⌃⌥⌘D`, changeable) gives the deck the keyboard: the arrows or Tab move between the tabs and the buttons, Space shows the peek, Return opens, Esc gives the keyboard back. `⌘↩` ticks the task the caret is on. With System Settings → Keyboard → *Keyboard navigation* on, Tab reaches every button of notes, All Notes and Settings, with a focus ring in the note's ink that shows on every paper colour. Every global and in-note shortcut can be recorded again in Settings → Shortcuts.
+- **Display.** *Increase contrast* firms up outlines, the perforation and quiet text; *Reduce transparency* makes the stripe, chips and notices solid; *Reduce motion* turns the deck's and notes' movement into fades. Settings → General → **Text size** (Small to Extra Large) sizes the text of notes, the peek and All Notes. Text on every paper colour is at least 4.5:1, with and without Increase contrast, and no state is shown by colour alone.
 
 ## Privacy
 

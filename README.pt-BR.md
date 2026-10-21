@@ -80,6 +80,7 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 | `⌥⌘A` | Todas as notas |
 | `⌥⌘E` | Arquivadas |
 | `⌥⌘Y` | Daily de hoje |
+| `⌃⌥⌘D` | Focar a pilha (setas, Return, Espaço, Esc) |
 
 | Numa nota | O que faz |
 |---|---|
@@ -90,6 +91,7 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 | `⌥⌘P` | Flutuar nota / Voltar à pilha |
 | `⇧⌘E` | Arquivar / trazer de volta |
 | `⇧⌘⌫` | Apagar (com desfazer) |
+| `⌘↩` | Marcar ou desmarcar a tarefa |
 | `⇥` / `⇧⇥` | Recuar / voltar um nível num item de lista |
 
 | Formatação | O que faz |
@@ -104,6 +106,12 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 | `⌥⌘K` | Bloco de código |
 | `⌥⌘T` `⌥⌘R` | Tabela, divisor |
 | `⇧⌘D` | Data de hoje |
+
+## Acessibilidade
+
+- **VoiceOver.** A faixa em repouso é um botão que abre a pilha. Cada aba é lida com o título da nota e depois a cor e os estados (fixada, mantida na pilha, flutuando, daily, arquiva em N dias), na ordem em que as abas aparecem; o menu de ações (VO-Shift-M) tem os comandos do clique direito. Todo controle só com ícone numa nota tem rótulo e dica, os itens de checklist são caixas que o VoiceOver marca, as tags têm a ação *Remover tag* e as amostras de cor dizem qual está escolhida. O KeepNote anuncia o que muda longe do cursor: nota criada, arquivada, apagada (o aviso então recebe o teclado, e o Desfazer fica a um passo), fixada, flutuando ou de volta à pilha, tarefas trazidas para a daily e notas arquivadas pela regra de tempo.
+- **Teclado.** **Focar a pilha** (`⌃⌥⌘D`, configurável) dá o teclado à pilha: as setas ou Tab passam pelas abas e pelos botões, Espaço mostra a espiada, Return abre, Esc devolve o teclado. `⌘↩` marca a tarefa em que está o cursor. Com Ajustes do Sistema → Teclado → *Navegação pelo teclado* ligada, Tab alcança todos os botões das notas, de Todas as notas e dos Ajustes, com um anel de foco na tinta da nota que aparece sobre todas as cores de papel. Todo atalho global e de dentro da nota pode ser gravado de novo em Ajustes → Atalhos.
+- **Tela.** *Aumentar contraste* reforça contornos, a perfuração e o texto secundário; *Reduzir transparência* deixa a faixa, os chips e os avisos sólidos; *Reduzir movimento* troca o movimento da pilha e das notas por esmaecimentos. Ajustes → Geral → **Tamanho do texto** (de Pequeno a Extragrande) ajusta o texto das notas, da espiada e de Todas as notas. O texto tem contraste de pelo menos 4,5:1 sobre todas as cores de papel, com e sem Aumentar contraste, e nenhum estado é mostrado só pela cor.
 
 ## Privacidade
 
