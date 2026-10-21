@@ -593,13 +593,19 @@ struct NoteEditorView: View {
                 Button { model.advanceFind(by: -1) } label: { Image(systemName: "chevron.up") }
                     .buttonStyle(InkFocusButtonStyle(color: model.color))
                     .disabled(model.matchCount == 0)
+                    .help(L("Previous match"))
+                    .accessibilityLabel(L("Previous match"))
                 Button { model.advanceFind(by: 1) } label: { Image(systemName: "chevron.down") }
                     .buttonStyle(InkFocusButtonStyle(color: model.color))
                     .disabled(model.matchCount == 0)
+                    .help(L("Next match"))
+                    .accessibilityLabel(L("Next match"))
             }
 
             Button { model.toggleFindBar() } label: { Image(systemName: "xmark") }
                 .buttonStyle(InkFocusButtonStyle(color: model.color))
+                .help(L("Close find"))
+                .accessibilityLabel(L("Close find"))
         }
         .scaledFont(10.5)
         .foregroundStyle(model.color.inkSwiftUI.opacity(0.6))
@@ -647,7 +653,7 @@ struct NoteEditorView: View {
                         if DailyNotes.isReserved(tag) { onDailyChip() } else { model.tagField?.focus() }
                     }, onRemove: { model.removeTag($0) })
                         .contentShape(Rectangle())
-                        .onTapGesture { model.tagField?.focus() }
+                        .onTapGesture { model.tagField?.focus() }   // a11y: the chips and the field are reachable themselves
                 }
             }
             if let line = model.deckLine {

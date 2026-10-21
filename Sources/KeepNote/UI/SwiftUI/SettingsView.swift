@@ -202,7 +202,7 @@ struct NotesSettingsPane: View {
                                 get: { Int(settings.autosaveDelay * 1000) },
                                 set: { settings.autosaveDelay = Double($0) / 1000 }
                             ),
-                            in: 100...2000, step: 50
+                            in: 100...2000, step: 50, named: L("Autosave after")
                         )
                     }
                 }
@@ -214,7 +214,7 @@ struct NotesSettingsPane: View {
                                 get: { Int(settings.undoWindow) },
                                 set: { settings.undoWindow = Double($0) }
                             ),
-                            in: 3...60, step: 1
+                            in: 3...60, step: 1, named: L("Undo a delete for")
                         )
                     }
                 }
@@ -224,10 +224,15 @@ struct NotesSettingsPane: View {
     }
 }
 
-private func stepper(_ label: String, value: Binding<Int>, in range: ClosedRange<Int>, step: Int) -> some View {
+/// The value and its stepper. VoiceOver hears the setting's name on the
+/// stepper and the value as its value.
+private func stepper(_ label: String, value: Binding<Int>, in range: ClosedRange<Int>, step: Int, named name: String) -> some View {
     HStack(spacing: 6) {
         Text(label).monospacedDigit().foregroundStyle(.secondary)
-        Stepper("", value: value, in: range, step: step).labelsHidden()
+            .accessibilityHidden(true)
+        Stepper(name, value: value, in: range, step: step).labelsHidden()
+            .accessibilityLabel(name)
+            .accessibilityValue(label)
     }
 }
 
@@ -298,7 +303,7 @@ struct DeckSettingsPane: View {
                                 get: { Int((settings.openDelay * 1000).rounded()) },
                                 set: { settings.openDelay = Double($0) / 1000 }
                             ),
-                            in: 0...400, step: 25
+                            in: 0...400, step: 25, named: L("Open delay")
                         )
                     }
                 }
@@ -310,7 +315,7 @@ struct DeckSettingsPane: View {
                                 get: { Int(settings.fanStagger * 1000) },
                                 set: { settings.fanStagger = Double($0) / 1000 }
                             ),
-                            in: 0...120, step: 5
+                            in: 0...120, step: 5, named: L("Cascade delay")
                         )
                     }
                 }

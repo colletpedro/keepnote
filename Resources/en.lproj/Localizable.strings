@@ -91,6 +91,7 @@
 "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one.";
 "Close" = "Close";
 "Close (esc)" = "Close (esc)";
+"Close find" = "Close find";
 "Closes the note. What you wrote is saved." = "Closes the note. What you wrote is saved.";
 "Code block" = "Code block";
 "Colors, states and dates came across unchanged." = "Colors, states and dates came across unchanged.";

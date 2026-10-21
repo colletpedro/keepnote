@@ -33,6 +33,8 @@ struct TagSuggestionList: View {
                     .contentShape(Rectangle())
                     .onTapGesture { onAccept(index) }
                     .onHover { inside in if inside { onHover(index) } }
+                    .accessibilityAddTraits(index == selection ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { onAccept(index) }
             }
         }
         .padding(4)

@@ -91,6 +91,7 @@
 "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Clique num atalho e pressione a nova combinação; ela precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho.";
 "Close" = "Fechar";
 "Close (esc)" = "Fechar (esc)";
+"Close find" = "Fechar busca";
 "Closes the note. What you wrote is saved." = "Fecha a nota. O que você escreveu fica salvo.";
 "Code block" = "Bloco de código";
 "Colors, states and dates came across unchanged." = "Cores, estados e datas vieram sem alteração.";

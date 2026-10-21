@@ -82,6 +82,8 @@ MainActor.assumeIsolated {
     runChecklistKeyboardTests()
     runDisplayOptionsTests()
     runTextSizeTests()
+    runAccessibilityTreeTests()
+    runContrastTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }
