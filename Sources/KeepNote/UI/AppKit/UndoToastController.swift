@@ -16,6 +16,8 @@ final class UndoToastController {
     private(set) var widthForTesting: CGFloat = 0
     private(set) var messageForTesting: String?
     private(set) var undoForTesting: (() -> Void)?
+    /// The notice's window, for the gallery's pictures.
+    var panelForTesting: NSPanel? { panel }
 
     func notice(_ message: String, duration: TimeInterval = 2.5) {
         show(message: message, duration: duration, onUndo: nil)
