@@ -104,8 +104,10 @@
       <li><h3>Anchored or floating</h3><p>Float Note (⌥⌘P) lifts a note off the edge, resizable, and it remembers its place.</p></li>
       <li><h3>Markdown as you type</h3><p>Bold, links, headings, lists, checklists, quotes, code, tables, all with shortcuts.</p></li>
       <li><h3>Colors and tags</h3><p>Five paper colors and #tags with suggestions. Search covers title, tags and text.</p></li>
+      <li><h3>Edit in All Notes</h3><p>The selected note opens in All Notes’ pane with everything a note has — shortcuts, Tools, find, colours, tags — and saves on its own. Open in a window too, it is one note: what you type shows in both at once. New Note makes it right there; the list sorts by Edited, Created or Title; ↑ ↓, Return and Esc move between list and note.</p></li>
       <li><h3>Daily notes</h3><p>Today’s Daily is one shortcut away (⌥⌘Y). The last two days stay on the deck; older ones go to Daily in All Notes. You can set a template for new daily notes, and yesterday’s unticked tasks can come along: offered at the top of the new daily, or brought in at once.</p></li>
       <li><h3>Pin, keep, archive by time</h3><p><em>Pin to Center</em> holds up to five notes in the middle of the deck, always whole. <em>Keep on Deck</em> exempts a note from archiving. Notes you have not opened for 7, 14 or 30 days (you choose; 14 by default) move to the Archive on their own, never deleted; in the last two days a clock appears on the tab.</p></li>
+      <li><h3>Daily backups</h3><p>Each day a copy of the database, encrypted like the original, beside it on this Mac; the seven most recent are kept, and one is made before an update. Settings → General → Backups has Back Up Now and Restore….</p></li>
       <li><h3>Sync through a folder</h3><p>Optional plain-text files in a folder you pick, such as iCloud Drive. No server of ours in between.</p></li>
       <li><h3>Import and export</h3><p>Markdown, plain text, or a KeepNote archive that keeps colors, states and dates.</p></li>
       <li><h3>Quiet, and your shortcuts</h3><p>In the menu bar, and in the Dock only while one of its windows is open. Every global and in-note shortcut can be recorded again in Settings; conflicts are caught, and Restore Defaults puts KeepNote’s back.</p></li>
@@ -152,7 +154,7 @@
     <h2>Accessibility</h2>
     <ol class="promises">
       <li><div><b>VoiceOver.</b> The stripe is a button that opens the deck; each tab reads its note’s title, colour and states (pinned, kept, floating, daily, archives soon) in the order drawn. Icon-only buttons have labels, checklist items are checkboxes, and KeepNote announces notes made, archived, deleted (with Undo one step away), pinned or returned, tasks brought and notes archived by time.</div></li>
-      <li><div><b>Keyboard.</b> Focus Deck (<code>⌃⌥⌘D</code>, changeable) gives the deck the keyboard: arrows or Tab between tabs, Space to peek, Return to open, Esc to leave. <code>⌘↩</code> ticks a task. With Keyboard navigation on, Tab reaches every button, with a focus ring that shows on every paper colour.</div></li>
+      <li><div><b>Keyboard.</b> Focus Deck (<code>⌃⌥⌘D</code>, changeable) gives the deck the keyboard: arrows or Tab between tabs, Space to peek, Return to open, Esc to leave. <code>⌘↩</code> ticks a task. In All Notes, ↑ and ↓ move through the list, Return goes into the note, Esc comes back. With Keyboard navigation on, Tab reaches every button, with a focus ring that shows on every paper colour.</div></li>
       <li><div><b>Display.</b> Increase contrast, Reduce transparency and Reduce motion are followed. Settings → General → Text size goes from Small to Extra Large for notes, the peek and All Notes.</div></li>
       <li><div><b>Colour.</b> Text is at least 4.5:1 on every paper, with and without Increase contrast, and no state is shown by colour alone.</div></li>
     </ol>
@@ -166,11 +168,12 @@
     <ol class="promises">
       <li><div><b>The app.</b> <code>/Applications/KeepNote.app</code>. Move it to the Trash.</div></li>
       <li><div><b>The database, your notes.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite</code>, with <code>notes.sqlite-wal</code> and <code>notes.sqlite-shm</code> beside it. Delete the whole container, <code>~/Library/Containers/com.keepnote.KeepNote</code>: in the Finder choose Go → Go to Folder…, type <code>~/Library/Containers</code>, and move the folder named <b>KeepNote</b> to the Trash.</div></li>
+      <li><div><b>The backups.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/Backups</code>, up to seven copies of the database. They go with the container; to remove only them, move the <code>Backups</code> folder to the Trash.</div></li>
       <li><div><b>The preferences.</b> <code>~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist</code>. It goes with the container.</div></li>
       <li><div><b>The encryption key.</b> A password item in the login keychain, service <code>com.keepnote.KeepNote.bodykey</code>, account <code>default</code>. In Keychain Access, search for it and delete it, or run <code>security delete-generic-password -s com.keepnote.KeepNote.bodykey</code> in Terminal.</div></li>
       <li><div><b>The login item.</b> KeepNote itself, registered with macOS while Launch at login is on. Turn that off before deleting the app. If the app is already gone: System Settings → General → Login Items (Login Items &amp; Extensions on macOS 15 and later), select KeepNote under Open at Login and click −.</div></li>
     </ol>
-    <p>The key only decrypts that database, so remove the two together. Once the container is gone your notes are gone with it: export them first (Settings → About → Export All Notes…) if you want to keep them.</p>
+    <p>The key only decrypts that database and its backups, so remove them together. Once the container is gone your notes and their backups are gone with it: export them first (Settings → About → Export All Notes…) if you want to keep them.</p>
     <p><b>Your sync folder is yours.</b> KeepNote never deletes it, and uninstalling leaves it and its <code>.hmnote</code> and <code>.hmtemplate</code> files exactly where they are. Delete it yourself if you no longer want it.</p>
   </div>
 </section>

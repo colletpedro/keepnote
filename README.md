@@ -39,8 +39,10 @@ KeepNote is not notarized by Apple. Notarization needs a paid Apple Developer me
 - **Anchored or floating.** An open note is anchored to the deck and closes when you click elsewhere. **Float Note** (⌥⌘P) lifts it off the edge so it stays on screen, resizable, and remembers its place; dragging a floating note back to the deck's edge returns it.
 - **Markdown as you type.** Bold, italic, strikethrough, highlight, links, headings, bulleted, numbered and checklist items (with indent and automatic renumbering), quotes, code, tables and dividers, all with shortcuts and in a Tools menu in the note.
 - **Colors and tags.** Five paper colors, changeable at any moment, and `#tags` with suggestions while you type. All Notes filters by tag and searches title, tags and text.
+- **Edit in All Notes.** The note selected in All Notes opens in its pane with everything a note has — title, text, lists and checklists, the note's shortcuts, Tools, find (⌘F), the colours, tags, Pin to Center and Keep on Deck — and saves on its own. A note open in the pane and in a window at the same time is one note: what you type in one shows in the other at once, and nothing is lost. Archived notes and dailies can be edited there and stay archived; a note that cannot be decrypted shows read-only, with the reason. Selecting a note counts as opening it for the archiving rule. **New Note** makes the note right in the pane, with the caret in its title — with the list's tag on a tag, as today's daily under Daily. The list sorts by **Edited**, **Created** or **Title** (kept between openings); ↑ and ↓ move through it, Return goes into the note's text, Esc comes back. **Open** lifts the note out as a floating note, and a toolbar button hides the sidebar and the list so the note fills the window.
 - **Daily notes.** Give a note the `daily` tag, or use **Today's Daily** (⌥⌘Y, or the calendar button on the deck). The deck keeps the dailies of your two most recent days; older ones are archived and stay under **Daily** in All Notes, grouped by day. You can set a template for new daily notes. **Unfinished tasks** (Settings → Daily) carry over: when a new daily is made, the checklist items left unticked in the dailies of the last day before can be offered at the top of it (*Ask each time*, the default), brought in at once with an Undo (*Bring automatically*), or left where they are (*Don't bring*). They go at the end of the new daily, subitems indented, under the day they came from ("From Thursday, 15/10"), without repeating what the template already has; the earlier daily is never changed.
 - **Pin, keep and archive by time.** *Pin to Center* holds up to five notes in the middle of the deck, always whole. *Keep on Deck* exempts a note from archiving. Notes you have not opened for 7, 14 or 30 days (you choose; 14 by default) move to the Archive on their own, never deleted; in the last two days a clock appears on the tab. Pinning, keeping and the archiving rules do not change a note's *Edited* date, which only moves when you change its text or title.
+- **Backups.** Once a day KeepNote copies its database into a `Backups` folder beside it, sealed exactly like the original, and keeps the seven most recent; it also makes one before an update changes how notes are stored. Settings → General → **Backups** shows when the last one was made, with **Back Up Now** and **Restore…**, which lists the backups with their date and number of notes, asks first, backs up your notes as they are now, and reopens KeepNote with the chosen one. Nothing leaves the Mac.
 - **Archive and undo.** Archived notes have their own window. Deleting a note gives you 10 seconds (adjustable) to undo it.
 - **Sync through a folder.** Optionally, KeepNote writes one plain-text `.hmnote` file per note into a folder you choose (iCloud Drive is suggested). The folder's provider moves them between Macs; KeepNote has no server of its own.
 - **Import and export.** Export notes as Markdown or plain text, one file per note or one document, or as a KeepNote archive (`.hmnotearchive`) that keeps colors, states and dates. Import reads that archive or a folder of `.hmnote` files.
@@ -94,6 +96,12 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 | `⌘↩` | Tick or untick the task |
 | `⇥` / `⇧⇥` | Indent / outdent a list item |
 
+| In All Notes | What it does |
+|---|---|
+| `↑` / `↓` | Previous / next note in the list |
+| `↩` | Into the selected note's text |
+| `esc` | From the note back to the list |
+
 | Formatting | What it does |
 |---|---|
 | `⌘B` `⌘I` `⇧⌘X` | Bold, italic, strikethrough |
@@ -110,7 +118,7 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 ## Accessibility
 
 - **VoiceOver.** The resting stripe is a button that opens the deck. Each tab reads as the note's title, then its colour and states (pinned, kept on deck, floating, daily, archives in N days), in the order the tabs are drawn; its actions menu (VO-Shift-M) has the right-click commands. Every icon-only control in a note has a label and a hint, checklist items are checkboxes VoiceOver can tick, tag chips have a *Remove tag* action, and the colour swatches say which one is chosen. KeepNote announces what changes away from the cursor: a note made, archived, deleted (the notice then takes the keyboard, so Undo is one step away), pinned, floated or back on the deck, tasks brought into a daily, and notes archived by the time rule.
-- **Keyboard.** **Focus Deck** (`⌃⌥⌘D`, changeable) gives the deck the keyboard: the arrows or Tab move between the tabs and the buttons, Space shows the peek, Return opens, Esc gives the keyboard back. `⌘↩` ticks the task the caret is on. With System Settings → Keyboard → *Keyboard navigation* on, Tab reaches every button of notes, All Notes and Settings, with a focus ring in the note's ink that shows on every paper colour. Every global and in-note shortcut can be recorded again in Settings → Shortcuts.
+- **Keyboard.** **Focus Deck** (`⌃⌥⌘D`, changeable) gives the deck the keyboard: the arrows or Tab move between the tabs and the buttons, Space shows the peek, Return opens, Esc gives the keyboard back. `⌘↩` ticks the task the caret is on. In All Notes, ↑ and ↓ move through the list, Return goes into the selected note and Esc comes back. With System Settings → Keyboard → *Keyboard navigation* on, Tab reaches every button of notes, All Notes and Settings, with a focus ring in the note's ink that shows on every paper colour. Every global and in-note shortcut can be recorded again in Settings → Shortcuts.
 - **Display.** *Increase contrast* firms up outlines, the perforation and quiet text; *Reduce transparency* makes the stripe, chips and notices solid; *Reduce motion* turns the deck's and notes' movement into fades. Settings → General → **Text size** (Small to Extra Large) sizes the text of notes, the peek and All Notes. Text on every paper colour is at least 4.5:1, with and without Increase contrast, and no state is shown by colour alone.
 
 ## Privacy
@@ -119,7 +127,7 @@ KeepNote makes no network connection. It has no server, account, telemetry or an
 
 The text of your notes is encrypted in the local database (AES-GCM) with a key kept in this Mac's Keychain, which never leaves it and is not synced. Note titles and tags are stored unencrypted so they can be searched; the synced `.hmnote` files are plain text, so they stay readable without the app and are protected by whatever protects the folder.
 
-The database lives at `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`.
+The database lives at `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, and its backups in the `Backups` folder beside it; they are copies of the database, with the text encrypted the same way.
 
 ## Uninstall
 
@@ -129,11 +137,12 @@ Quit KeepNote first (menu bar icon → Quit KeepNote). If **Launch at login** is
 |---|---|---|
 | The app | `/Applications/KeepNote.app` | Move it to the Trash. |
 | Database (your notes) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, with `notes.sqlite-wal` and `notes.sqlite-shm` beside it | Delete the whole container, `~/Library/Containers/com.keepnote.KeepNote`. In the Finder: Go → Go to Folder…, type `~/Library/Containers`, and move the folder named **KeepNote** to the Trash. |
+| Backups (copies of your notes) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/Backups`, up to seven `notes-….sqlite` files | Goes with the container above. To remove only the backups, move the `Backups` folder to the Trash. |
 | Preferences | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist` | Goes with the container above. |
 | Encryption key | Login keychain, password item with service `com.keepnote.KeepNote.bodykey`, account `default` | Keychain Access: search for `com.keepnote.KeepNote.bodykey` and delete it. Or in Terminal: `security delete-generic-password -s com.keepnote.KeepNote.bodykey` |
 | Login item | KeepNote itself, registered with macOS (`SMAppService`) when Launch at login is on | Turn off Launch at login before deleting the app. If the app is already gone: System Settings → General → Login Items (Login Items & Extensions on macOS 15 and later), select KeepNote under Open at Login and click −. |
 
-The key only decrypts that database; remove the two together. Once the container is gone, your notes are gone with it, so export them first (Settings → About → Export All Notes…) if you want to keep them.
+The key only decrypts that database and its backups; remove them together. Once the container is gone, your notes and their backups are gone with it, so export them first (Settings → About → Export All Notes…) if you want to keep them.
 
 **Your sync folder is yours.** KeepNote never deletes it, and uninstalling leaves it and its `.hmnote` and `.hmtemplate` files exactly where they are. Delete it yourself if you no longer want it.
 

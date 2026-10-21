@@ -39,8 +39,10 @@ O KeepNote não é notarizado pela Apple. A notarização exige uma assinatura p
 - **Ancorada ou solta.** Uma nota aberta fica ancorada à pilha e fecha quando você clica em outro lugar. **Flutuar nota** (⌥⌘P) a descola da borda para ela ficar na tela, redimensionável, e lembra a posição; arrastar uma nota flutuante de volta até a borda da pilha a devolve (**Voltar à pilha**).
 - **Markdown enquanto você escreve.** Negrito, itálico, tachado, destaque, links, títulos, listas com marcador, numeradas e checklists (com recuo e renumeração automática), citações, código, tabelas e divisores, tudo com atalho e no menu Ferramentas dentro da nota.
 - **Cores e tags.** Cinco cores de papel, trocáveis a qualquer momento, e `#tags` com sugestões enquanto você digita. A janela Todas as notas filtra por tag e busca no título, nas tags e no texto.
+- **Editar em Todas as notas.** A nota selecionada em Todas as notas abre no painel com tudo o que uma nota tem — título, texto, listas e checklists, os atalhos da nota, Ferramentas, busca (⌘F), as cores, as tags, Fixar no centro e Manter na pilha — e é salva sozinha. Uma nota aberta no painel e numa janela ao mesmo tempo é uma nota só: o que você digita num lugar aparece no outro na hora, e nada se perde. Notas e dailies arquivadas podem ser editadas ali e continuam arquivadas; uma nota que não pôde ser decifrada aparece somente leitura, com o motivo. Selecionar uma nota conta como abri-la para a regra de arquivamento. **Nova nota** cria a nota no próprio painel, com o cursor no título — com a tag da lista numa tag, como a daily de hoje em Daily. A lista se ordena por **Editada**, **Criada** ou **Título** (a escolha fica guardada); ↑ e ↓ passam por ela, Return leva ao texto da nota, Esc volta. **Abrir** tira a nota como nota solta, e um botão da barra de ferramentas esconde a barra lateral e a lista para a nota ocupar a janela.
 - **Notas daily.** Dê a uma nota a tag `daily`, ou use **Daily de hoje** (⌥⌘Y, ou o botão de calendário na pilha). A pilha mantém as dailies dos seus dois dias mais recentes; as mais antigas são arquivadas e ficam em **Daily**, em Todas as notas, agrupadas por dia. Você pode definir um modelo para as novas notas daily (Ajustes → Daily → **Editar modelo da Daily…**). As **tarefas pendentes** (Ajustes → Daily → **Tarefas pendentes da última daily**) passam adiante: ao criar uma daily nova, os itens de checklist que ficaram sem marcar nas dailies do último dia anterior podem ser oferecidos no topo dela (*Perguntar sempre*, o padrão), entrar direto com a opção de desfazer (*Trazer automaticamente*) ou ficar onde estão (*Não trazer*). Eles entram no fim da daily nova, com os subitens recuados, abaixo do dia de onde vieram ("De quinta-feira, 15/10"), sem repetir o que o modelo já tem; a daily anterior nunca muda.
 - **Fixar, manter e arquivar por tempo.** *Fixar no centro* prende até cinco notas no meio da pilha, sempre inteiras. *Manter na pilha* livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe em Ajustes → Pilha → **Arquivar notas não abertas há**; 14 por padrão) vão sozinhas para Arquivadas, nunca são apagadas; nos dois últimos dias aparece um relógio na aba. Fixar, manter e as regras de arquivamento não mudam a data *Editada* da nota, que só muda quando você altera o texto ou o título.
+- **Backups.** Uma vez por dia o KeepNote copia o banco para uma pasta `Backups` ao lado dele, cifrada exatamente como o original, e guarda as sete cópias mais recentes; também faz uma antes de uma atualização mudar o jeito de guardar as notas. Ajustes → Geral → **Backups** mostra quando foi feito o último, com **Fazer backup agora** e **Restaurar…**, que lista os backups com a data e o número de notas, pede confirmação, faz um backup das suas notas como estão agora e reabre o KeepNote com o escolhido. Nada sai do Mac.
 - **Arquivadas e desfazer.** As notas arquivadas têm janela própria. Apagar uma nota dá 10 segundos (ajustável em Ajustes → Notas → **Desfazer uma exclusão por**) para desfazer.
 - **Sincronização por pasta.** Opcionalmente (Ajustes → Sincronização), o KeepNote grava um arquivo de texto `.hmnote` por nota numa pasta que você escolhe (o iCloud Drive é sugerido). O provedor da pasta leva os arquivos entre os Macs; o KeepNote não tem servidor próprio.
 - **Importar e exportar.** Exporte as notas em Markdown ou texto simples, um arquivo por nota ou um só documento, ou num arquivo KeepNote (`.hmnotearchive`) que preserva cores, estados e datas. A importação lê esse arquivo ou uma pasta de arquivos `.hmnote`.
@@ -94,6 +96,12 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 | `⌘↩` | Marcar ou desmarcar a tarefa |
 | `⇥` / `⇧⇥` | Recuar / voltar um nível num item de lista |
 
+| Em Todas as notas | O que faz |
+|---|---|
+| `↑` / `↓` | Nota anterior / seguinte na lista |
+| `↩` | Para o texto da nota selecionada |
+| `esc` | Da nota de volta para a lista |
+
 | Formatação | O que faz |
 |---|---|
 | `⌘B` `⌘I` `⇧⌘X` | Negrito, itálico, tachado |
@@ -110,7 +118,7 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 ## Acessibilidade
 
 - **VoiceOver.** A faixa em repouso é um botão que abre a pilha. Cada aba é lida com o título da nota e depois a cor e os estados (fixada, mantida na pilha, flutuando, daily, arquiva em N dias), na ordem em que as abas aparecem; o menu de ações (VO-Shift-M) tem os comandos do clique direito. Todo controle só com ícone numa nota tem rótulo e dica, os itens de checklist são caixas que o VoiceOver marca, as tags têm a ação *Remover tag* e as amostras de cor dizem qual está escolhida. O KeepNote anuncia o que muda longe do cursor: nota criada, arquivada, apagada (o aviso então recebe o teclado, e o Desfazer fica a um passo), fixada, flutuando ou de volta à pilha, tarefas trazidas para a daily e notas arquivadas pela regra de tempo.
-- **Teclado.** **Focar a pilha** (`⌃⌥⌘D`, configurável) dá o teclado à pilha: as setas ou Tab passam pelas abas e pelos botões, Espaço mostra a espiada, Return abre, Esc devolve o teclado. `⌘↩` marca a tarefa em que está o cursor. Com Ajustes do Sistema → Teclado → *Navegação pelo teclado* ligada, Tab alcança todos os botões das notas, de Todas as notas e dos Ajustes, com um anel de foco na tinta da nota que aparece sobre todas as cores de papel. Todo atalho global e de dentro da nota pode ser gravado de novo em Ajustes → Atalhos.
+- **Teclado.** **Focar a pilha** (`⌃⌥⌘D`, configurável) dá o teclado à pilha: as setas ou Tab passam pelas abas e pelos botões, Espaço mostra a espiada, Return abre, Esc devolve o teclado. `⌘↩` marca a tarefa em que está o cursor. Em Todas as notas, ↑ e ↓ passam pela lista, Return leva à nota selecionada e Esc volta. Com Ajustes do Sistema → Teclado → *Navegação pelo teclado* ligada, Tab alcança todos os botões das notas, de Todas as notas e dos Ajustes, com um anel de foco na tinta da nota que aparece sobre todas as cores de papel. Todo atalho global e de dentro da nota pode ser gravado de novo em Ajustes → Atalhos.
 - **Tela.** *Aumentar contraste* reforça contornos, a perfuração e o texto secundário; *Reduzir transparência* deixa a faixa, os chips e os avisos sólidos; *Reduzir movimento* troca o movimento da pilha e das notas por esmaecimentos. Ajustes → Geral → **Tamanho do texto** (de Pequeno a Extragrande) ajusta o texto das notas, da espiada e de Todas as notas. O texto tem contraste de pelo menos 4,5:1 sobre todas as cores de papel, com e sem Aumentar contraste, e nenhum estado é mostrado só pela cor.
 
 ## Privacidade
@@ -119,7 +127,7 @@ O KeepNote não faz nenhuma conexão de rede. Não tem servidor, conta, telemetr
 
 O texto das suas notas é cifrado no banco local (AES-GCM) com uma chave guardada no Keychain deste Mac, que nunca sai dele e não é sincronizada. Títulos e tags ficam sem cifra no banco para poderem ser buscados; os arquivos `.hmnote` do sync são texto simples, então continuam legíveis sem o app e ficam protegidos pelo que protege a pasta.
 
-O banco fica em `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`.
+O banco fica em `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, e os backups dele na pasta `Backups` ao lado; são cópias do banco, com o texto cifrado do mesmo jeito.
 
 ## Desinstalar
 
@@ -129,11 +137,12 @@ Primeiro saia do KeepNote (ícone da barra de menus → Encerrar KeepNote). Se *
 |---|---|---|
 | O app | `/Applications/KeepNote.app` | Mova para o Lixo. |
 | Banco (suas notas) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, com `notes.sqlite-wal` e `notes.sqlite-shm` ao lado | Apague o container inteiro, `~/Library/Containers/com.keepnote.KeepNote`. No Finder: Ir → Ir para a Pasta…, digite `~/Library/Containers` e mova a pasta chamada **KeepNote** para o Lixo. |
+| Backups (cópias das suas notas) | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/Backups`, até sete arquivos `notes-….sqlite` | Vão junto com o container acima. Para apagar só os backups, mova a pasta `Backups` para o Lixo. |
 | Preferências | `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Preferences/com.keepnote.KeepNote.plist` | Vai junto com o container acima. |
 | Chave de criptografia | Keychain de login, item de senha com serviço `com.keepnote.KeepNote.bodykey`, conta `default` | Acesso às Chaves: busque `com.keepnote.KeepNote.bodykey` e apague. Ou no Terminal: `security delete-generic-password -s com.keepnote.KeepNote.bodykey` |
 | Item de login | O próprio KeepNote, registrado no macOS (`SMAppService`) quando Abrir ao iniciar sessão está ligado | Desligue Abrir ao iniciar sessão antes de apagar o app. Se o app já foi apagado: Ajustes do Sistema → Geral → Itens de Início (Itens de Início e Extensões no macOS 15 em diante), selecione KeepNote em Abrir ao Iniciar Sessão e clique em −. |
 
-A chave só serve para abrir aquele banco; remova os dois juntos. Sem o container, suas notas vão embora com ele, então exporte antes (Ajustes → Sobre → Exportar todas as notas…) se quiser guardá-las.
+A chave só serve para abrir aquele banco e os backups dele; remova tudo junto. Sem o container, suas notas e os backups vão embora com ele, então exporte antes (Ajustes → Sobre → Exportar todas as notas…) se quiser guardá-las.
 
 **A pasta de sync é sua.** O KeepNote nunca a apaga, e desinstalar deixa a pasta e os arquivos `.hmnote` e `.hmtemplate` exatamente onde estão. Apague você mesmo se não quiser mais.
 
