@@ -5,10 +5,13 @@ import SwiftUI
 ///
 /// `anchored` is the note still attached to the deck — tab on the left, sitting
 /// where its card sat. `detached` is the note lifted off the edge: the tab
-/// folds away and the full set of controls appears.
+/// folds away and the full set of controls appears. `pane` is the note in
+/// All Notes' right-hand pane: the same editor, without the window's own
+/// controls (close, Float Note, the drag) — the pane has its window around it.
 enum NotePresentation: Equatable {
     case anchored
     case detached
+    case pane
 }
 
 /// A drag on the spine or the header, reported to the window, which reads the
@@ -71,9 +74,6 @@ final class NoteEditorModel: ObservableObject {
     @Published private(set) var isSaving = false
 
     let noteID: UUID
-    /// All Notes' reading pane edits only the tags; it never writes the title
-    /// or body it loaded, so an open editor's newer text cannot be overwritten.
-    var savesTagsOnly = false
     private let store: NoteStore
     private let debouncer: Debouncer
 
@@ -91,6 +91,15 @@ final class NoteEditorModel: ObservableObject {
         self.deckLine = DeckStatus.line(for: note)
         self.isLocked = note.isLocked
         self.debouncer = Debouncer(delay: AppSettings.shared.autosaveDelay)
+        Self.live.add(self)
+    }
+
+    /// Every editor alive — in a note window or in All Notes' pane — so that
+    /// quitting or leaving the app writes what any of them still holds.
+    private static let live = NSHashTable<NoteEditorModel>.weakObjects()
+
+    static func flushAll() {
+        live.allObjects.forEach { $0.flush() }
     }
 
     var displayTitle: String {
@@ -137,10 +146,8 @@ final class NoteEditorModel: ObservableObject {
         let tags = TagText.parse(tagsText)
         do {
             try store.update(id: noteID) { note in
-                if !self.savesTagsOnly {
-                    note.title = self.title
-                    note.body = self.text
-                }
+                note.title = self.title
+                note.body = self.text
                 note.tags = tags
             }
             if let refreshed = store.note(id: noteID) { editedAt = refreshed.editedAt }
@@ -401,7 +408,7 @@ struct NoteEditorView: View {
             SpineLabel(
                 text: model.displayTitle,
                 color: model.color.inkSwiftUI.opacity(0.78),
-                topInset: Self.closeZoneHeight
+                topInset: presentation == .pane ? 4 : Self.closeZoneHeight
             )
 
             // The perforation between spine and paper.
@@ -412,6 +419,16 @@ struct NoteEditorView: View {
             }
         }
         .overlay(alignment: .top) {
+            if presentation != .pane { spineButtons }
+        }
+        .frame(width: EdgeMetrics.tabWidth)
+        .contentShape(Rectangle())
+        .gesture(windowDrag)
+    }
+
+    /// Close and Float Note / Return to Deck, at the top of the spine of a
+    /// note in its own window.
+    private var spineButtons: some View {
             VStack(spacing: Self.buttonGap) {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -429,10 +446,6 @@ struct NoteEditorView: View {
                 floatButton
             }
             .padding(.top, Self.closeTopMargin)
-        }
-        .frame(width: EdgeMetrics.tabWidth)
-        .contentShape(Rectangle())
-        .gesture(windowDrag)
     }
 
     /// Float Note on an anchored note, Return to Deck on a floating one: a

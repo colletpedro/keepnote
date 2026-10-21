@@ -52,7 +52,6 @@
 "Add Tag" = "Adicionar tag";
 "Add Tag…" = "Adicionar tag…";
 "Add a tag to %@" = "Adicionar uma tag a %@";
-"Add tag" = "Adicionar tag";
 "Add tags" = "Adicionar tags";
 "Add the daily tag to a note, or use Today’s Daily." = "Adicione a tag daily a uma nota ou use Daily de hoje.";
 "All" = "Todas";
@@ -305,7 +304,6 @@
 "Search %@" = "Buscar em %@";
 "Search the archive" = "Buscar nas arquivadas";
 "Select All" = "Selecionar tudo";
-"Select a note to read it here" = "Selecione uma nota para lê-la aqui";
 "Services" = "Serviços";
 "Settings" = "Ajustes";
 "Settings…" = "Ajustes…";
@@ -422,3 +420,4 @@
 "• Move the cursor to the pill and the stack fans out." = "• Leve o cursor até a faixa e a pilha se abre em leque.";
 "• Right-click the pill for the menu." = "• Clique com o botão direito na faixa para ver o menu.";
 "↩ on an empty item" = "↩ num item vazio";
+"Select a note to edit it here" = "Selecione uma nota para editá-la aqui";

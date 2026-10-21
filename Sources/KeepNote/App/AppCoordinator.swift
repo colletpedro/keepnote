@@ -314,6 +314,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     func flushEverything() {
         noteWindows.values.forEach { $0.flush() }
+        // All Notes' pane edits too.
+        NoteEditorModel.flushAll()
     }
 
     /// Before the process goes: pending autosaves are written, and the

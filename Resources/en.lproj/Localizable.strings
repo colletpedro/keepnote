@@ -52,7 +52,6 @@
 "Add Tag" = "Add Tag";
 "Add Tag…" = "Add Tag…";
 "Add a tag to %@" = "Add a tag to %@";
-"Add tag" = "Add tag";
 "Add tags" = "Add tags";
 "Add the daily tag to a note, or use Today’s Daily." = "Add the daily tag to a note, or use Today’s Daily.";
 "All" = "All";
@@ -305,7 +304,6 @@
 "Search %@" = "Search %@";
 "Search the archive" = "Search the archive";
 "Select All" = "Select All";
-"Select a note to read it here" = "Select a note to read it here";
 "Services" = "Services";
 "Settings" = "Settings";
 "Settings…" = "Settings…";
@@ -422,3 +420,4 @@
 "• Move the cursor to the pill and the stack fans out." = "• Move the cursor to the pill and the stack fans out.";
 "• Right-click the pill for the menu." = "• Right-click the pill for the menu.";
 "↩ on an empty item" = "↩ on an empty item";
+"Select a note to edit it here" = "Select a note to edit it here";

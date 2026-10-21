@@ -30,7 +30,8 @@ struct NoteListActions {
 }
 
 /// The full list: a sidebar of libraries and tags, the notes in the selected
-/// one (searchable within it), multiple selection and a reading pane.
+/// one (searchable within it), multiple selection and a pane that edits the
+/// selected note.
 struct AllNotesView: View {
     @ObservedObject var store: NoteStore
     var actions: NoteListActions
@@ -627,9 +628,10 @@ private struct NoteRow: View {
     }()
 }
 
-/// One note, read: its dates and the Open, Archive and Export buttons in the
-/// window's own colours, then the note as it looks open — spine, perforation,
-/// paper — with its tags and "Add tag" at the foot of the paper.
+/// One note, to edit: its dates and the Open, Archive and Export buttons in
+/// the window's own colours, then the note's own editor — spine, title,
+/// body, find, colours and tags — exactly as in a note window, saving the
+/// same way.
 struct NoteReadingPane: View {
     let note: Note
     let store: NoteStore
@@ -637,21 +639,30 @@ struct NoteReadingPane: View {
     var onTag: (String) -> Void
 
     @StateObject private var model: NoteEditorModel
+    @StateObject private var editor = PaneEditorController()
 
     init(note: Note, store: NoteStore, actions: NoteListActions, onTag: @escaping (String) -> Void) {
         self.note = note
         self.store = store
         self.actions = actions
         self.onTag = onTag
-        let model = NoteEditorModel(note: note, store: store)
-        model.savesTagsOnly = true
-        _model = StateObject(wrappedValue: model)
+        _model = StateObject(wrappedValue: NoteEditorModel(note: note, store: store))
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             infoBar
-            NoteReadingCard(note: note, model: model, onTag: onTag)
+            NoteEditorView(
+                model: model,
+                presentation: .pane,
+                onClose: {},
+                onDelete: { actions.delete([note.id]) },
+                onTogglePin: {},
+                onToggleCenterPin: { actions.setPinned([note.id], !model.isPinned) },
+                onShowTools: { editor.showTools() },
+                onDailyChip: { onTag(DailyNotes.tag) }
+            )
+                .background(PaneEditorAnchor(controller: editor))
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -660,8 +671,19 @@ struct NoteReadingPane: View {
                 .shadow(color: .black.opacity(0.14), radius: 8, y: 2)
         }
         .padding(16)
+        .onAppear(perform: wireEditor)
         .onReceive(store.changes) { _ in model.refreshFromStore() }
         .onDisappear { model.flush() }
+    }
+
+    private func wireEditor() {
+        editor.model = model
+        let id = note.id
+        let actions = actions
+        editor.onSetPinned = { actions.setPinned([id], $0) }
+        editor.onSetKeepOnDeck = { actions.setKeepOnDeck([id], $0) }
+        editor.onDelete = { actions.delete([id]) }
+        editor.onOpen = { actions.open(id) }
     }
 
     /// The dates beside the buttons when the pane is wide enough; above them,
@@ -698,7 +720,6 @@ struct NoteReadingPane: View {
     private var infoButtons: some View {
         HStack(spacing: 8) {
             Button(L("Open")) { actions.open(note.id) }
-                .keyboardShortcut(.defaultAction)
             Toggle(L("Pin to Center"), isOn: Binding(get: { note.isPinned }, set: { actions.setPinned([note.id], $0) }))
                 .toggleStyle(.checkbox)
                 .disabled(note.state == .archived)
@@ -733,140 +754,6 @@ struct NoteReadingPane: View {
         formatter.formattingContext = .middleOfSentence
         return formatter
     }()
-}
-
-/// The paper part of the reading pane. Its colours are the note's palette
-/// and stay the same in light and dark.
-private struct NoteReadingCard: View {
-    let note: Note
-    @ObservedObject var model: NoteEditorModel
-    var onTag: (String) -> Void
-
-    /// "Add tag" was clicked: the tags field shows instead of the chips until
-    /// it loses focus.
-    @State private var isAddingTag = false
-    @State private var footerHeight: CGFloat = 44
-
-    var body: some View {
-        HStack(spacing: 0) {
-            spine
-            paper
-        }
-        .background(note.color.surfaceSwiftUI)
-    }
-
-    private var spine: some View {
-        ZStack {
-            note.color.spineSwiftUI
-            SpineLabel(text: note.displayTitle, color: note.color.inkSwiftUI.opacity(0.78), topInset: 4)
-            HStack {
-                Spacer()
-                PerforationLine(color: note.color.perforationSwiftUI)
-                    .padding(.vertical, 10)
-            }
-        }
-        .frame(width: EdgeMetrics.tabWidth)
-    }
-
-    private var paper: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(note.displayTitle)
-                .scaledFont(15, weight: .semibold)
-                .foregroundStyle(note.color.inkSwiftUI)
-                .lineLimit(1)
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 4)
-            NoteTextView(text: .constant(note.body), color: note.color, findQuery: "", findIndex: 0, isEditable: false)
-            footer
-        }
-        .overlay(alignment: .bottomLeading) { suggestions }
-    }
-
-    private var showsField: Bool { isAddingTag || model.isTagFieldFocused }
-
-    private var footer: some View {
-        HStack(spacing: 8) {
-            ZStack(alignment: .leading) {
-                TagField(text: $model.tagsText, model: model, ink: note.color.ink, isEnabled: !note.isLocked)
-                    .frame(height: 20)
-                    .opacity(showsField ? 1 : 0)
-                    .allowsHitTesting(showsField)
-                if !showsField {
-                    HStack(spacing: 8) {
-                        if !note.tags.isEmpty {
-                            TagChipLinks(tags: note.tags, color: note.color, size: 11, onTag: onTag)
-                                .fixedSize()
-                        }
-                        if !note.isLocked {
-                            Button(action: startAddingTag) {
-                                Label(L("Add tag"), systemImage: "plus")
-                                    .scaledFont(11.5, weight: .medium)
-                            }
-                            .buttonStyle(InkFocusButtonStyle(color: note.color))
-                            .foregroundStyle(note.color.secondaryInkSwiftUI)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                }
-            }
-            if let line = DeckStatus.line(for: note) {
-                Text(line)
-                    .scaledFont(10.5)
-                    .foregroundStyle(note.color.secondaryInkSwiftUI)
-                    .lineLimit(1)
-                    .fixedSize()
-            }
-        }
-        .frame(height: 22)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .background(
-            ZStack(alignment: .top) {
-                note.color.surfaceSwiftUI
-                Rectangle().fill(note.color.inkSwiftUI.opacity(0.12)).frame(height: 1)
-            }
-        )
-        .background(GeometryReader { proxy in
-            Color.clear.onAppear { footerHeight = proxy.size.height }
-                .onChange(of: proxy.size.height) { footerHeight = $0 }
-        })
-        .onChange(of: model.isTagFieldFocused) { focused in
-            guard !focused else { return }
-            isAddingTag = false
-            model.tidyTags()
-            model.flush()
-        }
-    }
-
-    /// The field opens with the note's tags in it and the caret after them,
-    /// ready for a new one; the suggestion list is the open note's.
-    private func startAddingTag() {
-        isAddingTag = true
-        model.setTagRowLimit(6)
-        DispatchQueue.main.async {
-            let current = TagText.format(TagText.parse(model.tagsText))
-            let text = current.isEmpty ? "" : current + " "
-            model.tagField?.focus()
-            model.tagField?.apply(text: text, caret: (text as NSString).length)
-        }
-    }
-
-    private var suggestions: some View {
-        Group {
-            if model.isTagListVisible {
-                TagSuggestionList(
-                    rows: model.tagRows,
-                    selection: model.tagSelection,
-                    color: note.color,
-                    onAccept: { model.acceptTagRow(at: $0) },
-                    onHover: { model.hoverTagRow($0) }
-                )
-                .padding(.leading, 14)
-                .padding(.bottom, footerHeight - 7)
-            }
-        }
-    }
 }
 
 private struct MultipleSelectionPane: View {
@@ -904,7 +791,7 @@ private struct ContentUnavailablePlaceholder: View {
             Image(systemName: "doc.text.magnifyingglass")
                 .scaledFont(34)
                 .foregroundStyle(.tertiary)
-            Text(L("Select a note to read it here"))
+            Text(L("Select a note to edit it here"))
                 .scaledFont(13)
                 .foregroundStyle(.secondary)
         }
