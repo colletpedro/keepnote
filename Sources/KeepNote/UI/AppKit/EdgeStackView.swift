@@ -66,6 +66,36 @@ final class EdgeStackView: NSView {
 
     override var isFlipped: Bool { false }
 
+    // MARK: - VoiceOver
+
+    /// Resting, the stripe is one button ("KeepNote deck, 8 notes") that opens
+    /// the deck. Open, the tabs top to bottom — as they are drawn, not as
+    /// they are layered — then "+N", the "+" and Today's Daily.
+    override func isAccessibilityElement() -> Bool { state == .resting }
+    override func accessibilityRole() -> NSAccessibility.Role? { state == .resting ? .button : .group }
+    override func accessibilityLabel() -> String? { L("KeepNote deck") }
+    override func accessibilityValue() -> Any? { AccessibilityText.deckValue(count: controller?.noteCount ?? 0) }
+    override func accessibilityHelp() -> String? { state == .resting ? L("Opens the deck") : nil }
+
+    override func accessibilityPerformPress() -> Bool {
+        guard state == .resting else { return false }
+        controller?.openFromKeyboardOrVoiceOver()
+        return true
+    }
+
+    override func accessibilityChildren() -> [Any]? {
+        guard state == .fanned else { return [] }
+        var children: [Any] = cards.enumerated()
+            .filter { geometry.alphas.indices.contains($0.offset) && geometry.alphas[$0.offset] > 0.01 }
+            .map(\.element)
+        if let overflowCard, !overflowCard.isHidden { children.append(overflowCard) }
+        children += [plusButton as Any?, dailyButton as Any?].compactMap { $0 }
+        return children
+    }
+
+    /// The tabs in the order VoiceOver reads them, for the tests.
+    var accessibilityOrderForTesting: [NSView] { (accessibilityChildren() ?? []).compactMap { $0 as? NSView } }
+
     // MARK: - Tracking
 
     override func updateTrackingAreas() {

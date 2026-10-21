@@ -9,6 +9,7 @@
 "%@ changes color" = "%@ changes color";
 "%@ deletes with ten seconds to undo" = "%@ deletes with ten seconds to undo";
 "%@ finds" = "%@ finds";
+"%@ note" = "%@ note";
 "%@ now has no shortcut" = "%@ now has no shortcut";
 "%@ set to %@" = "%@ set to %@";
 "%@ unchanged: %@" = "%@ unchanged: %@";
@@ -20,6 +21,7 @@
 "%d locked notes were not exported" = "%d locked notes were not exported";
 "%d locked notes were skipped" = "%d locked notes were skipped";
 "%d min ago" = "%d min ago";
+"%d more notes" = "%d more notes";
 "%d notes" = "%d notes";
 "%d notes deleted" = "%d notes deleted";
 "%d notes selected" = "%d notes selected";
@@ -29,6 +31,7 @@
 "%d unfinished tasks from %@. Bring them?" = "%d unfinished tasks from %@. Bring them?";
 "1 locked note was not exported" = "1 locked note was not exported";
 "1 locked note was skipped" = "1 locked note was skipped";
+"1 more note" = "1 more note";
 "1 note" = "1 note";
 "1 note will lose this tag. The notes themselves are kept." = "1 note will lose this tag. The notes themselves are kept.";
 "1 task brought from %@" = "1 task brought from %@";
@@ -174,6 +177,7 @@
 "KeepNote Export" = "KeepNote Export";
 "KeepNote archive — colors, states and dates" = "KeepNote archive — colors, states and dates";
 "KeepNote could not start" = "KeepNote could not start";
+"KeepNote deck" = "KeepNote deck";
 "KeepNote is in the Dock, with its full menu bar, while one of its windows is open — All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay." = "KeepNote is in the Dock, with its full menu bar, while one of its windows is open — All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay.";
 "KeepNote switches language when it opens again." = "KeepNote switches language when it opens again.";
 "Kept on deck" = "Kept on deck";
@@ -190,6 +194,7 @@
 "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are." = "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are.";
 "Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format." = "Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format.";
 "Locked · read-only" = "Locked · read-only";
+"Makes a new note" = "Makes a new note";
 "Mark Complete" = "Mark Complete";
 "Mark complete" = "Mark complete";
 "Markdown — one file per note" = "Markdown — one file per note";
@@ -230,9 +235,13 @@
 "Open Login Items…" = "Open Login Items…";
 "Open delay" = "Open delay";
 "Open source, MIT License" = "Open source, MIT License";
+"Opens All Notes" = "Opens All Notes";
 "Opens KeepNote when you log in, so the deck is always there." = "Opens KeepNote when you log in, so the deck is always there.";
 "Opens KeepNote's issues on GitHub in your browser" = "Opens KeepNote's issues on GitHub in your browser";
 "Opens the KeepNote site in your browser" = "Opens the KeepNote site in your browser";
+"Opens the deck" = "Opens the deck";
+"Opens the note. The actions menu has its other commands." = "Opens the note. The actions menu has its other commands.";
+"Opens today’s daily note, or makes one" = "Opens today’s daily note, or makes one";
 "Option" = "Option";
 "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note." = "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note.";
 "Outdent item" = "Outdent item";
@@ -359,11 +368,18 @@
 "[notes] Archived" = "Archived";
 "[noun] Archive" = "Archive";
 "add daily" = "add daily";
+"archives in %d days" = "archives in %d days";
+"archives tomorrow" = "archives tomorrow";
 "click the daily chip in a note" = "click the daily chip in a note";
+"daily" = "daily";
 "esc closes" = "esc closes";
 "esc · ⌘W" = "esc · ⌘W";
+"floating" = "floating";
 "just now" = "just now";
+"kept on deck" = "kept on deck";
 "none" = "none";
+"note tab" = "note tab";
+"pinned to center" = "pinned to center";
 "the calendar button beside +" = "the calendar button beside +";
 "the pin in a note's header · Tools · right-click a tab · All Notes" = "the pin in a note's header · Tools · right-click a tab · All Notes";
 "unknown error" = "unknown error";

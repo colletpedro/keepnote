@@ -80,9 +80,13 @@ final class NoteCardView: SpringView {
         }
     }
 
+    /// Days before the time rule archives it, said by VoiceOver.
+    private var daysLeft: Int?
+
     init(note: Note, height: CGFloat, edge: ScreenEdge = .right) {
         self.noteID = note.id
         self.edge = edge
+        self.daysLeft = AutoArchive.daysLeft(note, today: DailyDay(Date()), days: AppSettings.shared.archiveAfterDays)
         self.label = note.spineLabel
         self.color = note.color
         self.isArchivedHint = note.state == .archived
@@ -93,7 +97,42 @@ final class NoteCardView: SpringView {
         super.init(frame: NSRect(x: 0, y: 0, width: EdgeMetrics.tabWidth, height: height))
         place(frame: frame)
         NoteCardShape.applyShadow(to: self, edge: edge)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityRoleDescription(L("note tab"))
     }
+
+    // MARK: - VoiceOver
+
+    /// The note's title; what the tab shows in colour and glyphs follows as
+    /// its value, so nothing is told by colour alone.
+    override func accessibilityLabel() -> String? { label }
+
+    override func accessibilityValue() -> Any? {
+        AccessibilityText.tabDescription(.init(
+            colorName: color.displayName, isPinned: isPinned, isKept: keepOnDeck, isFloating: isFloating,
+            isDaily: isDaily, daysLeft: daysLeft))
+    }
+
+    override func accessibilityHelp() -> String? { L("Opens the note. The actions menu has its other commands.") }
+
+    override func accessibilityPerformPress() -> Bool {
+        onActivate?(noteID)
+        return true
+    }
+
+    /// VO-Shift-M: the same menu a right-click opens.
+    override func accessibilityPerformShowMenu() -> Bool {
+        guard let event = NSEvent.mouseEvent(
+            with: .rightMouseDown, location: convert(NSPoint(x: bounds.midX, y: bounds.midY), to: nil),
+            modifierFlags: [], timestamp: 0, windowNumber: window?.windowNumber ?? 0, context: nil,
+            eventNumber: 0, clickCount: 1, pressure: 1) else { return false }
+        rightMouseDown(with: event)
+        return true
+    }
+
+    /// Everything VoiceOver reads for the tab, for the tests.
+    var accessibilityTextForTesting: String { "\(label) \u{2014} \(accessibilityValue() as? String ?? "")" }
 
     /// A rect laid out for the right edge, where it goes on this card.
     fileprivate func mirrored(_ rect: NSRect) -> NSRect { edge.mirrored(rect, in: bounds.width) }
@@ -113,6 +152,7 @@ final class NoteCardView: SpringView {
         keepOnDeck = note.keepOnDeck
         isPinned = note.isPinned
         isExpiring = DeckStatus.isExpiring(note)
+        daysLeft = AutoArchive.daysLeft(note, today: DailyDay(Date()), days: AppSettings.shared.archiveAfterDays)
         if changed { needsDisplay = true }
     }
 
@@ -259,6 +299,15 @@ final class OverflowCardView: SpringView {
         self.remaining = remaining
         super.init(frame: NSRect(x: 0, y: 0, width: EdgeMetrics.tabWidth, height: EdgeMetrics.overflowHeight))
         wantsLayer = true
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+    }
+
+    override func accessibilityLabel() -> String? { AccessibilityText.overflowLabel(count: remaining) }
+    override func accessibilityHelp() -> String? { L("Opens All Notes") }
+    override func accessibilityPerformPress() -> Bool {
+        onActivate?()
+        return true
     }
 
     @available(*, unavailable)
@@ -317,6 +366,21 @@ final class PlusButtonView: SpringView {
         self.glyph = glyph
         super.init(frame: NSRect(x: 0, y: 0, width: EdgeMetrics.plusDiameter, height: EdgeMetrics.plusDiameter))
         NoteCardShape.applyShadow(to: self, strength: 0.7)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+    }
+
+    override func accessibilityLabel() -> String? {
+        glyph == .plus ? L("New Note") : L("Today\u{2019}s Daily")
+    }
+
+    override func accessibilityHelp() -> String? {
+        glyph == .plus ? L("Makes a new note") : L("Opens today\u{2019}s daily note, or makes one")
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        onActivate?()
+        return true
     }
 
     @available(*, unavailable)

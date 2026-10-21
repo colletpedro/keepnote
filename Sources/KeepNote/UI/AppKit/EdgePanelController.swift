@@ -46,6 +46,18 @@ final class EdgePanelController: NSObject {
 
     private(set) var isFanned = false
 
+    var noteCount: Int { notes.count }
+
+    /// VoiceOver's press on the stripe (and the keyboard): the deck opens at
+    /// once, with no wait for the cursor.
+    func openFromKeyboardOrVoiceOver() {
+        collapseTask?.cancel()
+        collapseTask = nil
+        guard !isFanned else { return }
+        expand()
+        NSAccessibility.post(element: stackView, notification: .layoutChanged)
+    }
+
     /// Notes opened from this deck. While any is on screen the deck stays
     /// fanned, because the open note sits right beside it and collapsing out
     /// from under the cursor would be nonsense.

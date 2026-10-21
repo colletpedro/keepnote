@@ -9,6 +9,7 @@
 "%@ changes color" = "%@ muda a cor";
 "%@ deletes with ten seconds to undo" = "%@ apaga, com dez segundos para desfazer";
 "%@ finds" = "%@ busca";
+"%@ note" = "Nota %@";
 "%@ now has no shortcut" = "%@ agora está sem atalho";
 "%@ set to %@" = "%@ definido como %@";
 "%@ unchanged: %@" = "%@ sem alteração: %@";
@@ -20,6 +21,7 @@
 "%d locked notes were not exported" = "%d notas bloqueadas não foram exportadas";
 "%d locked notes were skipped" = "%d notas bloqueadas foram ignoradas";
 "%d min ago" = "há %d min";
+"%d more notes" = "mais %d notas";
 "%d notes" = "%d notas";
 "%d notes deleted" = "%d notas apagadas";
 "%d notes selected" = "%d notas selecionadas";
@@ -29,6 +31,7 @@
 "%d unfinished tasks from %@. Bring them?" = "%d tarefas pendentes de %@. Trazer?";
 "1 locked note was not exported" = "1 nota bloqueada não foi exportada";
 "1 locked note was skipped" = "1 nota bloqueada foi ignorada";
+"1 more note" = "mais 1 nota";
 "1 note" = "1 nota";
 "1 note will lose this tag. The notes themselves are kept." = "1 nota vai perder esta tag. A nota em si é mantida.";
 "1 task brought from %@" = "1 tarefa trazida de %@";
@@ -174,6 +177,7 @@
 "KeepNote Export" = "Exportação do KeepNote";
 "KeepNote archive — colors, states and dates" = "Arquivo do KeepNote — cores, estados e datas";
 "KeepNote could not start" = "Não foi possível iniciar o KeepNote";
+"KeepNote deck" = "Pilha do KeepNote";
 "KeepNote is in the Dock, with its full menu bar, while one of its windows is open — All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay." = "O KeepNote fica no Dock, com a barra de menus completa, enquanto uma das janelas dele está aberta — Todas as notas, Arquivadas, Ajustes, Sobre ou Boas-vindas. Quando a última fecha, ele sai do Dock; a pilha, suas notas e o ícone da barra de menus ficam.";
 "KeepNote switches language when it opens again." = "O KeepNote muda de idioma quando abre de novo.";
 "Kept on deck" = "Mantida na pilha";
@@ -190,6 +194,7 @@
 "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are." = "Não foi possível decifrar as notas bloqueadas com a chave deste Mac, então as tags delas ficaram como estavam.";
 "Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format." = "Não foi possível decifrar as notas bloqueadas com a chave deste Mac, então elas ficam de fora de todos os formatos de exportação.";
 "Locked · read-only" = "Bloqueada · somente leitura";
+"Makes a new note" = "Cria uma nota nova";
 "Mark Complete" = "Marcar como concluída";
 "Mark complete" = "Concluir";
 "Markdown — one file per note" = "Markdown — um arquivo por nota";
@@ -230,9 +235,13 @@
 "Open Login Items…" = "Abrir Itens de Início…";
 "Open delay" = "Atraso para abrir";
 "Open source, MIT License" = "Código aberto, Licença MIT";
+"Opens All Notes" = "Abre Todas as notas";
 "Opens KeepNote when you log in, so the deck is always there." = "Abre o KeepNote quando você inicia a sessão, para a pilha estar sempre lá.";
 "Opens KeepNote's issues on GitHub in your browser" = "Abre as issues do KeepNote no GitHub, no navegador";
 "Opens the KeepNote site in your browser" = "Abre o site do KeepNote no navegador";
+"Opens the deck" = "Abre a pilha";
+"Opens the note. The actions menu has its other commands." = "Abre a nota. O menu de ações tem os outros comandos.";
+"Opens today’s daily note, or makes one" = "Abre a nota daily de hoje, ou cria uma";
 "Option" = "Option";
 "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note." = "Outras tags não podem ser renomeadas para ela nem mescladas nela. Adicione a tag a uma nota para torná-la uma nota daily.";
 "Outdent item" = "Diminuir recuo do item";
@@ -359,11 +368,18 @@
 "[notes] Archived" = "Arquivadas";
 "[noun] Archive" = "Arquivadas";
 "add daily" = "adicionar daily";
+"archives in %d days" = "arquiva em %d dias";
+"archives tomorrow" = "arquiva amanhã";
 "click the daily chip in a note" = "clique na tag daily de uma nota";
+"daily" = "daily";
 "esc closes" = "esc fecha";
 "esc · ⌘W" = "esc · ⌘W";
+"floating" = "flutuando";
 "just now" = "agora mesmo";
+"kept on deck" = "mantida na pilha";
 "none" = "nenhum";
+"note tab" = "aba de nota";
+"pinned to center" = "fixada no centro";
 "the calendar button beside +" = "o botão de calendário ao lado do +";
 "the pin in a note's header · Tools · right-click a tab · All Notes" = "alfinete da nota · Ferramentas · clique direito na aba · Todas as notas";
 "unknown error" = "erro desconhecido";
