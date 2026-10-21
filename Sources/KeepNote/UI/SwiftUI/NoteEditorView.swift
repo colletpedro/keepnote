@@ -217,6 +217,8 @@ final class NoteEditorModel: ObservableObject {
 
     var noteID: UUID { buffer.noteID }
     private let store: NoteStore
+    /// Where the note's attachments are kept.
+    var library: NoteStore { store }
     private var bufferChanges: AnyCancellable?
 
     init(note: Note, store: NoteStore) {
@@ -591,7 +593,8 @@ struct NoteEditorView: View {
                 color: model.color,
                 findQuery: model.findQuery,
                 findIndex: model.findIndex,
-                isEditable: !model.isLocked
+                isEditable: !model.isLocked,
+                library: model.library
             )
             footer
         }

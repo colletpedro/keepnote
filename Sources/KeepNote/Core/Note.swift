@@ -179,7 +179,7 @@ struct Note: Identifiable, Hashable, Sendable {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !needle.isEmpty else { return true }
         if title.lowercased().contains(needle) { return true }
-        if body.lowercased().contains(needle) { return true }
+        if AttachmentText.removingReferences(from: body).lowercased().contains(needle) { return true }
         return tags.contains { $0.contains(needle) }
     }
 }

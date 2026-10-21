@@ -41,6 +41,30 @@ struct BodyCipher: Sendable {
         return (payload, Data(nonce))
     }
 
+    /// The same sealing, for bytes: an attachment.
+    func seal(data plaintext: Data) throws -> (ciphertext: Data, nonce: Data) {
+        let nonce = AES.GCM.Nonce()
+        let box = try AES.GCM.seal(plaintext, using: key, nonce: nonce)
+        var payload = box.ciphertext
+        payload.append(box.tag)
+        return (payload, Data(nonce))
+    }
+
+    func openData(ciphertext: Data, nonce: Data) throws -> Data {
+        guard ciphertext.count >= 16 else { throw CipherError.badCiphertext }
+        let split = ciphertext.index(ciphertext.endIndex, offsetBy: -16)
+        do {
+            let box = try AES.GCM.SealedBox(
+                nonce: try AES.GCM.Nonce(data: nonce),
+                ciphertext: ciphertext[ciphertext.startIndex..<split],
+                tag: ciphertext[split...]
+            )
+            return try AES.GCM.open(box, using: key)
+        } catch {
+            throw CipherError.badCiphertext
+        }
+    }
+
     func open(ciphertext: Data, nonce: Data) throws -> String {
         guard ciphertext.count >= 16 else { throw CipherError.badCiphertext }
         let tagRange = ciphertext.index(ciphertext.endIndex, offsetBy: -16)..<ciphertext.endIndex

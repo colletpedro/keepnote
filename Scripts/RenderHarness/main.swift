@@ -114,6 +114,35 @@ MainActor.assumeIsolated {
         }
     }
 
+    // MARK: Attachments: an image fitted to the note, a file card, a missing one.
+    do {
+        let image = NSImage(size: NSSize(width: 800, height: 450), flipped: false) { rect in
+            NSGradient(colors: [.systemTeal, .systemIndigo])!.draw(in: rect, angle: 30)
+            NSColor.white.withAlphaComponent(0.8).setFill()
+            NSBezierPath(ovalIn: NSRect(x: 300, y: 120, width: 200, height: 200)).fill()
+            return true
+        }
+        let rep = NSBitmapImageRep(data: image.tiffRepresentation!)!
+        let png = rep.representation(using: .png, properties: [:])!
+        let picture = try! store.addAttachment(png, name: "Sunset.png")
+        let pdf = try! store.addAttachment(Data(repeating: 7, count: 245_000), name: "Invoice October.pdf", type: .pdf)
+        let missing = String(repeating: "ab", count: 32)
+        let text = """
+        Trip photos and the invoice.
+
+        \(AttachmentText.token(id: picture.id, isImage: true, label: "A gradient with a white sun"))
+        \(AttachmentText.token(id: pdf.id, isImage: false, label: pdf.name))
+        - [ ] Send the invoice
+        \(AttachmentText.token(id: missing, isImage: true, label: ""))
+        """
+        let note = try! store.create(color: .butter, title: "Lisbon", body: text)
+        let model = NoteEditorModel(note: note, store: store)
+        render("editor-attachments", size: EdgeMetrics.detachedSize,
+               NoteEditorView(model: model, presentation: .detached, onClose: {}, onDelete: {}, onTogglePin: {}))
+        render("editor-attachments-anchored", size: EdgeMetrics.anchoredSize,
+               NoteEditorView(model: model, presentation: .anchored, onClose: {}, onDelete: {}, onTogglePin: {}))
+    }
+
     // MARK: All Notes, in a real titled window so the toolbar draws too.
 
     /// Draws the whole window frame (title bar and toolbar included), light

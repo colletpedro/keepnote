@@ -135,10 +135,11 @@ final class PaneEditorController: ObservableObject {
         menu.addItem(keep)
         let point = anchor.convert(window.mouseLocationOutsideOfEventStream, from: nil)
         let kept = body.selectedRange()
+        let textBefore = body.string
         menu.popUp(positioning: nil, at: point, in: anchor)
         withExtendedLifetime(target) {}
         window.makeFirstResponder(body)
-        body.setSelectedRange(kept)
+        if body.string == textBefore { body.setSelectedRange(kept) }
     }
 
     private final class MenuTarget: NSObject {

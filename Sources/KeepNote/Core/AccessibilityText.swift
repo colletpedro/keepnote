@@ -32,6 +32,18 @@ enum AccessibilityText {
         Lplural(count, L("1 note"), L("%d notes"))
     }
 
+    /// An attachment in a note: "Image, a red barn at dusk" (or "Image, no
+    /// description"); "File, Invoice.pdf, 1.2 MB".
+    static func attachment(isImage: Bool, label: String, name: String?, size: String?) -> String {
+        let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isImage {
+            return label.isEmpty ? L("Image, no description") : L("Image, %@", label)
+        }
+        let shown = label.isEmpty ? (name ?? L("Attachment")) : label
+        guard let size else { return L("File, %@, not on this Mac yet", shown) }
+        return L("File, %@, %@", shown, size)
+    }
+
     /// The "+N" chip: "12 more notes".
     static func overflowLabel(count: Int) -> String {
         Lplural(count, L("1 more note"), L("%d more notes"))

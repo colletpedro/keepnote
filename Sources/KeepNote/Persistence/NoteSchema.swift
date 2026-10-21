@@ -6,7 +6,7 @@ import Foundation
 /// that is deliberate: it is what lets the stack order, the state filter and
 /// the title/tag index work without ever touching the key.
 enum NoteSchema {
-    static let currentVersion: Int32 = 11
+    static let currentVersion: Int32 = 12
 
     static func migrate(_ db: SQLiteDatabase) throws {
         if db.userVersion < 1 {
@@ -53,6 +53,29 @@ enum NoteSchema {
             try migrateToV11(db)
             db.userVersion = 11
         }
+        if db.userVersion < 12 {
+            try migrateToV12(db)
+            db.userVersion = 12
+        }
+    }
+
+    /// Attachments: one row per distinct file, keyed by the SHA-256 of its
+    /// bytes, which are sealed like a body. Notes refer to them from their
+    /// text, so a file in two notes, or twice in one, is stored once.
+    private static func migrateToV12(_ db: SQLiteDatabase) throws {
+        try db.execute("""
+        CREATE TABLE IF NOT EXISTS attachments (
+            id          TEXT PRIMARY KEY NOT NULL,
+            name        TEXT NOT NULL DEFAULT '',
+            type        TEXT NOT NULL DEFAULT '',
+            size        INTEGER NOT NULL DEFAULT 0,
+            width       INTEGER NOT NULL DEFAULT 0,
+            height      INTEGER NOT NULL DEFAULT 0,
+            created_at  REAL NOT NULL,
+            ciphertext  BLOB NOT NULL,
+            nonce       BLOB NOT NULL
+        );
+        """)
     }
 
     /// The daily template's colour, as a note's raw colour value. Butter, the

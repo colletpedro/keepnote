@@ -191,6 +191,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         keep.state = store.note(id: noteID)?.keepOnDeck == true ? .on : .off
         menu.addItem(keep)
         let point = hosting.convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        let textBefore = textView.string
 
         menuDepth += 1
         menu.popUp(positioning: nil, at: point, in: hosting)
@@ -203,7 +204,8 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         let kept = textView.selectedRange()
         if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
         window.makeFirstResponder(textView)
-        textView.setSelectedRange(kept)
+        // An item that changed the text (Insert Image…) placed the caret itself.
+        if textView.string == textBefore { textView.setSelectedRange(kept) }
     }
 
     @objc private func toggleCenterPin() {
@@ -789,6 +791,9 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         // Never leave typed text sitting in a timer when focus moves away.
         model.flush()
         model.windowResignedKey()
+        // A panel the note put up for itself (Save As…, Quick Look…) is not
+        // a click elsewhere.
+        guard !NoteFocusHold.isHolding else { return }
         guard presentation == .anchored, !isClosing, menuDepth == 0,
               Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
         guard Date().timeIntervalSince(shownAt) > 0.4 else { return }

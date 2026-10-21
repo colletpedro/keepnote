@@ -14,6 +14,9 @@ struct NoteTextView: NSViewRepresentable {
     var findQuery: String
     var findIndex: Int
     var isEditable: Bool = true
+    /// Where the note's attachments are kept; without one, files dropped on
+    /// the text are not taken.
+    var library: NoteStore? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
@@ -67,6 +70,9 @@ struct NoteTextView: NSViewRepresentable {
 
         let coordinator = context.coordinator
         coordinator.textView = textView
+        textView.library = library
+        textView.registerAttachmentDrops()
+        coordinator.observeAttachments()
         coordinator.styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine, increaseContrast: DisplayOptions.increaseContrast,
                                     scale: context.environment.textScale)
         textView.onWidthChange = { [weak coordinator] in coordinator?.restyle(force: true) }
@@ -105,12 +111,17 @@ struct NoteTextView: NSViewRepresentable {
             needsRestyle = true
         }
 
+        if let markdown = textView as? MarkdownTextView, markdown.library !== library {
+            markdown.library = library
+            needsRestyle = true
+        }
         textView.insertionPointColor = color.accent
         textView.isEditable = isEditable
         if needsRestyle { coordinator.restyle(force: true) }
         coordinator.applyHighlight(query: findQuery, index: findIndex, accent: color.spine)
     }
 
+    @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var text: Binding<String>
         weak var textView: NSTextView?
@@ -119,8 +130,25 @@ struct NoteTextView: NSViewRepresentable {
         /// did not move anything does not restyle the whole note.
         private var lastSelection: NSRange?
 
+        private var attachmentObserver: NSObjectProtocol?
+
         init(text: Binding<String>) {
             self.text = text
+        }
+
+        deinit {
+            if let attachmentObserver { NotificationCenter.default.removeObserver(attachmentObserver) }
+        }
+
+        /// An attachment arrived (from the sync folder, say) or went: the
+        /// lines that name it are laid out again.
+        func observeAttachments() {
+            guard attachmentObserver == nil else { return }
+            attachmentObserver = NotificationCenter.default.addObserver(
+                forName: .keepNoteAttachmentsChanged, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.restyle(force: true) }
+            }
         }
 
         func textDidChange(_ notification: Notification) {
@@ -147,7 +175,8 @@ struct NoteTextView: NSViewRepresentable {
             let container = textView.textContainer
             let tableWidth = (container?.size.width ?? 0) - 2 * (container?.lineFragmentPadding ?? 0)
 
-            styler.apply(to: storage, selection: selection, tableWidth: tableWidth)
+            let attachments = (textView as? MarkdownTextView)?.library?.attachments ?? [:]
+            styler.apply(to: storage, selection: selection, tableWidth: tableWidth, attachments: attachments)
             textView.typingAttributes = styler.baseAttributes
             if let markdownView = textView as? MarkdownTextView {
                 markdownView.accentColor = styler.accent

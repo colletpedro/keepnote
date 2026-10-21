@@ -57,7 +57,7 @@ swiftc \
     -Onone \
     -framework AppKit -framework SwiftUI -framework Carbon -framework CryptoKit \
     -framework Security -framework UniformTypeIdentifiers \
-    -framework CoreServices -framework ServiceManagement -lsqlite3 \
+    -framework CoreServices -framework ServiceManagement -framework Quartz -lsqlite3 \
     -o "$BUILD/render" \
     "${SOURCES[@]}" "$ROOT/Scripts/RenderHarness/main.swift"
 

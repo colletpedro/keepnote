@@ -22,6 +22,49 @@ final class TableLayout: NSObject {
     var totalWidth: CGFloat { columnWidths.reduce(0, +) }
 }
 
+/// An attachment line, laid out by `MarkdownStyler` and painted by
+/// `MarkdownTextView`: the image fitted to the note's width, or a card for a
+/// file (or for an image this Mac does not have yet).
+final class AttachmentLayout: NSObject {
+    static let inset: CGFloat = 4
+    static let cornerRadius: CGFloat = 6
+
+    let reference: AttachmentText.Reference
+    let info: AttachmentInfo?
+    /// The drawn image or card, in points.
+    let size: CGSize
+    /// Whether it is drawn as an image (else as a card).
+    let showsImage: Bool
+
+    init(reference: AttachmentText.Reference, info: AttachmentInfo?, size: CGSize, showsImage: Bool) {
+        self.reference = reference
+        self.info = info
+        self.size = size
+        self.showsImage = showsImage
+    }
+
+    /// The line's height: the drawing and a little air above and below.
+    var lineHeight: CGFloat { ceil(size.height) + Self.inset * 2 }
+
+    /// What fits in `width`: an image no wider than the note, never blown up
+    /// past its own size, nor taller than `maxHeight`; a card of fixed height.
+    static func size(for info: AttachmentInfo?, isImage: Bool, width: CGFloat, scale: CGFloat) -> (CGSize, Bool) {
+        let room = max(width, 60)
+        if isImage, let info, info.isImage {
+            let natural = CGSize(width: CGFloat(info.pixelWidth) / 2, height: CGFloat(info.pixelHeight) / 2)
+            var w = min(natural.width, room)
+            var h = w * natural.height / max(natural.width, 1)
+            let maxHeight = 520 * scale
+            if h > maxHeight {
+                h = maxHeight
+                w = h * natural.width / max(natural.height, 1)
+            }
+            return (CGSize(width: max(1, w.rounded()), height: max(1, h.rounded())), true)
+        }
+        return (CGSize(width: min(room, (300 * scale).rounded()), height: (46 * scale).rounded()), false)
+    }
+}
+
 /// Live-preview styling for a note body written in markdown, the way
 /// Obsidian's Live Preview does it.
 ///
@@ -43,6 +86,7 @@ struct MarkdownStyler: Equatable {
     static let decorationKey = NSAttributedString.Key("KeepNote.decoration")
     static let linkKey = NSAttributedString.Key("KeepNote.link")
     static let tableKey = NSAttributedString.Key("KeepNote.table")
+    static let attachmentKey = NSAttributedString.Key("KeepNote.attachment")
 
     enum Decoration: String {
         case bullet, checkbox, checkboxDone, quote, rule, codeLine
@@ -125,7 +169,8 @@ struct MarkdownStyler: Equatable {
     /// Restyles the whole body. `selection` is where the caret or selection
     /// is; syntax is revealed only around it. `tableWidth` is the room a table
     /// may take, so wide ones wrap their cells instead of overflowing.
-    func apply(to storage: NSTextStorage, selection: NSRange, tableWidth: CGFloat) {
+    func apply(to storage: NSTextStorage, selection: NSRange, tableWidth: CGFloat,
+               attachments: [String: AttachmentInfo] = [:]) {
         let text = storage.string as NSString
         let full = NSRange(location: 0, length: text.length)
 
@@ -210,7 +255,13 @@ struct MarkdownStyler: Equatable {
                 )
             case .text:
                 guard line.range.length > 0 else { continue }
-                styleText(line: line.range, in: storage, text: text, selection: selection)
+                let lineText = string(i)
+                if AttachmentText.isReferenceLine(lineText),
+                   let reference = AttachmentText.references(in: lineText).first {
+                    styleAttachment(reference, line: line.range, attachments: attachments, width: tableWidth, in: storage)
+                } else {
+                    styleText(line: line.range, in: storage, text: text, selection: selection)
+                }
             }
         }
         storage.endEditing()
@@ -329,6 +380,30 @@ struct MarkdownStyler: Equatable {
             storage.addAttribute(.paragraphStyle, value: paragraph, range: range)
         }
         styleInline(line, from: contentStart, offset: range.location, selection: selection, in: storage)
+    }
+
+    /// The line's characters hidden, the line given the height of what is
+    /// drawn in its place, and the last character's kern set to its width, so
+    /// a caret at the end of the line stands at the drawing's right edge.
+    private func styleAttachment(_ local: AttachmentText.Reference, line: NSRange, attachments: [String: AttachmentInfo],
+                                 width: CGFloat, in storage: NSTextStorage) {
+        var reference = local
+        reference.range = NSRange(location: line.location + local.range.location, length: local.range.length)
+        reference.labelRange = NSRange(location: line.location + local.labelRange.location, length: local.labelRange.length)
+        let info = attachments[reference.id]
+        let (size, showsImage) = AttachmentLayout.size(for: info, isImage: reference.isImage, width: width, scale: scale)
+        let layout = AttachmentLayout(reference: reference, info: info, size: size, showsImage: showsImage)
+        let p = NSMutableParagraphStyle()
+        p.minimumLineHeight = layout.lineHeight
+        p.maximumLineHeight = layout.lineHeight
+        p.lineBreakMode = .byClipping
+        storage.addAttributes([
+            .font: Self.hiddenFont,
+            .foregroundColor: NSColor.clear,
+            .paragraphStyle: p,
+            Self.attachmentKey: layout,
+        ], range: line)
+        storage.addAttribute(.kern, value: size.width, range: NSRange(location: NSMaxRange(line) - 1, length: 1))
     }
 
     private func codeAttributes(dim: Bool) -> [NSAttributedString.Key: Any] {

@@ -160,6 +160,7 @@ swiftc \
     -framework UniformTypeIdentifiers \
     -framework CoreServices \
     -framework ServiceManagement \
+    -framework Quartz \
     -lsqlite3 \
     -o "$APP/Contents/MacOS/KeepNote" \
     "${SOURCES[@]}"

@@ -62,6 +62,8 @@ enum MarkdownText {
                 continue
             }
             if matches(rule, line) { continue }
+            // An attachment is drawn, not read: no text of its own here.
+            if AttachmentText.isReferenceLine(line) { continue }
             // Tables: drop the `|---|` row, flatten the others to "a · b".
             if line.contains("-"), matches(tableSeparator, line), line.contains("|") { continue }
             if trimmed.hasPrefix("|") {

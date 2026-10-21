@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 import os
@@ -78,7 +79,15 @@ final class NoteStore: ObservableObject {
 
     var today: DailyDay { DailyDay(now()) }
 
-    private let writer: StoreWriter
+    let writer: StoreWriter
+
+    /// Every attachment this Mac holds, by id, without its bytes; set only
+    /// by the attachment functions (`Attachments.swift`).
+    @Published var attachments: [String: AttachmentInfo] = [:]
+    /// Opened attachments and decoded images, kept while memory allows.
+    let attachmentCache = NSCache<NSString, NSData>()
+    let imageCache = NSCache<NSString, NSImage>()
+
     private var tombstones: [UUID: Date] = [:]
 
     /// Where the database's copies go: `Backups`, beside it.
@@ -98,6 +107,9 @@ final class NoteStore: ObservableObject {
         }
         try reload()
         purgeExpiredDeletions()
+        // Files no note refers to any more, left by a deletion in a session
+        // that ended first.
+        removeOrphanAttachments()
         lastBackup = Backups.list(in: backupDirectory).first
     }
 
@@ -180,6 +192,7 @@ final class NoteStore: ObservableObject {
         pendingDeletions = deleted
         tombstones = loaded.tombstones
         dailyTemplate = loaded.template
+        attachments = Dictionary(loaded.attachments.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         changes.send((.reloaded, .local))
     }
 
@@ -594,6 +607,8 @@ final class NoteStore: ObservableObject {
         notes.removeAll { $0.id == id }
         writer.save([.purge(id, deletedAt: deletedAt)])
         changes.send((.purged(id), origin))
+        // Its attachments go with it, unless another note has them too.
+        removeOrphanAttachments()
     }
 
     /// Notes deleted in a session that ended before the timer fired.
@@ -746,6 +761,9 @@ final class StoreWriter: @unchecked Sendable {
         case purge(UUID, deletedAt: Date)
         case tombstone(UUID, deletedAt: Date)
         case template(DailyTemplate)
+        /// Kept once: the same bytes already there are left as they are.
+        case attachment(AttachmentInfo, Data)
+        case removeAttachments([String])
     }
 
     /// Called on the writer's queue when a batch could not be written.
@@ -807,7 +825,7 @@ final class StoreWriter: @unchecked Sendable {
     }
 
     /// Every row, bodies opened, once the queue has caught up.
-    func load() throws -> (notes: [Note], tombstones: [UUID: Date], template: DailyTemplate) {
+    func load() throws -> (notes: [Note], tombstones: [UUID: Date], template: DailyTemplate, attachments: [AttachmentInfo]) {
         try queue.sync { [self] in
             let notes = try db.query(
                 """
@@ -863,7 +881,22 @@ final class StoreWriter: @unchecked Sendable {
             .reduce(into: [UUID: Date]()) { result, row in
                 if let id = row.0 { result[id] = row.1 }
             }
-            return (notes, tombstones, try loadTemplate())
+            let attachments = try db.query("SELECT id, name, type, size, width, height, created_at FROM attachments;") { s in
+                AttachmentInfo(id: s.string(at: 0), name: s.string(at: 1), type: s.string(at: 2), size: s.int(at: 3),
+                               pixelWidth: s.int(at: 4), pixelHeight: s.int(at: 5), createdAt: s.date(at: 6))
+            }
+            return (notes, tombstones, try loadTemplate(), attachments)
+        }
+    }
+
+    /// One attachment's bytes, opened, once every write before has landed.
+    func loadAttachment(_ id: String) throws -> Data? {
+        try queue.sync { [self] in
+            let rows = try db.query("SELECT ciphertext, nonce FROM attachments WHERE id = ?;", [.text(id)]) {
+                ($0.data(at: 0), $0.data(at: 1))
+            }
+            guard let row = rows.first else { return nil }
+            return try cipher.openData(ciphertext: row.0, nonce: row.1)
         }
     }
 
@@ -966,6 +999,18 @@ final class StoreWriter: @unchecked Sendable {
                 "INSERT OR REPLACE INTO tombstones (id, deleted_at) VALUES (?, ?);",
                 [.uuid(id), .date(deletedAt)]
             )
+        case .attachment(let info, let data):
+            let sealed = try cipher.seal(data: data)
+            try db.run(
+                """
+                INSERT OR IGNORE INTO attachments (id, name, type, size, width, height, created_at, ciphertext, nonce)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """,
+                [.text(info.id), .text(info.name), .text(info.type), .integer(info.size), .integer(info.pixelWidth),
+                 .integer(info.pixelHeight), .date(info.createdAt), .blob(sealed.ciphertext), .blob(sealed.nonce)]
+            )
+        case .removeAttachments(let ids):
+            for id in ids { try db.run("DELETE FROM attachments WHERE id = ?;", [.text(id)]) }
         case .template(let template):
             let sealed = try cipher.seal(template.body)
             try db.run(

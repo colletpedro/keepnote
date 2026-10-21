@@ -181,7 +181,17 @@ enum FormatCommand: CaseIterable {
             aim(item, at: target)
             menu.addItem(item)
         }
+        menu.addItem(.separator())
+        menu.addItem(insertImageItem(target: target))
         return menu
+    }
+
+    /// Insert Image…: pictures from a panel, into the note at the caret.
+    static func insertImageItem(target: AnyObject?) -> NSMenuItem {
+        let item = NSMenuItem(title: L("Insert Image\u{2026}"), action: #selector(MarkdownTextView.insertImage(_:)), keyEquivalent: "")
+        item.image = icon("photo")
+        item.target = target
+        return item
     }
 
     /// Sets the target on an item and on everything in its submenu.

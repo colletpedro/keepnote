@@ -11,6 +11,11 @@ final class MarkdownTextView: NSTextView {
     var inkColor: NSColor = .labelColor
     /// Tables are laid out for a width, so a resize has to restyle.
     var onWidthChange: (() -> Void)?
+    /// Where the note's attachments are kept, for drawing and adding them.
+    weak var library: NoteStore?
+    /// The file Quick Look is showing, while it is.
+    var quickLookURL: URL?
+    var quickLookHolding = false
 
     // MARK: - Layout
 
@@ -33,7 +38,9 @@ final class MarkdownTextView: NSTextView {
     private func drawDecorations(in dirtyRect: NSRect) {
         guard let layoutManager, let textContainer, let storage = textStorage, storage.length > 0 else { return }
         let origin = textContainerOrigin
-        let visible = dirtyRect.offsetBy(dx: -origin.x, dy: -origin.y)
+        // A little past the dirty rectangle, so a mark whose line is only
+        // partly redrawn is drawn whole rather than cut at the edge.
+        let visible = dirtyRect.insetBy(dx: 0, dy: -12).offsetBy(dx: -origin.x, dy: -origin.y)
         let glyphs = layoutManager.glyphRange(forBoundingRect: visible, in: textContainer)
         let characters = layoutManager.characterRange(forGlyphRange: glyphs, actualGlyphRange: nil)
 
@@ -44,6 +51,7 @@ final class MarkdownTextView: NSTextView {
         storage.enumerateAttribute(MarkdownStyler.tableKey, in: characters) { value, _, _ in
             if let table = value as? TableLayout { draw(table) }
         }
+        attachmentLayouts(in: characters).forEach(drawAttachment)
     }
 
     private func draw(_ kind: MarkdownStyler.Decoration, range: NSRange) {
@@ -213,6 +221,11 @@ final class MarkdownTextView: NSTextView {
     private func hiddenMarker(at index: Int) -> NSRange? {
         guard let storage = textStorage, index >= 0, index < storage.length else { return nil }
         var run = NSRange()
+        // An attachment line is one unit too: the caret stands before or after it.
+        if let layout = storage.attribute(MarkdownStyler.attachmentKey, at: index, effectiveRange: nil) as? AttachmentLayout,
+           NSMaxRange(layout.reference.range) <= storage.length {
+            return layout.reference.range
+        }
         guard let raw = storage.attribute(MarkdownStyler.decorationKey, at: index, effectiveRange: &run) as? String,
               let kind = MarkdownStyler.Decoration(rawValue: raw),
               kind == .bullet || kind == .checkbox || kind == .checkboxDone else { return nil }
@@ -235,12 +248,85 @@ final class MarkdownTextView: NSTextView {
         let selection = selectedRange()
         if selection.length == 0, let run = hiddenMarker(at: selection.location - 1),
            NSMaxRange(run) == selection.location {
-            replace(run, with: "")
+            replaceText(run, with: "")
             setSelectedRange(NSRange(location: run.location, length: 0))
             renumber(around: NSRange(location: run.location, length: 0))
             return
         }
         super.deleteBackward(sender)
+    }
+
+    /// Typing beside an attachment starts a line of its own, so the
+    /// attachment's line stays whole.
+    override func insertText(_ string: Any, replacementRange: NSRange) {
+        let selection = replacementRange.location == NSNotFound ? selectedRange() : replacementRange
+        if selection.length == 0, let layout = attachmentLine(touching: selection.location) {
+            let typed = (string as? NSAttributedString)?.string ?? (string as? String) ?? ""
+            if !typed.hasPrefix("\n") {
+                if selection.location == NSMaxRange(layout.reference.range) {
+                    super.insertText("\n" + typed, replacementRange: replacementRange)
+                } else {
+                    super.insertText(typed + "\n", replacementRange: replacementRange)
+                    setSelectedRange(NSRange(location: selection.location + (typed as NSString).length, length: 0))
+                }
+                return
+            }
+        }
+        super.insertText(string, replacementRange: replacementRange)
+    }
+
+    /// Space on a selected attachment shows it in Quick Look.
+    override func keyDown(with event: NSEvent) {
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        if flags.isEmpty, event.charactersIgnoringModifiers == " ", let layout = selectedAttachment {
+            quickLook(layout)
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    /// Delete just before an attachment removes it whole.
+    override func deleteForward(_ sender: Any?) {
+        let selection = selectedRange()
+        if selection.length == 0, let layout = attachmentLine(touching: selection.location),
+           layout.reference.range.location == selection.location {
+            removeAttachment(layout)
+            return
+        }
+        super.deleteForward(sender)
+    }
+
+    // MARK: - Dropping files
+
+    func registerAttachmentDrops() {
+        registerForDraggedTypes(registeredDraggedTypes + [.fileURL, .png, .tiff]
+            + NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let operation = super.draggingEntered(sender)
+        return isEditable && library != nil && Self.canAttach(from: sender.draggingPasteboard) ? .copy : operation
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let operation = super.draggingUpdated(sender)
+        return isEditable && library != nil && Self.canAttach(from: sender.draggingPasteboard) ? .copy : operation
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let board = sender.draggingPasteboard
+        guard isEditable, library != nil, Self.canAttach(from: board) else { return super.performDragOperation(sender) }
+        let index = characterIndexForInsertion(at: convert(sender.draggingLocation, from: nil))
+        let at = NSRange(location: index, length: 0)
+        let candidates = Self.candidates(from: board)
+        if !candidates.isEmpty {
+            insertAttachments(candidates, at: at)
+            return true
+        }
+        let promises = board.readObjects(forClasses: [NSFilePromiseReceiver.self]) as? [NSFilePromiseReceiver] ?? []
+        guard !promises.isEmpty else { return super.performDragOperation(sender) }
+        receivePromises(promises, at: at)
+        return true
     }
 
     /// Return continues a list or quote; Return on an empty item ends it.
@@ -274,7 +360,7 @@ final class MarkdownTextView: NSTextView {
         isApplyingEdit = true
         defer { isApplyingEdit = false }
         if change.range.length > 0 || !change.string.isEmpty {
-            replace(change.range, with: change.string)
+            replaceText(change.range, with: change.string)
         }
         setSelectedRange(edit.selection)
     }
@@ -306,8 +392,18 @@ final class MarkdownTextView: NSTextView {
         if let result = Formatting.link(currentEdit, clipboard: clipboard) { apply(result) } else { NSSound.beep() }
     }
 
-    /// A URL pasted over selected text becomes a link on that text.
+    /// A URL pasted over selected text becomes a link on that text. Files
+    /// and pictures on the clipboard (a screenshot, say) become attachments.
     override func paste(_ sender: Any?) {
+        let board = NSPasteboard.general
+        if isEditable, library != nil, Self.canAttach(from: board), board.string(forType: .string) == nil
+            || board.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) {
+            let candidates = Self.candidates(from: board)
+            if !candidates.isEmpty {
+                insertAttachments(candidates, at: selectedRange())
+                return
+            }
+        }
         if isEditable, let pasted = NSPasteboard.general.string(forType: .string),
            let result = Formatting.pasteURL(currentEdit, pasted: pasted) {
             apply(result)
@@ -319,6 +415,10 @@ final class MarkdownTextView: NSTextView {
     /// The right-click menu: the Format commands on top, above the standard
     /// items, so what the shortcuts do is discoverable where the text is.
     override func menu(for event: NSEvent) -> NSMenu? {
+        if let layout = attachment(at: convert(event.locationInWindow, from: nil)) {
+            select(layout)
+            return menu(for: layout)
+        }
         let menu = super.menu(for: event)
         guard let menu, isEditable else { return menu }
         if menu.items.first?.action != FormatCommand.bold.action {
@@ -380,7 +480,7 @@ final class MarkdownTextView: NSTextView {
 
     /// An edit through the normal path, so it is undoable and reaches the
     /// autosave like a keystroke.
-    private func replace(_ range: NSRange, with string: String) {
+    func replaceText(_ range: NSRange, with string: String) {
         guard let storage = textStorage else { return }
         if shouldChangeText(in: range, replacementString: string) {
             storage.replaceCharacters(in: range, with: string)
@@ -392,6 +492,18 @@ final class MarkdownTextView: NSTextView {
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
+
+        // An image: a click selects it, a double click shows it in Quick
+        // Look. A file's card opens it in its app.
+        if let layout = attachment(at: point) {
+            select(layout)
+            if !layout.showsImage, layout.info != nil {
+                openAttachment(layout)
+            } else if event.clickCount >= 2 {
+                quickLook(layout)
+            }
+            return
+        }
 
         if let box = checkbox(at: point) {
             toggleCheckbox(markerRange: box)
@@ -462,7 +574,7 @@ final class MarkdownTextView: NSTextView {
 
         let state = NSRange(location: markerRange.location + bracket.location + 1, length: 1)
         let current = (storage.string as NSString).substring(with: state)
-        replace(state, with: current == " " ? "x" : " ")
+        replaceText(state, with: current == " " ? "x" : " ")
     }
 
     private func link(at point: NSPoint) -> URL? {
@@ -496,7 +608,31 @@ extension MarkdownTextView {
     /// are drawn over hidden "[ ]" characters, which VoiceOver would
     /// otherwise read as punctuation.
     override func accessibilityChildren() -> [Any]? {
-        (super.accessibilityChildren() ?? []) + checklistBoxes()
+        (super.accessibilityChildren() ?? []) + checklistBoxes() + attachmentElements()
+    }
+
+    /// Images read as images, with their description; files as buttons with
+    /// their name and size, which pressing opens.
+    func attachmentElements() -> [NSAccessibilityElement] {
+        guard let window else { return [] }
+        return allAttachmentLayouts.compactMap { layout -> NSAccessibilityElement? in
+            guard let rect = attachmentRect(layout) else { return nil }
+            let element = ChecklistBoxElement()
+            element.setAccessibilityParent(self)
+            element.setAccessibilityFrame(window.convertToScreen(convert(rect, to: nil)))
+            element.setAccessibilityLabel(AccessibilityText.attachment(isImage: layout.reference.isImage,
+                                                                       label: layout.reference.label,
+                                                                       name: layout.info?.name,
+                                                                       size: layout.info?.sizeText))
+            if layout.reference.isImage {
+                element.setAccessibilityRole(.image)
+                element.toggle = { [weak self] in self?.quickLook(layout) }
+            } else {
+                element.setAccessibilityRole(.button)
+                element.toggle = { [weak self] in self?.openAttachment(layout) }
+            }
+            return element
+        }
     }
 
     func checklistBoxes() -> [ChecklistBoxElement] {
