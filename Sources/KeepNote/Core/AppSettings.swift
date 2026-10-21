@@ -30,6 +30,7 @@ final class AppSettings: ObservableObject {
         static let dailyIntroSeen = "dailyIntroSeen"
         static let archiveAfterDays = "archiveAfterDays"
         static let allNotesSort = "allNotesSort"
+        static let pendingRestore = "pendingRestore"
     }
 
     private let defaults: UserDefaults
@@ -205,6 +206,13 @@ final class AppSettings: ObservableObject {
     @Published var allNotesSort: NoteSort = UserDefaults.standard.string(forKey: Key.allNotesSort)
         .flatMap(NoteSort.init(rawValue:)) ?? .default {
         didSet { defaults.set(allNotesSort.rawValue, forKey: Key.allNotesSort) }
+    }
+
+    /// A backup waiting to replace the database at the next launch (its path),
+    /// set by Restore… just before KeepNote reopens.
+    var pendingRestorePath: String? {
+        get { defaults.string(forKey: Key.pendingRestore) }
+        set { defaults.set(newValue, forKey: Key.pendingRestore) }
     }
 
     /// Notes that were floating when the app last ran, in the order they were

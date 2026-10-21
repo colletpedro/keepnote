@@ -35,7 +35,7 @@ enum SettingsTab: Int, CaseIterable {
     /// Each pane is a fixed size; the window animates between them.
     var paneHeight: CGFloat {
         switch self {
-        case .general: return 510
+        case .general: return 630
         case .notes: return 270
         case .deck: return 430
         case .daily: return 380
@@ -57,6 +57,9 @@ struct SettingsActions {
     var editDailyTemplate: () -> Void = {}
     /// Quits and starts KeepNote again, for a new language.
     var relaunch: () -> Void = {}
+    /// Back Up Now and Restore…, in General.
+    var backUpNow: () -> Void = {}
+    var restoreBackup: () -> Void = {}
 }
 
 /// An option with its explanation underneath, the way System Settings does it.
@@ -91,6 +94,8 @@ private struct HelpNote: View {
 struct GeneralSettingsPane: View {
     @ObservedObject var settings: AppSettings
     var actions: SettingsActions
+    /// The notes' database, for the Backups section.
+    var store: NoteStore?
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var loginError: String?
 
@@ -137,6 +142,10 @@ struct GeneralSettingsPane: View {
                 }
                 HelpNote(text: L("KeepNote is in the Dock, with its full menu bar, while one of its windows is open \u{2014} All Notes, Archive, Settings, About or Welcome. When the last one closes it leaves the Dock; the deck, your notes and the menu bar icon stay."))
             }
+
+            if let store {
+                BackupsSection(store: store, actions: actions)
+            }
         }
         .formStyle(.grouped)
         .onAppear { launchAtLogin = LaunchAtLogin.isEnabled }
@@ -172,6 +181,44 @@ struct GeneralSettingsPane: View {
         }
         launchAtLogin = LaunchAtLogin.isEnabled
     }
+}
+
+/// Backups: when the last copy was made, Back Up Now and Restore….
+private struct BackupsSection: View {
+    @ObservedObject var store: NoteStore
+    var actions: SettingsActions
+
+    var body: some View {
+        Section {
+            Option(help: L("Each day KeepNote keeps a copy of your notes on this Mac, sealed like the notes themselves, and the seven most recent. One is also made before an update changes how notes are stored.")) {
+                LabeledContent(L("Backups")) {
+                    Text(lastLine)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+                Button(L("Back Up Now"), action: actions.backUpNow)
+                Button(L("Restore\u{2026}"), action: actions.restoreBackup)
+                    .disabled(store.lastBackup == nil)
+            }
+        }
+    }
+
+    private var lastLine: String {
+        guard let last = store.lastBackup else { return L("No backup yet") }
+        return L("Last: %@", Self.formatter.string(from: last.date))
+    }
+
+    static let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Localization.locale
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = true
+        formatter.formattingContext = .middleOfSentence
+        return formatter
+    }()
 }
 
 // MARK: - Notes

@@ -35,6 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let isFirstLaunch = !AppSettings.shared.hasLaunchedBefore
             || CommandLine.arguments.contains("--show-welcome")
 
+        // A restore chosen in Settings: the backup goes in place of the
+        // database now, before anything opens it.
+        let restoreError = Self.applyPendingRestore(to: AppPaths.databaseURL, settings: .shared)
+
         do {
             let cipher = try BodyCipher.makeDefault()
             let store = try NoteStore(cipher: cipher)
@@ -45,8 +49,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             installMainMenu(coordinator: coordinator)
             if isFirstLaunch { coordinator.showWelcome() }
             seedFirstRunNoteIfNeeded(store: store)
+            if let restoreError {
+                NSApp.activate(ignoringOtherApps: true)
+                NSAlert(error: restoreError).runModal()
+            }
         } catch {
             presentFatal(error)
+        }
+    }
+
+    /// Puts the backup Restore… set aside in place of the database, once, and
+    /// returns why it could not be — the database is then left as it was.
+    static func applyPendingRestore(to databaseURL: URL, settings: AppSettings) -> Error? {
+        guard let path = settings.pendingRestorePath else { return nil }
+        settings.pendingRestorePath = nil
+        let staged = URL(fileURLWithPath: path)
+        defer { try? FileManager.default.removeItem(at: staged) }
+        do {
+            try Backups.restore(staged, to: databaseURL)
+            return nil
+        } catch {
+            return error
         }
     }
 

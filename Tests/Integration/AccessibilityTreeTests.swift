@@ -138,7 +138,8 @@ func runAccessibilityTreeTests() {
     // Settings, every tab.
     let settingsWindow = SettingsWindowController(
         settings: AppSettings.shared, sync: FolderSyncService(store: store),
-        actions: SettingsActions(chooseSyncFolder: {}, forgetSyncFolder: {}, importNotes: {}, exportAll: {}, showWelcome: {}))
+        actions: SettingsActions(chooseSyncFolder: {}, forgetSyncFolder: {}, importNotes: {}, exportAll: {}, showWelcome: {}),
+        store: store)
     for tab in SettingsTab.allCases {
         settingsWindow.select(tab)
         settingsWindow.window.layoutIfNeeded()

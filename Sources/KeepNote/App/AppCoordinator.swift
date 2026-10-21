@@ -993,8 +993,11 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                     relaunch: { [weak self] in
                         self?.flushEverything()
                         AppRelaunch.relaunch()
-                    }
-                )
+                    },
+                    backUpNow: { [weak self] in self?.backUpNow() },
+                    restoreBackup: { [weak self] in self?.promptRestore() }
+                ),
+                store: store
             )
             controller.onClose = { [weak self] in
                 self?.settingsWindow = nil
@@ -1005,6 +1008,79 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         if let tab { settingsWindow?.select(tab) }
         settingsWindow?.show()
+    }
+
+    // MARK: - Backups
+
+    /// Back Up Now: what every editor holds is written, then copied.
+    func backUpNow() {
+        flushEverything()
+        do {
+            try store.backUp(kind: .manual)
+            Announcer.say(L("Backup made"))
+        } catch {
+            present(error)
+        }
+    }
+
+    /// Restore…: the backups with their date and how many notes each holds,
+    /// then a confirmation. The notes as they are now are backed up first,
+    /// and KeepNote reopens with the chosen backup in place of the database.
+    func promptRestore() {
+        let backups = Backups.list(in: store.backupDirectory)
+        NSApp.activate(ignoringOtherApps: true)
+        guard !backups.isEmpty else {
+            let none = NSAlert()
+            none.messageText = L("No backup yet")
+            none.informativeText = L("KeepNote makes one each day by itself, or press Back Up Now.")
+            none.runModal()
+            return
+        }
+        let pick = NSAlert()
+        pick.messageText = L("Restore a Backup")
+        pick.informativeText = L("Choose the copy of your notes to go back to.")
+        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 360, height: 25), pullsDown: false)
+        let counts = backups.map { Backups.noteCount(of: $0.url) }
+        for (backup, count) in zip(backups, counts) {
+            popup.addItem(withTitle: Backups.title(backup, notes: count))
+        }
+        pick.accessoryView = popup
+        pick.addButton(withTitle: L("Continue"))
+        pick.addButton(withTitle: L("Cancel"))
+        guard pick.runModal() == .alertFirstButtonReturn, backups.indices.contains(popup.indexOfSelectedItem) else { return }
+        let chosen = backups[popup.indexOfSelectedItem]
+        let count = counts[popup.indexOfSelectedItem] ?? 0
+
+        let confirm = NSAlert()
+        confirm.messageText = L("Restore the backup from %@?", Backups.title(chosen, notes: nil))
+        var detail = Lplural(count, L("Your notes now are replaced by the 1 note in it."), L("Your notes now are replaced by the %d notes in it."))
+        detail += " " + L("A backup of your notes as they are now is made first, so you can come back to them. KeepNote reopens to finish.")
+        if settings.syncEnabled {
+            detail += " " + L("With sync on, notes changed in the sync folder since this backup come back from it.")
+        }
+        confirm.informativeText = detail
+        confirm.addButton(withTitle: L("Restore and Reopen"))
+        confirm.addButton(withTitle: L("Cancel"))
+        guard confirm.runModal() == .alertFirstButtonReturn else { return }
+        restore(chosen)
+    }
+
+    /// Checks the backup, sets it aside, backs up the notes as they are, and
+    /// reopens; the swap itself happens at the next launch, before the
+    /// database is open (`AppDelegate`). A backup that does not check out
+    /// changes nothing.
+    func restore(_ backup: Backup, relaunch: Bool = true) {
+        flushEverything()
+        store.waitUntilSaved()
+        do {
+            let staged = try Backups.stageForRestore(backup.url, in: store.backupDirectory)
+            try store.backUp(kind: .beforeRestore)
+            settings.pendingRestorePath = staged.path
+        } catch {
+            present(error)
+            return
+        }
+        if relaunch { AppRelaunch.relaunch() }
     }
 
     /// Edit Daily Template…: All Notes on the Daily list, the template's row

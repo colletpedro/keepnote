@@ -14,14 +14,15 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     private let tabController = NSTabViewController()
 
-    init(settings: AppSettings, sync: FolderSyncService, actions: SettingsActions) {
+    /// `store` shows the backups in General.
+    init(settings: AppSettings, sync: FolderSyncService, actions: SettingsActions, store: NoteStore? = nil) {
         tabController.tabStyle = .toolbar
         tabController.transitionOptions = []
 
         for tab in SettingsTab.allCases {
             let root: AnyView
             switch tab {
-            case .general: root = AnyView(GeneralSettingsPane(settings: settings, actions: actions))
+            case .general: root = AnyView(GeneralSettingsPane(settings: settings, actions: actions, store: store))
             case .notes: root = AnyView(NotesSettingsPane(settings: settings))
             case .deck: root = AnyView(DeckSettingsPane(settings: settings))
             case .daily: root = AnyView(DailySettingsPane(actions: actions))

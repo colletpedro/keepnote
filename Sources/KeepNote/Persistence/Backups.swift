@@ -109,6 +109,40 @@ enum Backups {
         }
     }
 
+    /// A restore happens at the next launch, before the store opens; until
+    /// then the chosen backup waits here, under a name rotation leaves alone,
+    /// so the copy made of the notes as they are cannot push it out.
+    static func stageForRestore(_ backup: URL, in directory: URL) throws -> URL {
+        try validate(backup)
+        let staged = directory.appendingPathComponent(".pending-restore.sqlite")
+        try? FileManager.default.removeItem(at: staged)
+        try FileManager.default.copyItem(at: backup, to: staged)
+        return staged
+    }
+
+    /// The title of a backup in the list Restore shows.
+    static func title(_ backup: Backup, notes: Int?) -> String {
+        let kind: String
+        switch backup.kind {
+        case .daily: kind = L("Automatic")
+        case .manual: kind = L("Back Up Now")
+        case .migration: kind = L("Before an update")
+        case .beforeRestore: kind = L("Before a restore")
+        }
+        let date = listFormatter.string(from: backup.date)
+        guard let notes else { return L("%@ \u{00B7} %@", date, kind) }
+        return L("%@ \u{00B7} %@ \u{00B7} %@", date, TagLibrary.notesPhrase(notes), kind)
+    }
+
+    private static let listFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Localization.locale
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = true
+        return formatter
+    }()
+
     // MARK: - Reading a backup
 
     /// What a backup holds, for the list Restore shows.
