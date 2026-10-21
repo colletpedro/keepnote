@@ -375,7 +375,7 @@ struct NoteEditorView: View {
             content
         }
         .background(model.color.surfaceSwiftUI)
-        .animation(.easeOut(duration: 0.15), value: model.isFindBarVisible)
+        .animation(Motion.reduceMotion ? nil : .easeOut(duration: 0.15), value: model.isFindBarVisible)
         .onChange(of: model.isFindBarVisible) { visible in
             findFieldFocused = visible
         }
@@ -404,7 +404,7 @@ struct NoteEditorView: View {
             // The perforation between spine and paper.
             HStack {
                 Spacer()
-                PerforationLine(color: model.color.inkSwiftUI.opacity(0.28))
+                PerforationLine(color: model.color.perforationSwiftUI)
                     .padding(.vertical, 10)
             }
         }
@@ -711,7 +711,7 @@ struct NoteFooterButtonStyle: ButtonStyle {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(.black.opacity(0.10), lineWidth: 1)
+                    .strokeBorder(color.ruleSwiftUI, lineWidth: 1)
             )
             .modifier(InkFocusRing(color: color, shape: RoundedRectangle(cornerRadius: 6, style: .continuous)))
             .foregroundStyle(color.inkSwiftUI.opacity(0.85))
@@ -833,6 +833,6 @@ struct NoteColorRow: View {
             }
         }
         .padding(.leading, 3)
-        .animation(.easeOut(duration: 0.12), value: selected)
+        .animation(Motion.reduceMotion ? nil : .easeOut(duration: 0.12), value: selected)
     }
 }

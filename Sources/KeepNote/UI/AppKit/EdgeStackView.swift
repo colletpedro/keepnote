@@ -376,6 +376,7 @@ final class EdgeStackView: NSView {
 
     func layoutPill(height: CGFloat) {
         pill.edge = edge
+        pill.needsDisplay = true
         pill.frame = NSRect(
             x: edge.mirroredX(bounds.width - EdgeMetrics.pillWidth, itemWidth: EdgeMetrics.pillWidth, in: bounds.width),
             y: (bounds.height - height) / 2,

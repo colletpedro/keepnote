@@ -67,7 +67,7 @@ struct NoteTextView: NSViewRepresentable {
 
         let coordinator = context.coordinator
         coordinator.textView = textView
-        coordinator.styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine)
+        coordinator.styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine, increaseContrast: DisplayOptions.increaseContrast)
         textView.onWidthChange = { [weak coordinator] in coordinator?.restyle(force: true) }
         coordinator.restyle(force: true)
         return scrollView
@@ -96,7 +96,7 @@ struct NoteTextView: NSViewRepresentable {
             needsRestyle = true
         }
 
-        let styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine)
+        let styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine, increaseContrast: DisplayOptions.increaseContrast)
         if coordinator.styler != styler {
             coordinator.styler = styler
             needsRestyle = true

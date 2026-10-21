@@ -503,6 +503,8 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             window.styleMask.remove(.resizable)
         }
         window.level = AppSettings.shared.showOverFullScreen ? .popUpMenu : .floating
+        // Increase contrast or Reduce transparency changed: redraw the paper.
+        model.objectWillChange.send()
         // The deck went to the other edge: an anchored note goes with it.
         let edge = AppSettings.shared.screenEdge
         if presentation == .anchored, edge != anchoredEdge, !isClosing {

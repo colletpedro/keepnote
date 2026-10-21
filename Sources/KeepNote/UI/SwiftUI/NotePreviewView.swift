@@ -23,7 +23,7 @@ struct NotePreviewView: View {
             note.color.spineSwiftUI
             HStack {
                 Spacer()
-                PerforationLine(color: note.color.inkSwiftUI.opacity(0.28))
+                PerforationLine(color: note.color.perforationSwiftUI)
                     .padding(.vertical, 10)
             }
         }

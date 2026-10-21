@@ -70,8 +70,17 @@ enum NoteColor: Int, CaseIterable, Codable, Sendable {
     /// checkboxes, the caret. Dark enough for 4.5:1 on `surface`.
     var accent: NSColor { Self.color(swatch.accent) }
 
-    /// The status line and other quiet text on the paper.
-    var secondaryInk: NSColor { Self.color(swatch.secondary) }
+    /// The status line and other quiet text on the paper — the body's ink
+    /// itself with Increase contrast.
+    @MainActor var secondaryInk: NSColor {
+        DisplayOptions.increaseContrast ? ink : Self.color(swatch.secondary)
+    }
+
+    /// The tear line, the card outlines and the footer buttons' borders: faint,
+    /// or firm with Increase contrast.
+    @MainActor var rule: NSColor {
+        ink.withAlphaComponent(DisplayOptions.increaseContrast ? 0.6 : 0.2)
+    }
 
     /// Body text on top of `surface`. The same dark on every paper.
     var ink: NSColor { Self.color(NotePalette.ink) }
@@ -94,7 +103,12 @@ enum NoteColor: Int, CaseIterable, Codable, Sendable {
     var surfaceSwiftUI: Color { Color(nsColor: surface) }
     var spineSwiftUI: Color { Color(nsColor: spine) }
     var inkSwiftUI: Color { Color(nsColor: ink) }
-    var secondaryInkSwiftUI: Color { Color(nsColor: secondaryInk) }
+    @MainActor var secondaryInkSwiftUI: Color { Color(nsColor: secondaryInk) }
+    @MainActor var ruleSwiftUI: Color { Color(nsColor: rule) }
+    /// The tear line on an open note, the peek and All Notes' card.
+    @MainActor var perforationSwiftUI: Color {
+        inkSwiftUI.opacity(DisplayOptions.increaseContrast ? 0.65 : 0.28)
+    }
 }
 
 extension NSAppearance {

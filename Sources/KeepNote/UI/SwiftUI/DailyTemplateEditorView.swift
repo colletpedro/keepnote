@@ -152,7 +152,7 @@ struct DailyTemplateCard: View {
                 SpineLabel(text: DailyTemplateText.title, color: color.inkSwiftUI.opacity(0.78), topInset: 4)
                 HStack {
                     Spacer()
-                    PerforationLine(color: color.inkSwiftUI.opacity(0.28))
+                    PerforationLine(color: color.perforationSwiftUI)
                         .padding(.vertical, 10)
                 }
             }

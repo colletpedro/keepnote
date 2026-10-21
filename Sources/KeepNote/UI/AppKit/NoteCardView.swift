@@ -203,8 +203,13 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         NoteCardShape.drawPerforation(
             at: edge == .right ? bounds.maxX - 9 : bounds.minX + 9,
             in: bounds,
-            color: color.ink.withAlphaComponent(0.20)
+            color: color.rule
         )
+        if DisplayOptions.increaseContrast {
+            color.rule.setStroke()
+            body.lineWidth = 1
+            body.stroke()
+        }
 
         // Floating and daily: the label gives up the top of the tab to the
         // markers, the floating one first, the calendar under it.
@@ -332,10 +337,14 @@ final class OverflowCardView: SpringView, KeyboardFocusable {
     override func draw(_ dirtyRect: NSRect) {
         let body = NoteCardShape.path(in: bounds, radius: 8, edge: edge)
         let fill = effectiveAppearance.isDark
-            ? NSColor(white: 0.24, alpha: 0.92)
-            : NSColor(white: 0.90, alpha: 0.95)
+            ? NSColor(white: 0.24, alpha: DisplayOptions.alpha(0.92))
+            : NSColor(white: 0.90, alpha: DisplayOptions.alpha(0.95))
         fill.setFill()
         body.fill()
+        if DisplayOptions.increaseContrast {
+            NSColor.labelColor.withAlphaComponent(0.6).setStroke()
+            body.stroke()
+        }
 
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 10.5, weight: .semibold),
@@ -427,7 +436,7 @@ final class PlusButtonView: SpringView, KeyboardFocusable {
         (isHovered ? base.blended(withFraction: 0.08, of: .systemBlue) ?? base : base).setFill()
         circle.fill()
 
-        NSColor(white: 0, alpha: 0.10).setStroke()
+        NSColor(white: 0, alpha: DisplayOptions.increaseContrast ? 0.6 : 0.10).setStroke()
         circle.lineWidth = 1
         circle.stroke()
 

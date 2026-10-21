@@ -79,6 +79,7 @@ MainActor.assumeIsolated {
     runAnnouncementTests()
     runDeckKeyboardTests()
     runChecklistKeyboardTests()
+    runDisplayOptionsTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }

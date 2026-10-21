@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         logLaunchKind()
+        DisplayOptions.observe()
 
         // A cold launch opens no window (the first launch's welcome aside):
         // a launch by the user and one by "Launch at login" cannot yet be told

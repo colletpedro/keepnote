@@ -621,6 +621,16 @@ MainActor.assumeIsolated {
         renderDeck("deck-left-20-hover", count: 20, hoverTab: 8, edge: .left)
         renderDeck("deck-left-pinned-hover", count: 30, hoverTab: 10, pinned: [2, 8, 14], edge: .left)
         renderDeck("deck-left-expiring", count: 6, pinned: [3], expiring: [0, 1, 4], edge: .left)
+        // With Increase contrast and Reduce transparency on.
+        DisplayOptions.increaseContrastOverride = true
+        DisplayOptions.reduceTransparencyOverride = true
+        renderDeck("deck-contrast", count: 6, hoverTab: 2, pinned: [3], expiring: [0, 4])
+        let contrastNote = try! deckStore.create(color: .sky, title: "Weekly plan", body: "- [ ] Send the invoice\n- [x] Book the room\n\nQuiet text here.", tags: ["work"])
+        let contrastModel = NoteEditorModel(note: contrastNote, store: deckStore)
+        render("editor-contrast", size: EdgeMetrics.detachedSize,
+               NoteEditorView(model: contrastModel, presentation: .detached, onClose: {}, onDelete: {}, onTogglePin: {}))
+        DisplayOptions.increaseContrastOverride = nil
+        DisplayOptions.reduceTransparencyOverride = nil
 
         // A screen with the deck open on each edge: a peek out of the hovered
         // tab, and a note anchored where it sits, both towards the middle.

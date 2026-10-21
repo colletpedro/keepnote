@@ -149,10 +149,12 @@ private struct UndoToastView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(DisplayOptions.reduceTransparency
+                      ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                      : AnyShapeStyle(.regularMaterial))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(.black.opacity(0.1), lineWidth: 1)
+                        .strokeBorder(.black.opacity(DisplayOptions.increaseContrast ? 0.6 : 0.1), lineWidth: 1)
                 )
         )
         .onAppear {

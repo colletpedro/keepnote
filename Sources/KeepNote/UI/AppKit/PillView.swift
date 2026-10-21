@@ -31,10 +31,15 @@ final class PillView: NSView {
         // Barely there: enough to hold the dashes together over a busy
         // wallpaper, not enough to read as a window.
         let background = effectiveAppearance.isDark
-            ? NSColor(white: 0.18, alpha: isHighlighted ? 0.55 : 0.28)
-            : NSColor(white: 1.0, alpha: isHighlighted ? 0.60 : 0.32)
+            ? NSColor(white: 0.18, alpha: DisplayOptions.alpha(isHighlighted ? 0.55 : 0.28))
+            : NSColor(white: 1.0, alpha: DisplayOptions.alpha(isHighlighted ? 0.60 : 0.32))
         background.setFill()
         container.fill()
+        if DisplayOptions.increaseContrast {
+            NSColor.labelColor.withAlphaComponent(0.6).setStroke()
+            container.lineWidth = 1
+            container.stroke()
+        }
 
         let dashX = (bounds.width - EdgeMetrics.dashWidth) / 2
         var y = bounds.height - EdgeMetrics.pillPadding - EdgeMetrics.dashHeight

@@ -20,7 +20,7 @@ final class HoverLabel {
 
         let box = NSView(frame: NSRect(origin: .zero, size: size))
         box.wantsLayer = true
-        box.layer?.backgroundColor = NSColor(white: 0.12, alpha: 0.94).cgColor
+        box.layer?.backgroundColor = NSColor(white: 0.12, alpha: DisplayOptions.alpha(0.94)).cgColor
         box.layer?.cornerRadius = 7
         field.frame.origin = NSPoint(x: 8, y: 4)
         box.addSubview(field)

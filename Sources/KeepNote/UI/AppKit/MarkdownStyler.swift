@@ -65,6 +65,12 @@ struct MarkdownStyler: Equatable {
     var accent: NSColor
     /// The spine colour, for the `==highlight==` wash only.
     var highlight: NSColor
+    /// Increase contrast: the quiet marks (markup, done tasks, quotes) are
+    /// drawn near full ink instead of faded.
+    var increaseContrast = false
+
+    /// A faded text alpha, held up with Increase contrast.
+    func faded(_ alpha: CGFloat) -> CGFloat { increaseContrast ? max(alpha, 0.78) : alpha }
 
     var baseFont: NSFont { NSFont.systemFont(ofSize: Self.baseSize) }
 
@@ -252,7 +258,7 @@ struct MarkdownStyler: Equatable {
         } else if let m = Self.quote.firstMatch(in: lineString, range: whole) {
             let depth = CGFloat(line.substring(with: m.range).filter { $0 == ">" }.count)
             let indent = Self.quoteIndent * depth
-            storage.addAttribute(.foregroundColor, value: ink.withAlphaComponent(0.72), range: range)
+            storage.addAttribute(.foregroundColor, value: ink.withAlphaComponent(faded(0.72)), range: range)
             if lineActive {
                 dim(abs(m.range), in: storage)
             } else {
@@ -296,7 +302,7 @@ struct MarkdownStyler: Equatable {
                 if done, m.range.length < line.length {
                     storage.addAttributes([
                         .strikethroughStyle: NSUnderlineStyle.single.rawValue,
-                        .foregroundColor: ink.withAlphaComponent(0.5)
+                        .foregroundColor: ink.withAlphaComponent(faded(0.5))
                     ], range: abs(NSRange(location: m.range.length, length: line.length - m.range.length)))
                 }
             } else if isOrdered {
@@ -324,7 +330,7 @@ struct MarkdownStyler: Equatable {
     private func codeAttributes(dim: Bool) -> [NSAttributedString.Key: Any] {
         [
             .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular),
-            .foregroundColor: dim ? ink.withAlphaComponent(0.45) : ink,
+            .foregroundColor: dim ? ink.withAlphaComponent(faded(0.45)) : ink,
             Self.decorationKey: Decoration.codeLine.rawValue
         ]
     }
@@ -369,7 +375,7 @@ struct MarkdownStyler: Equatable {
         for m in Self.comment.matches(in: string, range: scope) where !overlaps(m.range) {
             protected.append(m.range)
             let show = revealed(m.range)
-            storage.addAttribute(.foregroundColor, value: ink.withAlphaComponent(0.42), range: abs(m.range(at: 2)))
+            storage.addAttribute(.foregroundColor, value: ink.withAlphaComponent(faded(0.42)), range: abs(m.range(at: 2)))
             marker(m.range(at: 1), show: show)
             marker(NSRange(location: NSMaxRange(m.range) - 2, length: 2), show: show)
         }
@@ -616,7 +622,7 @@ struct MarkdownStyler: Equatable {
     }
 
     private func dim(_ range: NSRange, in storage: NSTextStorage) {
-        storage.addAttribute(.foregroundColor, value: ink.withAlphaComponent(0.4), range: range)
+        storage.addAttribute(.foregroundColor, value: ink.withAlphaComponent(faded(0.4)), range: range)
     }
 
     /// Near-zero width, invisible. `reserve` keeps room after the last hidden
