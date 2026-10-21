@@ -273,8 +273,9 @@ final class MarkdownTextView: NSTextView {
             if firstBaseline == nil { firstBaseline = baseline }
             lastBaseline = baseline
         }
-        let top = joinsAbove ? union.minY : (firstBaseline ?? union.minY) - font.ascender
-        let bottom = joinsBelow ? union.maxY : lastBaseline - font.descender
+        // Never past its lines, which are all a redraw of them repaints.
+        let top = joinsAbove ? union.minY : max(union.minY, (firstBaseline ?? union.minY) - font.ascender)
+        let bottom = joinsBelow ? union.maxY : min(union.maxY, lastBaseline - font.descender)
         let rect = NSRect(x: textContainerOrigin.x + container.lineFragmentPadding,
                           y: textContainerOrigin.y + top, width: 3, height: max(0, bottom - top))
         return (rect, joinsAbove, joinsBelow)

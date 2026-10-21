@@ -92,3 +92,6 @@ swiftc \
     "${APP_SOURCES[@]}" "$ROOT/Tests/Harness.swift" "${INTEGRATION[@]}"
 
 KEEPNOTE_LANGUAGE=en KEEPNOTE_LPROJ_ROOT="$ROOT/Resources" "$OUT/run-integration-tests"
+
+# The same buttons in Portuguese, where the words run longer: none may be cut.
+KEEPNOTE_TESTS=buttons KEEPNOTE_LANGUAGE=pt-BR KEEPNOTE_LPROJ_ROOT="$ROOT/Resources" "$OUT/run-integration-tests"

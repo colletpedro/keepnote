@@ -811,32 +811,50 @@ struct NoteEditorView: View {
         })
     }
 
+    /// Colours and, on a floating note, Delete, Mark complete and Close on
+    /// one line; on a note narrowed (or a longer language, a larger Text
+    /// size) the buttons take a line of their own rather than being cut.
     private var footerControls: some View {
-        HStack(spacing: 10) {
-            colorRow
-
-            Spacer(minLength: 8)
-
-            // Anchored, the footer carries the colours and the way out. Lifted
-            // off the edge, the note has to carry everything.
-            if presentation == .detached {
-                Button(L("Delete"), action: onDelete)
-                    .buttonStyle(InkFocusButtonStyle(color: model.color))
-                    .fixedSize()
-                    .help(shortcuts.tooltip(L("Delete"), .note(.delete)))
-                    .foregroundStyle(Color(nsColor: NSColor(srgbRed: 0.80, green: 0.24, blue: 0.22, alpha: 1)))
-
-                Button(model.state == .archived ? L("Reopen") : L("Mark complete")) {
-                    model.toggleComplete()
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                colorRow
+                Spacer(minLength: 8)
+                footerButtons
+            }
+            VStack(alignment: .trailing, spacing: 8) {
+                HStack {
+                    colorRow
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(NoteFooterButtonStyle(color: model.color))
-                .help(shortcuts.tooltip(model.state == .archived ? L("Reopen") : L("Mark complete"), .note(.archive)))
-
-                Button(L("Close"), action: onClose)
-                    .buttonStyle(NoteFooterButtonStyle(color: model.color))
+                HStack(spacing: 10) {
+                    Spacer(minLength: 0)
+                    footerButtons
+                }
             }
         }
         .scaledFont(11.5)
+    }
+
+    // Anchored, the footer carries the colours and the way out. Lifted off
+    // the edge, the note has to carry everything.
+    @ViewBuilder
+    private var footerButtons: some View {
+        if presentation == .detached {
+            Button(L("Delete"), action: onDelete)
+                .buttonStyle(InkFocusButtonStyle(color: model.color))
+                .fixedSize()
+                .help(shortcuts.tooltip(L("Delete"), .note(.delete)))
+                .foregroundStyle(Color(nsColor: NSColor(srgbRed: 0.80, green: 0.24, blue: 0.22, alpha: 1)))
+
+            Button(model.state == .archived ? L("Reopen") : L("Mark complete")) {
+                model.toggleComplete()
+            }
+            .buttonStyle(NoteFooterButtonStyle(color: model.color))
+            .help(shortcuts.tooltip(model.state == .archived ? L("Reopen") : L("Mark complete"), .note(.archive)))
+
+            Button(L("Close"), action: onClose)
+                .buttonStyle(NoteFooterButtonStyle(color: model.color))
+        }
     }
 }
 

@@ -826,6 +826,20 @@ struct NoteReadingPane: View {
                     infoButtons
                 }
             }
+            // Narrower still (a small window, a longer language): the
+            // buttons on one line, the two choices on the next.
+            VStack(alignment: .trailing, spacing: 6) {
+                HStack {
+                    dates
+                    Spacer(minLength: 0)
+                }
+                HStack(spacing: 8) { actionButtons }
+                    .lineLimit(1)
+                    .fixedSize()
+                HStack(spacing: 8) { placeToggles }
+                    .lineLimit(1)
+                    .fixedSize()
+            }
         }
         .controlSize(.small)
     }
@@ -844,11 +858,7 @@ struct NoteReadingPane: View {
     private var infoButtons: some View {
         HStack(spacing: 8) {
             Button(L("Open")) { actions.open(note.id) }
-            Toggle(L("Pin to Center"), isOn: Binding(get: { note.isPinned }, set: { actions.setPinned([note.id], $0) }))
-                .toggleStyle(.checkbox)
-                .disabled(note.state == .archived)
-            Toggle(L("Keep on Deck"), isOn: Binding(get: { note.keepOnDeck }, set: { actions.setKeepOnDeck([note.id], $0) }))
-                .toggleStyle(.checkbox)
+            placeToggles
             if note.state == .archived {
                 Button(L("Move to Deck")) { actions.unarchive([note.id]) }
             } else {
@@ -858,6 +868,26 @@ struct NoteReadingPane: View {
         }
         .lineLimit(1)
         .fixedSize()
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        Button(L("Open")) { actions.open(note.id) }
+        if note.state == .archived {
+            Button(L("Move to Deck")) { actions.unarchive([note.id]) }
+        } else {
+            Button(L("Archive")) { actions.archive([note.id]) }
+        }
+        Button(L("Export\u{2026}")) { actions.export([note.id]) }
+    }
+
+    @ViewBuilder
+    private var placeToggles: some View {
+        Toggle(L("Pin to Center"), isOn: Binding(get: { note.isPinned }, set: { actions.setPinned([note.id], $0) }))
+            .toggleStyle(.checkbox)
+            .disabled(note.state == .archived)
+        Toggle(L("Keep on Deck"), isOn: Binding(get: { note.keepOnDeck }, set: { actions.setKeepOnDeck([note.id], $0) }))
+            .toggleStyle(.checkbox)
     }
 
     private static let formatter: DateFormatter = {

@@ -30,6 +30,12 @@ swizzle(NSApplication.self, #selector(NSApplication.activate(ignoringOtherApps:)
 
 MainActor.assumeIsolated {
     NSApplication.shared.setActivationPolicy(.prohibited)
+    // Scripts/test.sh runs this runner a second time in Portuguese, for
+    // the buttons alone.
+    if ProcessInfo.processInfo.environment["KEEPNOTE_TESTS"] == "buttons" {
+        runButtonTextTests()
+        finish()
+    }
     runLockedNoteTests()
     runLastEditTests()
     runEditedDateTests()
@@ -101,6 +107,9 @@ MainActor.assumeIsolated {
     runLinkHoverTests()
     runNoNetworkSourceTests()
     runAttachmentStorageTests()
+    runMarkGeometryTests()
+    runButtonTextTests()
+    runEllipsisTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }

@@ -79,7 +79,7 @@ enum EdgeMetrics {
     /// Floating: the note lifted off the edge, its spine kept, full controls.
     /// 420 pt of paper plus the 48 pt spine.
     static let detachedSize = CGSize(width: 420 + tabWidth, height: 440)
-    static let minimumNoteSize = CGSize(width: 280, height: 220)
+    static let minimumNoteSize = CGSize(width: 360, height: 240)
 
     // MARK: Timing
 
