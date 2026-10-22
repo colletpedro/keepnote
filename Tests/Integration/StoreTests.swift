@@ -216,7 +216,7 @@ func runBatchTests() {
     let created = try! store.create((0..<50).map { NoteDraft(title: "n\($0)") })
     expect("batch: one change for fifty notes", String(events.count), "1")
     expect("batch: one redraw", String(publishes), "1")
-    expectTrue("batch: the last created is on top", store.notes.first?.id == created.last?.id)
+    expectTrue("batch: the last created is at the end", store.notes.last?.id == created.last?.id)
     expectTrue("batch: colours still walk the palette", created[0].color.next == created[1].color)
 
     events.removeAll()

@@ -251,25 +251,31 @@ final class NoteStore: ObservableObject {
         try create([NoteDraft(title: title, body: body, color: color, tags: tags)])[0]
     }
 
-    /// Several notes in one transaction and one change. Each goes on top of
-    /// the one before, the way creating them one at a time would leave them.
+    /// The place after every note there is: where a note that is new to the
+    /// stack goes, at the foot of it beside the "+".
+    private var endIndex: Int {
+        (notes.map(\.sortIndex).max() ?? -1) + 1
+    }
+
+    /// Several notes in one transaction and one change. Each goes at the end,
+    /// after the one before, the way creating them one at a time would leave them.
     @discardableResult
     func create(_ drafts: [NoteDraft]) throws -> [Note] {
         guard !drafts.isEmpty else { return [] }
-        var topIndex = (notes.map(\.sortIndex).min() ?? 0) - 1
+        var nextIndex = endIndex
         var previousColor = notes.max(by: { $0.createdAt < $1.createdAt })?.color
         let created = drafts.map { draft -> Note in
             // New notes walk the palette instead of repeating one colour, so
             // a stack is legible at a glance.
             let color = draft.color ?? previousColor?.next ?? .default
             previousColor = color
-            defer { topIndex -= 1 }
+            defer { nextIndex += 1 }
             return settleDaily(Note(
                 title: draft.title,
                 body: draft.body,
                 color: color,
                 state: .active,
-                sortIndex: topIndex,
+                sortIndex: nextIndex,
                 tags: Note.normalizeTags(draft.tags)
             ))
         }
@@ -733,6 +739,15 @@ final class NoteStore: ObservableObject {
             }
         }
         guard !accepted.isEmpty else { return [] }
+        // A note new to this Mac goes where a new note goes: at the end, the
+        // oldest first. Its place in the stack is not in the file.
+        var arrival = endIndex
+        for position in accepted.indices.filter({ accepted[$0].isNew })
+            .sorted(by: { (accepted[$0].note.createdAt, accepted[$0].note.id.uuidString)
+                < (accepted[$1].note.createdAt, accepted[$1].note.id.uuidString) }) {
+            accepted[position].note.sortIndex = arrival
+            arrival += 1
+        }
         for entry in accepted where entry.isNew { tombstones.removeValue(forKey: entry.note.id) }
         apply(accepted.map(\.note))
         writer.save(accepted.map { $0.isNew ? .insert($0.note) : .update($0.note) })

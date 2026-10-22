@@ -51,6 +51,7 @@ MainActor.assumeIsolated {
     runDailyIntroTests()
     runOpenArchivedDailyTests()
     runNoteScreenTests()
+    runNewNoteOrderTests()
     runDeckTests()
     runDeckClickTests()
     runPinnedDeckTests()
