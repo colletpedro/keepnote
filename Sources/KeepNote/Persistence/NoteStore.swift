@@ -32,6 +32,15 @@ struct NoteDraft: Sendable {
     var body: String = ""
     var color: NoteColor?
     var tags: [String] = []
+    /// The group the note is born in, if any.
+    var groupID: UUID?
+}
+
+/// A group as it is kept: with the moment it was deleted, if it was. A deleted
+/// group keeps its record so that sync can tell the other Macs it is gone.
+struct GroupRecord: Equatable, Sendable {
+    var group: NoteGroup
+    var deletedAt: Date?
 }
 
 /// The single source of truth for notes.
@@ -55,6 +64,16 @@ final class NoteStore: ObservableObject {
 
     /// Notes inside their undo window: gone from the UI, still in the database.
     @Published private(set) var pendingDeletions: [UUID: Note] = [:]
+
+    /// The groups, in the order they stand. Deleted ones are not here.
+    @Published private(set) var groups: [NoteGroup] = []
+
+    /// Every group there is, deleted ones too, by id.
+    private var groupRecords: [UUID: GroupRecord] = [:]
+
+    /// Fires with the id of a group after it changes, is made or is deleted, so
+    /// sync can carry it to the folder.
+    let groupChanges = PassthroughSubject<(UUID, ChangeOrigin), Never>()
 
     /// Fires after every change so sync and the panels can react.
     let changes = PassthroughSubject<(StoreChange, ChangeOrigin), Never>()
@@ -159,6 +178,9 @@ final class NoteStore: ObservableObject {
         note.dailyDay = settled.day
         note.dailyKept = settled.kept
         note.lastOpenedDay = AutoArchive.settled(note.lastOpenedDay, today: today)
+        // A daily is in the Daily group of the deck, which is not one of the
+        // groups here: it names none.
+        if note.isDaily { note.groupID = nil }
         return note
     }
 
@@ -201,6 +223,8 @@ final class NoteStore: ObservableObject {
         pendingDeletions = deleted
         tombstones = loaded.tombstones
         dailyTemplate = loaded.template
+        groupRecords = Dictionary(loaded.groups.map { ($0.group.id, $0) }, uniquingKeysWith: { first, _ in first })
+        publishGroups()
         attachments = Dictionary(loaded.attachments.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         changes.send((.reloaded, .local))
     }
@@ -247,8 +271,9 @@ final class NoteStore: ObservableObject {
     // MARK: - Creating and updating
 
     @discardableResult
-    func create(color: NoteColor? = nil, title: String = "", body: String = "", tags: [String] = []) throws -> Note {
-        try create([NoteDraft(title: title, body: body, color: color, tags: tags)])[0]
+    func create(color: NoteColor? = nil, title: String = "", body: String = "", tags: [String] = [],
+                group: UUID? = nil) throws -> Note {
+        try create([NoteDraft(title: title, body: body, color: color, tags: tags, groupID: group)])[0]
     }
 
     /// The place after every note there is: where a note that is new to the
@@ -276,7 +301,9 @@ final class NoteStore: ObservableObject {
                 color: color,
                 state: .active,
                 sortIndex: nextIndex,
-                tags: Note.normalizeTags(draft.tags)
+                tags: Note.normalizeTags(draft.tags),
+                // Only a group there is, and never for a daily.
+                groupID: draft.groupID.flatMap { id in groupRecords[id].flatMap { $0.deletedAt == nil ? id : nil } }
             ))
         }
         insert(created, origin: .local)
@@ -335,6 +362,7 @@ final class NoteStore: ObservableObject {
             previousTags: before.tags, tags: note.tags, day: note.dailyDay, kept: note.dailyKept, today: today)
         note.dailyDay = daily.day
         note.dailyKept = daily.kept
+        if note.isDaily { note.groupID = nil }
         // Locked notes are read-only: text and title stay as they are.
         if note.isLocked {
             note.title = before.title
@@ -676,6 +704,131 @@ final class NoteStore: ObservableObject {
         changes.send((.reloaded, .local))
     }
 
+    // MARK: - Groups
+
+    private func publishGroups() {
+        groups = NoteGroup.sorted(groupRecords.values.filter { $0.deletedAt == nil }.map(\.group))
+    }
+
+    /// The group with this id, if it exists (a deleted one does not).
+    func group(id: UUID) -> NoteGroup? {
+        groupRecords[id].flatMap { $0.deletedAt == nil ? $0.group : nil }
+    }
+
+    /// The notes in `id`, on the deck or archived, in the stack's order.
+    func notes(inGroup id: UUID) -> [Note] {
+        GroupLibrary.members(of: id, in: notes, groups: groups)
+    }
+
+    /// A strictly later moment than anything the group last carried, whatever
+    /// the clock says, so an edit always wins over what it replaced.
+    private func stamp(after previous: Date?) -> Date {
+        max(Date(), (previous ?? .distantPast).addingTimeInterval(0.001))
+    }
+
+    private func commit(_ record: GroupRecord, origin: ChangeOrigin) {
+        groupRecords[record.group.id] = record
+        publishGroups()
+        writer.save([.group(record)])
+        groupChanges.send((record.group.id, origin))
+    }
+
+    /// A new group, last in the order. The name is cleaned; no name, no group
+    /// (`nil`). Without a colour it takes the one after the last group's.
+    @discardableResult
+    func createGroup(name: String, color: GroupColor? = nil) -> NoteGroup? {
+        guard let name = NoteGroup.cleaned(name) else { return nil }
+        let chosen = color ?? groups.last?.color.next ?? .default
+        let now = Date()
+        let group = NoteGroup(name: name, color: chosen, order: (groups.map(\.order).max() ?? -1) + 1,
+                              createdAt: now, updatedAt: now)
+        commit(GroupRecord(group: group, deletedAt: nil), origin: .local)
+        return group
+    }
+
+    @discardableResult
+    func renameGroup(id: UUID, to name: String) -> Bool {
+        guard var group = group(id: id), let name = NoteGroup.cleaned(name), name != group.name else { return false }
+        group.name = name
+        group.updatedAt = stamp(after: group.updatedAt)
+        commit(GroupRecord(group: group, deletedAt: nil), origin: .local)
+        return true
+    }
+
+    func setGroupColor(_ color: GroupColor, id: UUID) {
+        guard var group = group(id: id), group.color != color else { return }
+        group.color = color
+        group.updatedAt = stamp(after: group.updatedAt)
+        commit(GroupRecord(group: group, deletedAt: nil), origin: .local)
+    }
+
+    /// Puts the groups in the order of `ids` (any not named keep their order,
+    /// after those named). Only the groups whose place changed are written.
+    func reorderGroups(ids: [UUID]) {
+        let ordered = NoteGroup.reordered(groups, ids: ids)
+        for (index, var group) in ordered.enumerated() where group.order != index {
+            group.order = index
+            group.updatedAt = stamp(after: group.updatedAt)
+            commit(GroupRecord(group: group, deletedAt: nil), origin: .local)
+        }
+    }
+
+    /// One group to another place in the order.
+    func moveGroup(id: UUID, to destination: Int) {
+        var ids = groups.map(\.id)
+        guard let from = ids.firstIndex(of: id) else { return }
+        ids.remove(at: from)
+        ids.insert(id, at: max(0, min(ids.count, destination)))
+        reorderGroups(ids: ids)
+    }
+
+    /// Deletes the group. Its notes are not deleted: they are left in no
+    /// group, each written as the change it is, so the other Macs hear it from
+    /// the notes as well as from the group.
+    func deleteGroup(id: UUID) throws {
+        guard var group = group(id: id) else { return }
+        for note in notes where note.groupID == id {
+            try update(id: note.id) { $0.groupID = nil }
+        }
+        let deletedAt = stamp(after: group.updatedAt)
+        group.updatedAt = deletedAt
+        commit(GroupRecord(group: group, deletedAt: deletedAt), origin: .local)
+    }
+
+    /// Moves notes into a group, or out of every group (`nil`). A daily stays
+    /// in the Daily group; one that is already where it is asked to go is not
+    /// written. Returns how many were moved.
+    @discardableResult
+    func setGroup(_ groupID: UUID?, for ids: [UUID]) throws -> Int {
+        if let groupID, group(id: groupID) == nil { return 0 }
+        var moved = 0
+        for id in ids {
+            guard let note = note(id: id), !note.isDaily, note.groupID != groupID else { continue }
+            try update(id: id) { $0.groupID = groupID }
+            moved += 1
+        }
+        return moved
+    }
+
+    /// Every group the sync layer should mirror, deleted ones included.
+    func groupRecordsForSync() -> [GroupRecord] {
+        groupRecords.values.sorted { $0.group.id.uuidString < $1.group.id.uuidString }
+    }
+
+    func groupRecord(id: UUID) -> GroupRecord? { groupRecords[id] }
+
+    /// Applies a group that arrived from the sync folder or an import: taken
+    /// only when it is new here or strictly newer than the copy here. A
+    /// `deletedAt` is a deletion. Returns whether it was taken.
+    @discardableResult
+    func applyIncomingGroup(_ group: NoteGroup, deletedAt: Date? = nil, origin: ChangeOrigin = .sync) -> Bool {
+        if let current = groupRecords[group.id], !current.group.accepts(group) { return false }
+        var incoming = group
+        if let deletedAt { incoming.updatedAt = max(incoming.updatedAt, deletedAt) }
+        commit(GroupRecord(group: incoming, deletedAt: deletedAt), origin: origin)
+        return true
+    }
+
     // MARK: - Sync ingress
 
     /// Applies a note that arrived from the sync folder.
@@ -788,6 +941,7 @@ final class StoreWriter: @unchecked Sendable {
         /// Kept once: the same bytes already there are left as they are.
         case attachment(AttachmentInfo, Data)
         case removeAttachments([String])
+        case group(GroupRecord)
     }
 
     /// Called on the writer's queue when a batch could not be written.
@@ -849,14 +1003,15 @@ final class StoreWriter: @unchecked Sendable {
     }
 
     /// Every row, bodies opened, once the queue has caught up.
-    func load() throws -> (notes: [Note], tombstones: [UUID: Date], template: DailyTemplate, attachments: [AttachmentInfo]) {
+    func load() throws -> (notes: [Note], tombstones: [UUID: Date], template: DailyTemplate,
+                           attachments: [AttachmentInfo], groups: [GroupRecord]) {
         try queue.sync { [self] in
             let notes = try db.query(
                 """
                 SELECT id, title, body_ciphertext, nonce, color, state, sort_index,
                        tags, created_at, updated_at, deleted_at, daily_day, daily_kept,
                        keep_on_deck, pinned_at, last_opened_day, auto_archived_day,
-                       edited_at
+                       edited_at, group_id
                 FROM notes
                 ORDER BY sort_index ASC, updated_at DESC;
                 """
@@ -896,6 +1051,7 @@ final class StoreWriter: @unchecked Sendable {
                     pinnedAt: statement.optionalDate(at: 14),
                     lastOpenedDay: statement.isNull(at: 15) ? nil : DailyDay(string: statement.string(at: 15)),
                     autoArchivedDay: statement.isNull(at: 16) ? nil : DailyDay(string: statement.string(at: 16)),
+                    groupID: statement.isNull(at: 18) ? nil : statement.uuid(at: 18),
                     isLocked: isLocked
                 )
             }
@@ -909,7 +1065,16 @@ final class StoreWriter: @unchecked Sendable {
                 AttachmentInfo(id: s.string(at: 0), name: s.string(at: 1), type: s.string(at: 2), size: s.int(at: 3),
                                pixelWidth: s.int(at: 4), pixelHeight: s.int(at: 5), createdAt: s.date(at: 6))
             }
-            return (notes, tombstones, try loadTemplate(), attachments)
+            let groups = try db.query(
+                "SELECT id, name, color, ordinal, created_at, updated_at, deleted_at FROM note_groups;"
+            ) { s -> GroupRecord? in
+                guard let id = s.uuid(at: 0) else { return nil }
+                return GroupRecord(
+                    group: NoteGroup(id: id, name: s.string(at: 1), color: GroupColor.resolve(rawValue: s.int(at: 2)),
+                                     order: s.int(at: 3), createdAt: s.date(at: 4), updatedAt: s.date(at: 5)),
+                    deletedAt: s.optionalDate(at: 6))
+            }.compactMap { $0 }
+            return (notes, tombstones, try loadTemplate(), attachments, groups)
         }
     }
 
@@ -946,6 +1111,10 @@ final class StoreWriter: @unchecked Sendable {
         note.lastOpenedDay.map { .text($0.string) } ?? .null
     }
 
+    private static func groupValue(_ note: Note) -> SQLiteValue {
+        note.groupID.map { .uuid($0) } ?? .null
+    }
+
     private func perform(_ operation: Operation) throws {
         switch operation {
         case .insert(let note):
@@ -954,8 +1123,9 @@ final class StoreWriter: @unchecked Sendable {
                 """
                 INSERT INTO notes (id, title, body_ciphertext, nonce, color, state,
                                    sort_index, tags, created_at, updated_at, deleted_at,
-                                   daily_day, daily_kept, keep_on_deck, pinned_at, last_opened_day, auto_archived_day, edited_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                                   daily_day, daily_kept, keep_on_deck, pinned_at, last_opened_day, auto_archived_day, edited_at,
+                                   group_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 [
                     .uuid(note.id), .text(note.title), .blob(sealed.ciphertext), .blob(sealed.nonce),
@@ -963,7 +1133,7 @@ final class StoreWriter: @unchecked Sendable {
                     .text(note.tagsCSV), .date(note.createdAt), .date(note.updatedAt),
                     .optionalDate(note.deletedAt), Self.dailyDay(note), .integer(note.dailyKept ? 1 : 0),
                     .integer(note.keepOnDeck ? 1 : 0), .optionalDate(note.pinnedAt), Self.openedDay(note),
-                    Self.autoArchivedDay(note), .date(note.editedAt),
+                    Self.autoArchivedDay(note), .date(note.editedAt), Self.groupValue(note),
                 ]
             )
             try db.run("DELETE FROM tombstones WHERE id = ?;", [.uuid(note.id)])
@@ -976,7 +1146,8 @@ final class StoreWriter: @unchecked Sendable {
                 UPDATE notes
                    SET title = ?, color = ?, state = ?, sort_index = ?, tags = ?,
                        created_at = ?, updated_at = ?, deleted_at = ?,
-                       daily_day = ?, daily_kept = ?, keep_on_deck = ?, pinned_at = ?, last_opened_day = ?, auto_archived_day = ?, edited_at = ?
+                       daily_day = ?, daily_kept = ?, keep_on_deck = ?, pinned_at = ?, last_opened_day = ?, auto_archived_day = ?, edited_at = ?,
+                       group_id = ?
                  WHERE id = ?;
                 """,
                 [
@@ -984,7 +1155,8 @@ final class StoreWriter: @unchecked Sendable {
                     .integer(note.sortIndex), .text(note.tagsCSV), .date(note.createdAt),
                     .date(note.updatedAt), .optionalDate(note.deletedAt),
                     Self.dailyDay(note), .integer(note.dailyKept ? 1 : 0),
-                    .integer(note.keepOnDeck ? 1 : 0), .optionalDate(note.pinnedAt), Self.openedDay(note), Self.autoArchivedDay(note), .date(note.editedAt), .uuid(note.id),
+                    .integer(note.keepOnDeck ? 1 : 0), .optionalDate(note.pinnedAt), Self.openedDay(note), Self.autoArchivedDay(note), .date(note.editedAt),
+                    Self.groupValue(note), .uuid(note.id),
                 ]
             )
             try indexForSearch(note)
@@ -995,7 +1167,8 @@ final class StoreWriter: @unchecked Sendable {
                 UPDATE notes
                    SET title = ?, body_ciphertext = ?, nonce = ?, color = ?, state = ?,
                        sort_index = ?, tags = ?, created_at = ?, updated_at = ?, deleted_at = ?,
-                       daily_day = ?, daily_kept = ?, keep_on_deck = ?, pinned_at = ?, last_opened_day = ?, auto_archived_day = ?, edited_at = ?
+                       daily_day = ?, daily_kept = ?, keep_on_deck = ?, pinned_at = ?, last_opened_day = ?, auto_archived_day = ?, edited_at = ?,
+                       group_id = ?
                  WHERE id = ?;
                 """,
                 [
@@ -1003,7 +1176,8 @@ final class StoreWriter: @unchecked Sendable {
                     .integer(note.color.rawValue), .text(note.state.rawValue), .integer(note.sortIndex),
                     .text(note.tagsCSV), .date(note.createdAt), .date(note.updatedAt),
                     .optionalDate(note.deletedAt), Self.dailyDay(note), .integer(note.dailyKept ? 1 : 0),
-                    .integer(note.keepOnDeck ? 1 : 0), .optionalDate(note.pinnedAt), Self.openedDay(note), Self.autoArchivedDay(note), .date(note.editedAt), .uuid(note.id),
+                    .integer(note.keepOnDeck ? 1 : 0), .optionalDate(note.pinnedAt), Self.openedDay(note), Self.autoArchivedDay(note), .date(note.editedAt),
+                    Self.groupValue(note), .uuid(note.id),
                 ]
             )
             try indexForSearch(note)
@@ -1032,6 +1206,16 @@ final class StoreWriter: @unchecked Sendable {
                 """,
                 [.text(info.id), .text(info.name), .text(info.type), .integer(info.size), .integer(info.pixelWidth),
                  .integer(info.pixelHeight), .date(info.createdAt), .blob(sealed.ciphertext), .blob(sealed.nonce)]
+            )
+        case .group(let record):
+            try db.run(
+                """
+                INSERT OR REPLACE INTO note_groups (id, name, color, ordinal, created_at, updated_at, deleted_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?);
+                """,
+                [.uuid(record.group.id), .text(record.group.name), .integer(record.group.color.rawValue),
+                 .integer(record.group.order), .date(record.group.createdAt), .date(record.group.updatedAt),
+                 .optionalDate(record.deletedAt)]
             )
         case .removeAttachments(let ids):
             for id in ids { try db.run("DELETE FROM attachments WHERE id = ?;", [.text(id)]) }

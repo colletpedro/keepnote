@@ -22,6 +22,8 @@ enum AppPaths {
     static let noteFileExtension = "hmnote"
     /// Extension of the daily template in the sync folder.
     static let templateFileExtension = "hmtemplate"
+    /// Extension of one group in the sync folder.
+    static let groupFileExtension = "hmgroup"
     /// Extension of the full archive package (all notes plus metadata).
     static let archiveFileExtension = "hmnotearchive"
 }

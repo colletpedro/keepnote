@@ -6,7 +6,7 @@ import Foundation
 /// that is deliberate: it is what lets the stack order, the state filter and
 /// the title/tag index work without ever touching the key.
 enum NoteSchema {
-    static let currentVersion: Int32 = 12
+    static let currentVersion: Int32 = 13
 
     static func migrate(_ db: SQLiteDatabase) throws {
         if db.userVersion < 1 {
@@ -57,6 +57,35 @@ enum NoteSchema {
             try migrateToV12(db)
             db.userVersion = 12
         }
+        if db.userVersion < 13 {
+            try migrateToV13(db)
+            db.userVersion = 13
+        }
+    }
+
+    /// Groups: a table of their own, and on each note the group it is in
+    /// (`NULL` for none, which is every note there already is). A group that is
+    /// deleted keeps its row, with `deleted_at` set, so that sync can tell the
+    /// other Macs it is gone. Nothing is rewritten: the notes stay as they were.
+    private static func migrateToV13(_ db: SQLiteDatabase) throws {
+        // Only when it is not there already, like V11: a database opened by a
+        // build that knew the column and then by one that re-runs this step
+        // stays whole.
+        let columns = try db.query("PRAGMA table_info(notes);") { $0.string(at: 1) }
+        if !columns.contains("group_id") {
+            try db.execute("ALTER TABLE notes ADD COLUMN group_id TEXT;")
+        }
+        try db.execute("""
+        CREATE TABLE IF NOT EXISTS note_groups (
+            id          TEXT PRIMARY KEY NOT NULL,
+            name        TEXT NOT NULL DEFAULT '',
+            color       INTEGER NOT NULL DEFAULT 8,
+            ordinal     INTEGER NOT NULL DEFAULT 0,
+            created_at  REAL NOT NULL,
+            updated_at  REAL NOT NULL,
+            deleted_at  REAL
+        );
+        """)
     }
 
     /// Attachments: one row per distinct file, keyed by the SHA-256 of its

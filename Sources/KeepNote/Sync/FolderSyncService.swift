@@ -59,6 +59,8 @@ final class FolderSyncService: NSObject, ObservableObject {
     private var folderHolds: [UUID: Held] = [:]
     /// The same for the daily template's file.
     private var templateHeld: Held?
+    /// And for each group's file.
+    private var groupsHeld: [UUID: Held] = [:]
     /// Attachments already written to (or found in) the folder's
     /// `Attachments` folder: plain copies, named `<id>.<extension>`.
     private var attachmentsInFolder: Set<String> = []
@@ -110,6 +112,14 @@ final class FolderSyncService: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
 
+        store.groupChanges
+            .sink { [weak self] event in
+                let (id, origin) = event
+                guard origin != .sync else { return }
+                self?.pushGroup(id: id)
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .keepNoteSyncSettingsChanged)
             .sink { [weak self] _ in self?.reconfigure() }
             .store(in: &cancellables)
@@ -144,6 +154,7 @@ final class FolderSyncService: NSObject, ObservableObject {
         status = .active
         folderHolds = [:]
         templateHeld = nil
+        groupsHeld = [:]
         let stamps = stamps
         io.async { stamps.dates = [:] }
         // Read the folder, then write what is newer here: a note created while
@@ -260,7 +271,7 @@ final class FolderSyncService: NSObject, ObservableObject {
         let query = NSMetadataQuery()
         query.searchScopes = [NSMetadataQueryUbiquitousDataScope, NSMetadataQueryUbiquitousDocumentsScope]
         query.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
-            AppPaths.noteFileExtension, AppPaths.templateFileExtension,
+            AppPaths.noteFileExtension, AppPaths.templateFileExtension, AppPaths.groupFileExtension,
         ].map { NSPredicate(format: "%K LIKE %@", NSMetadataItemFSNameKey, "*.\($0)") })
 
         NotificationCenter.default.addObserver(
@@ -315,6 +326,8 @@ final class FolderSyncService: NSObject, ObservableObject {
                hasConflicts {
                 if url.pathExtension == AppPaths.templateFileExtension {
                     resolveTemplateConflicts(at: url)
+                } else if url.pathExtension == AppPaths.groupFileExtension {
+                    resolveGroupConflicts(at: url)
                 } else {
                     resolveConflicts(at: url)
                 }
@@ -387,6 +400,30 @@ final class FolderSyncService: NSObject, ObservableObject {
         }
     }
 
+    /// A group's version of the same: the newest wins, the others are kept
+    /// beside it as `.conflict` files.
+    private func resolveGroupConflicts(at url: URL) {
+        let presenter = presenter
+        io.async { [weak self] in
+            var candidates: [GroupRecord] = []
+            if let current = Self.readGroup(at: url, presenter: presenter) { candidates.append(current) }
+            for version in NSFileVersion.unresolvedConflictVersionsOfItem(at: url) ?? [] {
+                if let text = try? String(contentsOf: version.url, encoding: .utf8),
+                   let parsed = GroupFile.parse(text) {
+                    candidates.append(parsed)
+                    let keep = url
+                        .deletingPathExtension()
+                        .appendingPathExtension("conflict-\(Int(version.modificationDate?.timeIntervalSince1970 ?? 0)).\(AppPaths.groupFileExtension)")
+                    try? FileManager.default.copyItem(at: version.url, to: keep)
+                }
+                version.isResolved = true
+            }
+            try? NSFileVersion.removeOtherVersionsOfItem(at: url)
+            guard let winner = candidates.max(by: { $0.group.updatedAt < $1.group.updatedAt }) else { return }
+            Task { @MainActor in self?.applyGroups([winner]) }
+        }
+    }
+
     // MARK: - Pull
 
     /// Files are read on `io`, in order with the writes, and applied back here
@@ -408,7 +445,12 @@ final class FolderSyncService: NSObject, ObservableObject {
                 .filter { $0.pathExtension == AppPaths.templateFileExtension }
                 .compactMap { Self.readTemplateIfChanged(at: $0, presenter: presenter, stamps: stamps) }
                 .max { $0.updatedAt < $1.updatedAt }
+            let groups = contents
+                .filter { $0.pathExtension == AppPaths.groupFileExtension }
+                .compactMap { Self.readGroupIfChanged(at: $0, presenter: presenter, stamps: stamps) }
             Task { @MainActor in
+                // The groups first, so the notes find theirs waiting.
+                self?.applyGroups(groups)
                 self?.apply(files)
                 if let template { self?.applyTemplate(template) }
                 self?.importMissingAttachments()
@@ -434,7 +476,8 @@ final class FolderSyncService: NSObject, ObservableObject {
         }
         let wanted = urls.filter { $0.pathExtension == AppPaths.noteFileExtension }
         let wantedTemplates = urls.filter { $0.pathExtension == AppPaths.templateFileExtension }
-        guard !wanted.isEmpty || !wantedTemplates.isEmpty else { return }
+        let wantedGroups = urls.filter { $0.pathExtension == AppPaths.groupFileExtension }
+        guard !wanted.isEmpty || !wantedTemplates.isEmpty || !wantedGroups.isEmpty else { return }
         let presenter = presenter
         let stamps = stamps
         io.async { [weak self] in
@@ -442,7 +485,9 @@ final class FolderSyncService: NSObject, ObservableObject {
             let template = wantedTemplates
                 .compactMap { Self.readTemplateIfChanged(at: $0, presenter: presenter, stamps: stamps) }
                 .max { $0.updatedAt < $1.updatedAt }
+            let groups = wantedGroups.compactMap { Self.readGroupIfChanged(at: $0, presenter: presenter, stamps: stamps) }
             Task { @MainActor in
+                if !groups.isEmpty { self?.applyGroups(groups) }
                 if !files.isEmpty { self?.apply(files) }
                 if let template { self?.applyTemplate(template) }
                 if !files.isEmpty { self?.importMissingAttachments() }
@@ -507,6 +552,34 @@ final class FolderSyncService: NSObject, ObservableObject {
                 }
             }
         }
+    }
+
+    private func applyGroups(_ records: [GroupRecord]) {
+        for record in records {
+            // Our own write coming back around, or a file already applied.
+            if let held = groupsHeld[record.group.id], held.matches(record.group.updatedAt) { continue }
+            groupsHeld[record.group.id] = Held(date: record.group.updatedAt, isExact: false)
+            store.applyIncomingGroup(record.group, deletedAt: record.deletedAt)
+        }
+    }
+
+    nonisolated private static func readGroupIfChanged(at url: URL, presenter: NSFilePresenter?, stamps: FileStamps) -> GroupRecord? {
+        let modified = FileStamps.modificationDate(of: url)
+        if let modified, stamps.dates[url.lastPathComponent] == modified { return nil }
+        let record = readGroup(at: url, presenter: presenter)
+        if let modified { stamps.dates[url.lastPathComponent] = modified }
+        return record
+    }
+
+    nonisolated private static func readGroup(at url: URL, presenter: NSFilePresenter?) -> GroupRecord? {
+        var result: GroupRecord?
+        var coordinationError: NSError?
+        let coordinator = NSFileCoordinator(filePresenter: presenter)
+        coordinator.coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordinationError) { readURL in
+            guard let text = try? String(contentsOf: readURL, encoding: .utf8) else { return }
+            result = GroupFile.parse(text)
+        }
+        return result
     }
 
     private func applyTemplate(_ template: DailyTemplate) {
@@ -584,10 +657,24 @@ final class FolderSyncService: NSObject, ObservableObject {
     /// the files.
     private func pushAll() {
         guard status == .active else { return }
+        // The groups first, so a Mac that reads a note finds its group waiting.
+        for record in store.groupRecordsForSync() { push(record) }
         for note in store.allNotesForSync() {
             push(note)
         }
         pushTemplate()
+    }
+
+    private func pushGroup(id: UUID) {
+        guard status == .active, let record = store.groupRecord(id: id) else { return }
+        push(record)
+    }
+
+    private func push(_ record: GroupRecord) {
+        guard let folderURL else { return }
+        if let held = groupsHeld[record.group.id], held.matches(record.group.updatedAt) { return }
+        write(contents: GroupFile.serialized(record), to: folderURL.appendingPathComponent(GroupFile.fileName(for: record.group.id)))
+        groupsHeld[record.group.id] = Held(date: record.group.updatedAt, isExact: true)
     }
 
     /// The template, once it has ever been set; an emptied one is still

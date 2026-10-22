@@ -38,6 +38,8 @@ struct HMNoteFile: Equatable {
     var lastOpenedDay: DailyDay?
     /// `auto-archived: <day>` on a note the time rule archived.
     var autoArchivedDay: DailyDay?
+    /// `group: <id>` when the note is in a group; older files have none.
+    var groupID: UUID?
 
     init(note: Note) {
         self.id = note.id
@@ -56,6 +58,7 @@ struct HMNoteFile: Equatable {
         self.pinnedAt = note.pinnedAt
         self.lastOpenedDay = note.lastOpenedDay
         self.autoArchivedDay = note.autoArchivedDay
+        self.groupID = note.groupID
     }
 
     init(
@@ -63,7 +66,7 @@ struct HMNoteFile: Equatable {
         createdAt: Date, updatedAt: Date, editedAt: Date? = nil, deletedAt: Date?, body: String,
         dailyDay: DailyDay? = nil, dailyKept: Bool = false, keepOnDeck: Bool = false,
         pinnedAt: Date? = nil, lastOpenedDay: DailyDay? = nil,
-        autoArchivedDay: DailyDay? = nil
+        autoArchivedDay: DailyDay? = nil, groupID: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -81,6 +84,7 @@ struct HMNoteFile: Equatable {
         self.pinnedAt = pinnedAt
         self.lastOpenedDay = lastOpenedDay
         self.autoArchivedDay = autoArchivedDay
+        self.groupID = groupID
     }
 
     static func tombstone(id: UUID, deletedAt: Date) -> HMNoteFile {
@@ -98,7 +102,7 @@ struct HMNoteFile: Equatable {
             sortIndex: 0, tags: tags, createdAt: createdAt, updatedAt: updatedAt, editedAt: editedAt,
             deletedAt: nil, dailyDay: dailyDay, dailyKept: dailyKept, keepOnDeck: keepOnDeck,
             pinnedAt: pinnedAt, lastOpenedDay: lastOpenedDay,
-            autoArchivedDay: autoArchivedDay
+            autoArchivedDay: autoArchivedDay, groupID: groupID
         )
     }
 
@@ -122,6 +126,7 @@ struct HMNoteFile: Equatable {
         if let pinnedAt { lines.append("pinned: \(Self.isoFormatter.string(from: pinnedAt))") }
         if let lastOpenedDay { lines.append("opened: \(lastOpenedDay.string)") }
         if let autoArchivedDay { lines.append("auto-archived: \(autoArchivedDay.string)") }
+        if let groupID { lines.append("group: \(groupID.uuidString)") }
         lines.append("created: \(Self.isoFormatter.string(from: createdAt))")
         lines.append("updated: \(Self.isoFormatter.string(from: updatedAt))")
         if let editedAt { lines.append("edited: \(Self.isoFormatter.string(from: editedAt))") }
@@ -152,6 +157,8 @@ struct HMNoteFile: Equatable {
             fields[key] = value
         }
 
+        // A group's file has the same fence and an id; it says what it is.
+        guard fields["kind"] == nil else { return nil }
         guard let idString = fields["id"], let id = UUID(uuidString: idString) else { return nil }
 
         var body = ""
@@ -178,18 +185,19 @@ struct HMNoteFile: Equatable {
             keepOnDeck: fields["keep"] == "yes",
             pinnedAt: fields["pinned"].flatMap { isoFormatter.date(from: $0) },
             lastOpenedDay: fields["opened"].flatMap { DailyDay(string: $0) },
-            autoArchivedDay: fields["auto-archived"].flatMap { DailyDay(string: $0) }
+            autoArchivedDay: fields["auto-archived"].flatMap { DailyDay(string: $0) },
+            groupID: fields["group"].flatMap { UUID(uuidString: $0) }
         )
     }
 
     /// Titles are one header line, so newlines have to survive a round trip.
-    private static func escape(_ value: String) -> String {
+    static func escape(_ value: String) -> String {
         value
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\n", with: "\\n")
     }
 
-    private static func unescape(_ value: String) -> String {
+    static func unescape(_ value: String) -> String {
         var result = ""
         var isEscaping = false
         for character in value {

@@ -51,6 +51,9 @@ struct Note: Identifiable, Hashable, Sendable {
     /// The day the time rule archived the note, which the Archive says; `nil`
     /// for a note archived by hand, or not archived. Cleared when it comes back.
     var autoArchivedDay: DailyDay?
+    /// The group the note is in, if any (`NoteGroup`). It may name a group
+    /// this Mac does not have (yet), which reads as none: see `GroupLibrary`.
+    var groupID: UUID?
     /// The body could not be decrypted with this Mac's key, so `body` holds a
     /// placeholder rather than the user's text. Never persisted: it is derived
     /// at load time, and a locked note is read-only and never leaves the Mac.
@@ -79,6 +82,7 @@ struct Note: Identifiable, Hashable, Sendable {
         pinnedAt: Date? = nil,
         lastOpenedDay: DailyDay? = nil,
         autoArchivedDay: DailyDay? = nil,
+        groupID: UUID? = nil,
         isLocked: Bool = false
     ) {
         self.id = id
@@ -98,6 +102,7 @@ struct Note: Identifiable, Hashable, Sendable {
         self.pinnedAt = pinnedAt
         self.lastOpenedDay = lastOpenedDay
         self.autoArchivedDay = autoArchivedDay
+        self.groupID = groupID
         self.isLocked = isLocked
         self.text = DerivedText(title: title, body: body)
     }
@@ -128,6 +133,7 @@ struct Note: Identifiable, Hashable, Sendable {
             && lhs.dailyDay == rhs.dailyDay && lhs.dailyKept == rhs.dailyKept
             && lhs.keepOnDeck == rhs.keepOnDeck && lhs.pinnedAt == rhs.pinnedAt
             && lhs.lastOpenedDay == rhs.lastOpenedDay && lhs.autoArchivedDay == rhs.autoArchivedDay
+            && lhs.groupID == rhs.groupID
     }
 
     func hash(into hasher: inout Hasher) {
@@ -148,6 +154,7 @@ struct Note: Identifiable, Hashable, Sendable {
         hasher.combine(pinnedAt)
         hasher.combine(lastOpenedDay)
         hasher.combine(autoArchivedDay)
+        hasher.combine(groupID)
         hasher.combine(isLocked)
     }
 
@@ -190,6 +197,7 @@ struct Note: Identifiable, Hashable, Sendable {
 extension Note: DailyItem {}
 extension Note: PinItem {}
 extension Note: AutoArchiveItem {}
+extension Note: GroupedItem {}
 
 extension Note: TaggedItem {
     var isArchived: Bool { state == .archived }

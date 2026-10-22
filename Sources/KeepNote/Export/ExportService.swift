@@ -47,17 +47,18 @@ enum ExportService {
     @discardableResult
     static func run(
         notes allNotes: [Note], format: ExportFormat, suggestedName: String = "KeepNote",
-        dailyTemplate: DailyTemplate? = nil, attachments: AttachmentSource? = nil
+        dailyTemplate: DailyTemplate? = nil, groups: [NoteGroup] = [], attachments: AttachmentSource? = nil
     ) throws -> Int? {
         let notes = allNotes.filter { !$0.isLocked }
         let skipped = allNotes.count - notes.count
         guard !notes.isEmpty else { return skipped }
         if format.writesToDirectory {
             guard let directory = promptForDirectory() else { return nil }
-            try writePerNote(notes: notes, format: format, into: directory, attachments: attachments)
+            try writePerNote(notes: notes, format: format, into: directory, groups: groups, attachments: attachments)
         } else {
             guard let url = promptForFile(format: format, suggestedName: suggestedName) else { return nil }
-            try writeSingleFile(notes: notes, format: format, to: url, dailyTemplate: dailyTemplate, attachments: attachments)
+            try writeSingleFile(notes: notes, format: format, to: url, dailyTemplate: dailyTemplate, groups: groups,
+                                attachments: attachments)
         }
         return skipped
     }
@@ -95,8 +96,9 @@ enum ExportService {
     /// `Attachments` folder beside them, under their own names, and the text
     /// links to them there. Plain text says what was attached.
     static func writePerNote(notes: [Note], format: ExportFormat, into directory: URL,
-                             attachments: AttachmentSource? = nil) throws {
+                             groups: [NoteGroup] = [], attachments: AttachmentSource? = nil) throws {
         let isMarkdown = format == .markdownPerNote
+        let names = groupNames(groups)
         var usedNames = Set<String>()
         var links: [String: String] = [:]
         if isMarkdown, let attachments {
@@ -105,7 +107,8 @@ enum ExportService {
         for note in notes {
             let base = safeFileName(for: note, taken: &usedNames)
             let url = directory.appendingPathComponent("\(base).\(isMarkdown ? "md" : "txt")")
-            let contents = isMarkdown ? markdown(for: note, links: links) : plainText(for: note)
+            let group = note.groupID.flatMap { names[$0] }
+            let contents = isMarkdown ? markdown(for: note, links: links, group: group) : plainText(for: note, group: group)
             try contents.write(to: url, atomically: true, encoding: .utf8)
         }
     }
@@ -144,15 +147,21 @@ enum ExportService {
         return candidate
     }
 
+    /// Group names by id, for the exports that say a note's group in words.
+    private static func groupNames(_ groups: [NoteGroup]) -> [UUID: String] {
+        Dictionary(groups.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+    }
+
     private static func writeSingleFile(notes: [Note], format: ExportFormat, to url: URL, dailyTemplate: DailyTemplate?,
-                                        attachments: AttachmentSource?) throws {
+                                        groups: [NoteGroup], attachments: AttachmentSource?) throws {
+        let names = groupNames(groups)
         switch format {
         case .archivePackage:
-            try NoteArchive.write(notes: notes, dailyTemplate: dailyTemplate, attachments: attachments, to: url)
+            try NoteArchive.write(notes: notes, groups: groups, dailyTemplate: dailyTemplate, attachments: attachments, to: url)
         case .singleDocument:
             let document = notes
                 .sorted { $0.editedAt > $1.editedAt }
-                .map { markdown(for: $0) }
+                .map { markdown(for: $0, group: $0.groupID.flatMap { names[$0] }) }
                 .joined(separator: "\n\n---\n\n")
             try document.write(to: url, atomically: true, encoding: .utf8)
         case .markdownPerNote, .plainTextPerNote:
@@ -165,8 +174,12 @@ enum ExportService {
 
     /// `links` maps attachments to the files written beside the note; one
     /// that has none is said in words.
-    static func markdown(for note: Note, links: [String: String] = [:]) -> String {
+    static func markdown(for note: Note, links: [String: String] = [:], group: String? = nil) -> String {
         var lines = ["# \(note.displayTitle)", ""]
+        if let group {
+            lines.append(L("Group: %@", group))
+            lines.append("")
+        }
         if !note.tags.isEmpty {
             lines.append(note.tags.map { "#\($0)" }.joined(separator: " "))
             lines.append("")
@@ -180,9 +193,13 @@ enum ExportService {
         return lines.joined(separator: "\n")
     }
 
-    static func plainText(for note: Note) -> String {
+    static func plainText(for note: Note, group: String? = nil) -> String {
         var lines = [note.displayTitle, String(repeating: "=", count: max(3, note.displayTitle.count)), ""]
         lines.append(exportedBody(note.body, links: [:], markdown: false))
+        if let group {
+            lines.append("")
+            lines.append(L("Group: %@", group))
+        }
         if !note.tags.isEmpty {
             lines.append("")
             lines.append(L("Tags: %@", note.tags.joined(separator: ", ")))
@@ -255,6 +272,18 @@ enum NoteArchive {
         /// The daily template, once it has been set; archives from before it
         /// existed have none.
         var dailyTemplate: TemplateEntry?
+        /// The groups the notes are in; archives from before groups existed
+        /// have none, and are as good as ever.
+        var groups: [GroupEntry]?
+    }
+
+    struct GroupEntry: Codable {
+        var id: UUID
+        var name: String
+        var color: Int
+        var order: Int
+        var createdAt: Date
+        var updatedAt: Date
     }
 
     struct TemplateEntry: Codable {
@@ -283,12 +312,14 @@ enum NoteArchive {
         var pinnedAt: Date?
         var lastOpenedDay: String?
         var autoArchivedDay: String?
+        /// The group the note is in; only when it is in one.
+        var groupID: UUID?
     }
 
     static let formatIdentifier = "com.keepnote.archive"
     static let version = 1
 
-    static func encode(notes: [Note], dailyTemplate: DailyTemplate? = nil) throws -> Data {
+    static func encode(notes: [Note], groups: [NoteGroup] = [], dailyTemplate: DailyTemplate? = nil) throws -> Data {
         let payload = Payload(
             format: formatIdentifier,
             version: version,
@@ -309,10 +340,15 @@ enum NoteArchive {
                     keepOnDeck: note.keepOnDeck ? true : nil,
                     pinnedAt: note.pinnedAt,
                     lastOpenedDay: note.lastOpenedDay?.string,
-                    autoArchivedDay: note.autoArchivedDay?.string
+                    autoArchivedDay: note.autoArchivedDay?.string,
+                    groupID: note.groupID
                 )
             },
-            dailyTemplate: dailyTemplate.flatMap { $0.isSet ? TemplateEntry(body: $0.body, updatedAt: $0.updatedAt, color: $0.color.rawValue) : nil }
+            dailyTemplate: dailyTemplate.flatMap { $0.isSet ? TemplateEntry(body: $0.body, updatedAt: $0.updatedAt, color: $0.color.rawValue) : nil },
+            groups: groups.isEmpty ? nil : groups.map {
+                GroupEntry(id: $0.id, name: $0.name, color: $0.color.rawValue, order: $0.order,
+                           createdAt: $0.createdAt, updatedAt: $0.updatedAt)
+            }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -327,8 +363,9 @@ enum NoteArchive {
     /// Writes the archive: one JSON file, or — when the notes have
     /// attachments — a package holding that JSON and an `Attachments` folder
     /// with each file as `<id>.<extension>`, which is how the text names them.
-    static func write(notes: [Note], dailyTemplate: DailyTemplate?, attachments: AttachmentSource?, to url: URL) throws {
-        let json = try encode(notes: notes, dailyTemplate: dailyTemplate)
+    static func write(notes: [Note], groups: [NoteGroup] = [], dailyTemplate: DailyTemplate?,
+                      attachments: AttachmentSource?, to url: URL) throws {
+        let json = try encode(notes: notes, groups: groups, dailyTemplate: dailyTemplate)
         var files: [(String, Data)] = []
         var seen = Set<String>()
         if let attachments {
@@ -370,12 +407,17 @@ enum NoteArchive {
         try decodeContents(data).notes
     }
 
+    /// The groups an archive carries; none for one from before groups.
+    static func decodeGroups(_ data: Data) throws -> [NoteGroup] {
+        try decodeContents(data).groups
+    }
+
     /// The daily template an archive carries, if it has one.
     static func decodeTemplate(_ data: Data) throws -> DailyTemplate? {
         try decodeContents(data).template
     }
 
-    private static func decodeContents(_ data: Data) throws -> (notes: [Note], template: DailyTemplate?) {
+    private static func decodeContents(_ data: Data) throws -> (notes: [Note], template: DailyTemplate?, groups: [NoteGroup]) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let payload = try decoder.decode(Payload.self, from: data)
@@ -400,9 +442,14 @@ enum NoteArchive {
                 keepOnDeck: entry.keepOnDeck ?? false,
                 pinnedAt: entry.pinnedAt,
                 lastOpenedDay: entry.lastOpenedDay.flatMap { DailyDay(string: $0) },
-                autoArchivedDay: entry.autoArchivedDay.flatMap { DailyDay(string: $0) }
+                autoArchivedDay: entry.autoArchivedDay.flatMap { DailyDay(string: $0) },
+                groupID: entry.groupID
             )
-        }, template)
+        }, template, (payload.groups ?? []).compactMap { entry in
+            guard let name = NoteGroup.cleaned(entry.name) else { return nil }
+            return NoteGroup(id: entry.id, name: name, color: GroupColor.resolve(rawValue: entry.color), order: entry.order,
+                             createdAt: entry.createdAt, updatedAt: entry.updatedAt)
+        })
     }
 }
 
@@ -441,6 +488,7 @@ enum NoteImporter {
     static func importContents(of url: URL, into store: NoteStore) throws -> (applied: Int, ids: [UUID]) {
         var imported: [Note] = []
         var template: DailyTemplate?
+        var importedGroups: [NoteGroup] = []
 
         var isDirectory: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
@@ -452,6 +500,7 @@ enum NoteImporter {
             let data = try Data(contentsOf: manifest)
             imported = try NoteArchive.decode(data)
             template = try NoteArchive.decodeTemplate(data)
+            importedGroups = try NoteArchive.decodeGroups(data)
             attachmentFolder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
         } else if isDirectory.boolValue {
             // A folder of .hmnote files, a copy of a sync folder: its
@@ -470,6 +519,11 @@ enum NoteImporter {
                 .filter { $0.pathExtension == AppPaths.templateFileExtension }
                 .compactMap { (try? String(contentsOf: $0, encoding: .utf8)).flatMap(DailyTemplateFile.parse) }
                 .max { $0.updatedAt < $1.updatedAt }
+            importedGroups = contents
+                .filter { $0.pathExtension == AppPaths.groupFileExtension }
+                .compactMap { (try? String(contentsOf: $0, encoding: .utf8)).flatMap(GroupFile.parse) }
+                .filter { $0.deletedAt == nil }
+                .map(\.group)
         } else if url.pathExtension == AppPaths.noteFileExtension {
             // One note, in the sync folder's plain-text format, not an archive.
             let text = try String(contentsOf: url, encoding: .utf8)
@@ -480,6 +534,7 @@ enum NoteImporter {
             let data = try Data(contentsOf: url)
             imported = try NoteArchive.decode(data)
             template = try NoteArchive.decodeTemplate(data)
+            importedGroups = try NoteArchive.decodeGroups(data)
         }
 
         // The files first, so the notes find them when they arrive.
@@ -494,6 +549,10 @@ enum NoteImporter {
                 }
             }
         }
+
+        // The groups before the notes, so each note finds its own. Newer than
+        // the copy here, or not at all, like a note.
+        for group in importedGroups { store.applyIncomingGroup(group, origin: .importer) }
 
         // One transaction and one change for the lot. `.importer`, not
         // `.sync`: imported notes are new to the sync folder too.

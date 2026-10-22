@@ -624,6 +624,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                 format: format,
                 suggestedName: notes.count == 1 ? notes[0].displayTitle : L("KeepNote Export"),
                 dailyTemplate: store.dailyTemplate,
+                groups: groupsForExport(of: notes),
                 attachments: attachmentSource
             )
             if let skipped, skipped > 0 {
@@ -635,6 +636,14 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         } catch {
             present(error)
         }
+    }
+
+    /// The groups an export carries: those the notes are in — or all of them,
+    /// when every note is going, so a group with nothing in it is not lost.
+    func groupsForExport(of notes: [Note]) -> [NoteGroup] {
+        if notes.count == store.notes.count { return store.groups }
+        let used = Set(notes.compactMap(\.groupID))
+        return store.groups.filter { used.contains($0.id) }
     }
 
     /// An attachment's info and bytes, for exports and archives.
