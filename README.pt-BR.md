@@ -44,8 +44,9 @@ O KeepNote não é notarizado pela Apple. A notarização exige uma assinatura p
 - **Fixar, manter e arquivar por tempo.** *Fixar no centro* prende até cinco notas no meio da pilha, sempre inteiras. *Manter na pilha* livra uma nota do arquivamento. Notas que você não abre há 7, 14 ou 30 dias (você escolhe em Ajustes → Pilha → **Arquivar notas não abertas há**; 14 por padrão) vão sozinhas para Arquivadas, nunca são apagadas; nos dois últimos dias aparece um relógio na aba. Fixar, manter e as regras de arquivamento não mudam a data *Editada* da nota, que só muda quando você altera o texto ou o título.
 - **Backups.** Uma vez por dia o KeepNote copia o banco para uma pasta `Backups` ao lado dele, cifrada exatamente como o original, e guarda as sete cópias mais recentes; também faz uma antes de uma atualização mudar o jeito de guardar as notas. Ajustes → Geral → **Backups** mostra quando foi feito o último, com **Fazer backup agora** e **Restaurar…**, que lista os backups com a data e o número de notas, pede confirmação, faz um backup das suas notas como estão agora e reabre o KeepNote com o escolhido. Nada sai do Mac.
 - **Arquivadas e desfazer.** As notas arquivadas têm janela própria. Apagar uma nota dá 10 segundos (ajustável em Ajustes → Notas → **Desfazer uma exclusão por**) para desfazer.
-- **Sincronização por pasta.** Opcionalmente (Ajustes → Sincronização), o KeepNote grava um arquivo de texto `.hmnote` por nota numa pasta que você escolhe (o iCloud Drive é sugerido). O provedor da pasta leva os arquivos entre os Macs; o KeepNote não tem servidor próprio.
-- **Importar e exportar.** Exporte as notas em Markdown ou texto simples, um arquivo por nota ou um só documento, ou num arquivo KeepNote (`.hmnotearchive`) que preserva cores, estados e datas. A importação lê esse arquivo ou uma pasta de arquivos `.hmnote`.
+- **Imagens e arquivos.** Arraste uma imagem do Finder ou do navegador para a nota, cole uma (inclusive uma captura de tela) ou use **Inserir imagem…** em Ferramentas: ela fica no texto, na largura da nota, com cantos arredondados. Outros arquivos — arrastados, colados ou com **Anexar arquivo…** — aparecem como um cartão com ícone, nome e tamanho. Um clique seleciona a imagem e abre o arquivo no app dele; Espaço mostra os dois na Visualização rápida; o botão direito tem Abrir, Salvar como…, Remover e, numa imagem, **Editar descrição…**, que é o que o VoiceOver lê. Cada anexo pode ter até 25 MB. Eles ficam no banco, cifrados como o texto, uma vez só por mais notas que tenham o mesmo arquivo, e vão embora com as notas que os tinham. A espiada mostra a primeira imagem da nota, Todas as notas marca com um clipe as notas com anexos, e os links mostram a mãozinha e "⌘-clique para abrir".
+- **Sincronização por pasta.** Opcionalmente (Ajustes → Sincronização), o KeepNote grava um arquivo de texto `.hmnote` por nota numa pasta que você escolhe (o iCloud Drive é sugerido). Os anexos vão junto como cópias comuns na pasta `Attachments` dela. O provedor da pasta leva os arquivos entre os Macs; o KeepNote não tem servidor próprio.
+- **Importar e exportar.** Exporte as notas em Markdown ou texto simples, um arquivo por nota ou um só documento, ou num arquivo KeepNote (`.hmnotearchive`) que preserva cores, estados e datas. Imagens e arquivos vão junto, numa pasta `Attachments` que o texto exportado referencia (dentro do arquivo KeepNote, que vira um pacote). A importação lê esse arquivo ou uma pasta de arquivos `.hmnote`.
 - **Onde ele fica.** Na barra de menus, e no Dock só enquanto uma das janelas dele está aberta. **Abrir ao iniciar sessão** e **Mostrar sobre apps em tela cheia** (Ajustes → Geral) são opcionais. O idioma do app se escolhe em Ajustes → Geral → **Idioma**.
 
 ## Compilar a partir do código
@@ -60,7 +61,7 @@ cd keepnote
 
 Isso compila o app em `build/` e o abre. Num clone novo não há certificado de assinatura, então o build é assinado **ad-hoc** e mostra um aviso visível. A assinatura ad-hoc muda a cada build, então depois de cada recompilação o macOS volta a pedir acesso ao item do Keychain com a chave que cifra as notas; escolha Permitir, nenhuma nota se perde.
 
-Para acabar com esses pedidos, crie um certificado de assinatura uma vez: em Acesso às Chaves, **Assistente de Certificado → Criar um Certificado…**, nome **KeepNote Dev**, tipo de identidade **Raiz Autoassinada**, tipo de certificado **Assinatura de Código**. O build passa a usá-lo sozinho. Outro certificado funciona com `KEEPNOTE_SIGN_ID="Nome"`.
+Para acabar com esses pedidos, assine com um certificado que tenha **Team ID**: um certificado **Apple Development**, que o Xcode cria para qualquer Apple ID, de graça (Xcode → Ajustes → Contas → Gerenciar Certificados → +). O build o encontra e usa sozinho. Para um app assim, o Keychain guarda a permissão da chave por time, então toda build é o mesmo app para ele. Um certificado autoassinado (**KeepNote Dev**: Acesso às Chaves, **Assistente de Certificado → Criar um Certificado…**, **Raiz Autoassinada**, **Assinatura de Código**) mantém a assinatura estável, mas não tem Team ID, e o Keychain volta a pedir depois de cada recompilação. Outro certificado funciona com `KEEPNOTE_SIGN_ID="Nome"`.
 
 | Comando | O que faz |
 |---|---|
@@ -95,6 +96,7 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 | `⇧⌘⌫` | Apagar (com desfazer) |
 | `⌘↩` | Marcar ou desmarcar a tarefa |
 | `⇥` / `⇧⇥` | Recuar / voltar um nível num item de lista |
+| `Espaço` | Visualização rápida da imagem ou do arquivo selecionado |
 
 | Em Todas as notas | O que faz |
 |---|---|
@@ -125,7 +127,7 @@ Estes são os padrões. Todos os atalhos abaixo, menos Fechar, podem ser trocado
 
 O KeepNote não faz nenhuma conexão de rede. Não tem servidor, conta, telemetria nem analytics, e os entitlements dele (`Resources/KeepNote.entitlements`) são o sandbox, as pastas que você escolhe e os bookmarks delas, nada mais. Um link dentro de uma nota abre no seu navegador.
 
-O texto das suas notas é cifrado no banco local (AES-GCM) com uma chave guardada no Keychain deste Mac, que nunca sai dele e não é sincronizada. Títulos e tags ficam sem cifra no banco para poderem ser buscados; os arquivos `.hmnote` do sync são texto simples, então continuam legíveis sem o app e ficam protegidos pelo que protege a pasta.
+O texto das suas notas é cifrado no banco local (AES-GCM) com uma chave guardada no Keychain deste Mac, que nunca sai dele e não é sincronizada. Imagens e arquivos anexados às notas são cifrados do mesmo jeito. Títulos e tags ficam sem cifra no banco para poderem ser buscados; os arquivos `.hmnote` do sync são texto simples, então continuam legíveis sem o app e ficam protegidos pelo que protege a pasta.
 
 O banco fica em `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, e os backups dele na pasta `Backups` ao lado; são cópias do banco, com o texto cifrado do mesmo jeito.
 
@@ -144,7 +146,7 @@ Primeiro saia do KeepNote (ícone da barra de menus → Encerrar KeepNote). Se *
 
 A chave só serve para abrir aquele banco e os backups dele; remova tudo junto. Sem o container, suas notas e os backups vão embora com ele, então exporte antes (Ajustes → Sobre → Exportar todas as notas…) se quiser guardá-las.
 
-**A pasta de sync é sua.** O KeepNote nunca a apaga, e desinstalar deixa a pasta e os arquivos `.hmnote` e `.hmtemplate` exatamente onde estão. Apague você mesmo se não quiser mais.
+**A pasta de sync é sua.** O KeepNote nunca a apaga, e desinstalar deixa a pasta, os arquivos `.hmnote` e `.hmtemplate` e a pasta `Attachments` exatamente onde estão. Apague você mesmo se não quiser mais.
 
 ## Licença
 

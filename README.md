@@ -44,8 +44,9 @@ KeepNote is not notarized by Apple. Notarization needs a paid Apple Developer me
 - **Pin, keep and archive by time.** *Pin to Center* holds up to five notes in the middle of the deck, always whole. *Keep on Deck* exempts a note from archiving. Notes you have not opened for 7, 14 or 30 days (you choose; 14 by default) move to the Archive on their own, never deleted; in the last two days a clock appears on the tab. Pinning, keeping and the archiving rules do not change a note's *Edited* date, which only moves when you change its text or title.
 - **Backups.** Once a day KeepNote copies its database into a `Backups` folder beside it, sealed exactly like the original, and keeps the seven most recent; it also makes one before an update changes how notes are stored. Settings → General → **Backups** shows when the last one was made, with **Back Up Now** and **Restore…**, which lists the backups with their date and number of notes, asks first, backs up your notes as they are now, and reopens KeepNote with the chosen one. Nothing leaves the Mac.
 - **Archive and undo.** Archived notes have their own window. Deleting a note gives you 10 seconds (adjustable) to undo it.
-- **Sync through a folder.** Optionally, KeepNote writes one plain-text `.hmnote` file per note into a folder you choose (iCloud Drive is suggested). The folder's provider moves them between Macs; KeepNote has no server of its own.
-- **Import and export.** Export notes as Markdown or plain text, one file per note or one document, or as a KeepNote archive (`.hmnotearchive`) that keeps colors, states and dates. Import reads that archive or a folder of `.hmnote` files.
+- **Images and files.** Drag a picture from the Finder or a browser into a note, paste one (a screenshot too), or use **Insert Image…** in Tools: it sits in the text at the note's width, with rounded corners. Other files — drag them in, paste them, or **Attach File…** — show as a card with their icon, name and size. A click selects an image and opens a file in its app; Space shows either in Quick Look; the right click has Open, Save As…, Remove and, for an image, **Edit Description…**, which is what VoiceOver reads. Each attachment can be up to 25 MB. They are kept in the database, sealed like the text, once however many notes hold the same file, and go away with the notes that held them. The peek shows a note's first image, All Notes marks notes with attachments with a paperclip, and links show a hand and "⌘-click to open".
+- **Sync through a folder.** Optionally, KeepNote writes one plain-text `.hmnote` file per note into a folder you choose (iCloud Drive is suggested). Attachments go with them as plain copies in the folder's `Attachments`. The folder's provider moves them between Macs; KeepNote has no server of its own.
+- **Import and export.** Export notes as Markdown or plain text, one file per note or one document, or as a KeepNote archive (`.hmnotearchive`) that keeps colors, states and dates. Images and files go along, in an `Attachments` folder the exported text links to (inside the archive, which becomes a package). Import reads that archive or a folder of `.hmnote` files.
 - **Where it lives.** In the menu bar, and in the Dock only while one of its windows is open. Optional launch at login and display over full-screen apps.
 
 ## Build from source
@@ -60,7 +61,7 @@ cd keepnote
 
 That builds the app into `build/` and opens it. On a fresh clone there is no signing certificate, so the build is signed **ad-hoc** and prints a visible warning. An ad-hoc signature changes with every build, so after each rebuild macOS asks again for access to the Keychain item holding the key that encrypts your notes; choose Allow, no notes are lost.
 
-To stop those prompts, create a signing certificate once: in Keychain Access, **Certificate Assistant → Create a Certificate…**, name it **KeepNote Dev**, identity type **Self-Signed Root**, certificate type **Code Signing**. The build uses it automatically from then on. Another certificate works with `KEEPNOTE_SIGN_ID="Name"`.
+To stop those prompts, sign with a certificate that has a **Team ID**: an **Apple Development** certificate, which Xcode makes for any Apple ID, free (Xcode → Settings → Accounts → Manage Certificates → +). The build finds it and uses it by itself. The Keychain keeps the key's permission per team for such an app, so every build is the same app to it. A self-signed certificate (**KeepNote Dev**: Keychain Access, **Certificate Assistant → Create a Certificate…**, **Self-Signed Root**, **Code Signing**) keeps the signature stable but has no Team ID, so the Keychain still asks after each rebuild. Another certificate works with `KEEPNOTE_SIGN_ID="Name"`.
 
 | Command | What it does |
 |---|---|
@@ -95,6 +96,7 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 | `⇧⌘⌫` | Delete (undoable) |
 | `⌘↩` | Tick or untick the task |
 | `⇥` / `⇧⇥` | Indent / outdent a list item |
+| `Space` | Quick Look on the selected image or file |
 
 | In All Notes | What it does |
 |---|---|
@@ -125,7 +127,7 @@ These are the defaults. Every shortcut below except Close can be changed in Sett
 
 KeepNote makes no network connection. It has no server, account, telemetry or analytics, and its entitlements (`Resources/KeepNote.entitlements`) are the sandbox, folders you choose, and bookmarks to them, nothing more. A link inside a note opens in your browser.
 
-The text of your notes is encrypted in the local database (AES-GCM) with a key kept in this Mac's Keychain, which never leaves it and is not synced. Note titles and tags are stored unencrypted so they can be searched; the synced `.hmnote` files are plain text, so they stay readable without the app and are protected by whatever protects the folder.
+The text of your notes is encrypted in the local database (AES-GCM) with a key kept in this Mac's Keychain, which never leaves it and is not synced. Images and files attached to notes are encrypted the same way. Note titles and tags are stored unencrypted so they can be searched; the synced `.hmnote` files are plain text, so they stay readable without the app and are protected by whatever protects the folder.
 
 The database lives at `~/Library/Containers/com.keepnote.KeepNote/Data/Library/Application Support/KeepNote/notes.sqlite`, and its backups in the `Backups` folder beside it; they are copies of the database, with the text encrypted the same way.
 
@@ -144,7 +146,7 @@ Quit KeepNote first (menu bar icon → Quit KeepNote). If **Launch at login** is
 
 The key only decrypts that database and its backups; remove them together. Once the container is gone, your notes and their backups are gone with it, so export them first (Settings → About → Export All Notes…) if you want to keep them.
 
-**Your sync folder is yours.** KeepNote never deletes it, and uninstalling leaves it and its `.hmnote` and `.hmtemplate` files exactly where they are. Delete it yourself if you no longer want it.
+**Your sync folder is yours.** KeepNote never deletes it, and uninstalling leaves it, its `.hmnote` and `.hmtemplate` files and its `Attachments` folder exactly where they are. Delete it yourself if you no longer want it.
 
 ## License
 
