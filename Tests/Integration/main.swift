@@ -107,6 +107,7 @@ MainActor.assumeIsolated {
     runAttachmentDisplayTests()
     runAttachmentAccessibilityTests()
     runLinkHoverTests()
+    runMentionTests()
     runNoNetworkSourceTests()
     runAttachmentStorageTests()
     runMarkGeometryTests()

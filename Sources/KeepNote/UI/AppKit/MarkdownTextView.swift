@@ -40,6 +40,11 @@ final class MarkdownTextView: NSTextView {
     var hasKeyboardFocus: Bool { window?.firstResponder === self }
     /// Where the note's attachments are kept, for drawing and adding them.
     weak var library: NoteStore?
+    /// How a link is opened: in the browser (the tests watch it instead).
+    var openURL: (URL) -> Void = { NSWorkspace.shared.open($0) }
+    /// Pasting an address offers it as a mention (off in the tests, which
+    /// cannot answer a menu).
+    var offersMentionOnPaste = true
     /// Where ⌘V reads from: the clipboard (the tests hand in their own).
     var pasteSource: NSPasteboard = .general
     /// The file Quick Look is showing, while it is.
@@ -90,6 +95,7 @@ final class MarkdownTextView: NSTextView {
         }
         drawFindMatches(in: characters)
         attachmentLayouts(in: characters).forEach(drawAttachment)
+        drawMentionIcons(in: characters)
     }
 
     /// Where a list mark is drawn, in view coordinates: the bullet's dot or
@@ -572,6 +578,16 @@ final class MarkdownTextView: NSTextView {
         if isEditable, let pasted = board.string(forType: .string),
            let result = Formatting.pasteURL(currentEdit, pasted: pasted) {
             apply(result)
+        } else if isEditable, selectedRange().length == 0, let url = Formatting.url(from: board.string(forType: .string)),
+                  !url.lowercased().hasPrefix("mailto:") {
+            // An address pasted on its own: written out, then offered as a
+            // mention.
+            let start = selectedRange().location
+            insertText(url, replacementRange: selectedRange())
+            let range = NSRange(location: start, length: (url as NSString).length)
+            if offersMentionOnPaste {
+                DispatchQueue.main.async { [weak self] in self?.offerMention(for: range) }
+            }
         } else if isEditable, board !== NSPasteboard.general, let pasted = board.string(forType: .string) {
             // The tests' own clipboard: the text as the system would paste it.
             insertText(pasted, replacementRange: selectedRange())
@@ -587,7 +603,14 @@ final class MarkdownTextView: NSTextView {
             select(layout)
             return menu(for: layout)
         }
+        let linkItems = linkMenuItems(at: convert(event.locationInWindow, from: nil))
         let menu = super.menu(for: event)
+        defer {
+            if let menu, !linkItems.isEmpty {
+                menu.insertItem(.separator(), at: 0)
+                for item in linkItems.reversed() { menu.insertItem(item, at: 0) }
+            }
+        }
         guard let menu, isEditable else { return menu }
         if menu.items.first?.action != FormatCommand.bold.action {
             let items = FormatCommand.menuItems()
@@ -682,8 +705,11 @@ final class MarkdownTextView: NSTextView {
             toggleCheckbox(markerRange: box)
             return
         }
-        if event.modifierFlags.contains(.command), let url = link(at: point) {
-            NSWorkspace.shared.open(url)
+        // A click on a link opens it, as in a browser; ⌥-click puts the
+        // caret in it to edit it.
+        if !event.modifierFlags.contains(.option), !event.modifierFlags.contains(.shift),
+           event.clickCount == 1, let url = link(at: point) {
+            openURL(url)
             return
         }
         super.mouseDown(with: event)
@@ -754,7 +780,7 @@ final class MarkdownTextView: NSTextView {
     // MARK: - Hover
 
     /// What the pointer over a link or a file's card is told, and shown.
-    static var linkHint: String { L("\u{2318}-click to open") }
+    static var linkHint: String { L("Click to open \u{00B7} \u{2325}-click to edit") }
 
     /// The hint for the point, if it is over a link: "⌘-click to open".
     func hoverHint(at point: NSPoint) -> String? {

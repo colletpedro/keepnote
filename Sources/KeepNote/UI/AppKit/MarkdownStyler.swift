@@ -91,6 +91,9 @@ struct MarkdownStyler: Equatable {
     /// code, a highlight — rather than TextKit's background, which fills the
     /// whole line box and runs into the lines around it.
     static let inlineBoxKey = NSAttributedString.Key("KeepNote.inlineBox")
+    /// On the hidden "[" of a mention: the address, whose site the icon
+    /// drawn there stands for.
+    static let mentionKey = NSAttributedString.Key("KeepNote.mention")
 
     enum InlineBox: String {
         case code, highlight
@@ -166,6 +169,7 @@ struct MarkdownStyler: Equatable {
     private static let code = regex(#"`([^`\n]+)`"#)
     private static let wikilink = regex(#"\[\[([^\]\n|]+)(?:\|([^\]\n]+))?\]\]"#)
     private static let link = regex(#"!?\[([^\]\n]+)\]\(([^)\s]+)\)"#)
+    private static let mention = regex(#"\[([^\]\n]+)\]\(([^)\s]+)[ ]"mention"\)"#)
     private static let bareURL = regex(#"https?://[^\s<>)\]]+"#)
     private static let boldItalic = regex(#"(\*\*\*|___)(?=\S)(.+?)(?<=\S)\1"#)
     private static let bold = regex(#"(\*\*|__)(?=\S)(.+?)(?<=\S)\1"#)
@@ -492,6 +496,9 @@ struct MarkdownStyler: Equatable {
         return p
     }
 
+    /// The icon of a mention and the gap after it.
+    static let mentionIconRoom: CGFloat = 20
+
     /// Room between a code card's edge and its text.
     static let codeInset: CGFloat = 10
 
@@ -568,6 +575,31 @@ struct MarkdownStyler: Equatable {
             storage.addAttribute(.foregroundColor, value: accent, range: abs(shown))
             marker(NSRange(location: m.range.location, length: shown.location - m.range.location), show: show)
             marker(NSRange(location: NSMaxRange(shown), length: NSMaxRange(m.range) - NSMaxRange(shown)), show: show)
+        }
+
+        // A mention: the site's icon (drawn by the text view in the room the
+        // hidden "[" keeps) and the title, underlined in the ink.
+        for m in Self.mention.matches(in: string, range: scope) where !overlaps(m.range) {
+            protected.append(m.range)
+            let show = revealed(m.range)
+            let label = m.range(at: 1)
+            let url = line.substring(with: m.range(at: 2))
+            storage.addAttributes([
+                .foregroundColor: ink,
+                .underlineStyle: NSUnderlineStyle.single.rawValue,
+                .underlineColor: ink.withAlphaComponent(faded(0.35)),
+                Self.linkKey: url
+            ], range: abs(label))
+            let open = NSRange(location: m.range.location, length: 1)
+            let close = NSRange(location: NSMaxRange(label), length: NSMaxRange(m.range) - NSMaxRange(label))
+            if show {
+                marker(open, show: true)
+                marker(close, show: true)
+            } else {
+                hide(abs(open), reserve: Self.mentionIconRoom * scale, in: storage)
+                storage.addAttributes([Self.mentionKey: url, Self.linkKey: url], range: abs(open))
+                marker(close, show: false)
+            }
         }
 
         for m in Self.link.matches(in: string, range: scope) where !overlaps(m.range) {

@@ -1,7 +1,7 @@
 import AppKit
 import CryptoKit
 
-/// Links: a hand and "⌘-click to open" over them, nothing elsewhere; a
+/// Links: a hand and "Click to open · ⌥-click to edit" over them, nothing elsewhere; a
 /// file's card gets the hand too.
 @MainActor
 func runLinkHoverTests() {
@@ -26,7 +26,7 @@ func runLinkHoverTests() {
     }
     let linkIndex = (body.string as NSString).range(of: "guide").location + 2
     let onLink = point(ofCharacter: linkIndex)
-    expect("hover: over a link, the hint", body.hoverHint(at: onLink), "\u{2318}-click to open")
+    expect("hover: over a link, the hint", body.hoverHint(at: onLink), "Click to open \u{00B7} \u{2325}-click to edit")
     expectTrue("hover: over a link, a hand", body.hoverCursor(at: onLink) === NSCursor.pointingHand)
     let onText = point(ofCharacter: 1)
     expectTrue("hover: over plain text, no hint", body.hoverHint(at: onText) == nil)
@@ -36,7 +36,7 @@ func runLinkHoverTests() {
     if let card = body.allAttachmentLayouts.first, let rect = body.attachmentRect(card) {
         expectTrue("hover: over a file's card, a hand", body.hoverCursor(at: NSPoint(x: rect.midX, y: rect.midY)) === NSCursor.pointingHand)
     }
-    expect("hover: in Portuguese", L("\u{2318}-click to open", in: "pt-BR"), "\u{2318}-clique para abrir")
+    expect("hover: in Portuguese", L("Click to open \u{00B7} \u{2325}-click to edit", in: "pt-BR"), "Clique para abrir \u{00B7} \u{2325}-clique para editar")
     window.close()
 }
 

@@ -122,6 +122,10 @@ MainActor.assumeIsolated {
     let longNote = try! store.create(color: .coral, title: longTitle, body: "- [ ] Short\n" + AttachmentText.token(id: tall.id, isImage: true, label: "A tall tower"),
                                      tags: ["travel"])
     let emptyNote = try! store.create(color: .mint, title: "", body: "")
+    let songs = ["traffic-in-the-sky", "crying-shame", "tomorrow-morning", "you-and-your-heart", "inaudible-melodies"]
+        .map { "- " + LinkMention.token(url: "https://www.cifraclub.com.br/jack-johnson/\($0)/") }
+        .joined(separator: "\n") + "\n\nAnd one left as an address: https://www.cifraclub.com.br/jack-johnson/\nAnd [a plain link](https://example.com)."
+    let songsNote = try! store.create(color: .lilac, title: "Jack Johnson", body: songs)
 
     @MainActor func editor(_ note: Note, _ presentation: NotePresentation, prepare: ((NoteEditorModel) -> Void)? = nil) -> NoteEditorView {
         let model = NoteEditorModel(note: store.note(id: note.id)!, store: store)
@@ -138,6 +142,8 @@ MainActor.assumeIsolated {
     AppSettings.shared.screenEdge = .right
     shoot("note-rich-floating", size: EdgeMetrics.detachedSize, editor(richNote, .detached))
     shoot("note-rich-floating-tall", size: CGSize(width: EdgeMetrics.detachedSize.width, height: 900), editor(richNote, .detached))
+    shoot("note-mentions", size: EdgeMetrics.detachedSize, editor(songsNote, .detached))
+    shoot("note-mentions-anchored", size: EdgeMetrics.anchoredSize, editor(songsNote, .anchored))
     shoot("note-long-title-anchored", size: EdgeMetrics.anchoredSize, editor(longNote, .anchored))
     shoot("note-long-title-floating", size: EdgeMetrics.detachedSize, editor(longNote, .detached))
     shoot("note-empty-anchored", size: EdgeMetrics.anchoredSize, editor(emptyNote, .anchored))

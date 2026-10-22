@@ -24,7 +24,7 @@ OUT="$ROOT/build/tests"
 mkdir -p "$OUT"
 
 LOGIC=()
-for name in TextEdit ListEditing Formatting BlockEditing TagText TagLibrary DailyNotes DailyTemplateApply NotePalette SaveStatus PreviewText SearchText DeckGeometry TabLabel Spring FrameRestore DockPolicy FloatDrag LegacyDefaults DeckPins DeckIntent AutoArchive Localization ScreenEdge DeckPlacement DailyCarryOver AccessibilityText NoteSort AttachmentText; do
+for name in TextEdit ListEditing Formatting BlockEditing TagText TagLibrary DailyNotes DailyTemplateApply NotePalette SaveStatus PreviewText SearchText DeckGeometry TabLabel Spring FrameRestore DockPolicy FloatDrag LegacyDefaults DeckPins DeckIntent AutoArchive Localization ScreenEdge DeckPlacement DailyCarryOver AccessibilityText NoteSort AttachmentText LinkMention; do
     file="$ROOT/Sources/KeepNote/Core/$name.swift"
     [ -f "$file" ] && LOGIC+=("$file")
 done

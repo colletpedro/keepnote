@@ -481,7 +481,6 @@
 "File: %@" = "File: %@";
 "Image: %@" = "Image: %@";
 "Has attachments" = "Has attachments";
-"⌘-click to open" = "⌘-click to open";
 "Space used" = "Space used";
 "1 backup" = "1 backup";
 "%d backups" = "%d backups";
@@ -493,3 +492,11 @@
 "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created." = "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created.";
 "One plain-text file per note, written where you choose — iCloud Drive by default, with the notes’ images and files as plain copies in its Attachments folder. The folder’s own provider moves them between Macs; KeepNote has no server and uses no CloudKit." = "One plain-text file per note, written where you choose — iCloud Drive by default, with the notes’ images and files as plain copies in its Attachments folder. The folder’s own provider moves them between Macs; KeepNote has no server and uses no CloudKit.";
 "1 archived" = "1 archived";
+"Mention" = "Mention";
+"URL" = "URL";
+"Paste as" = "Paste as";
+"Open Link" = "Open Link";
+"Copy Link" = "Copy Link";
+"Show as Mention" = "Show as Mention";
+"Show as Link" = "Show as Link";
+"Click to open · ⌥-click to edit" = "Click to open · ⌥-click to edit";
