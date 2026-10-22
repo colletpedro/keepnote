@@ -56,6 +56,7 @@
 "Add the daily tag to a note, or use Today’s Daily." = "Add the daily tag to a note, or use Today’s Daily.";
 "All" = "All";
 "All Notes" = "All Notes";
+"Amber" = "Amber";
 "Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu." = "Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu.";
 "Archive" = "Archive";
 "Archive %d Notes" = "Archive %d Notes";
@@ -68,6 +69,7 @@
 "Ask each time" = "Ask each time";
 "Automatic" = "Automatic";
 "Autosave after" = "Autosave after";
+"Blue" = "Blue";
 "Bold" = "Bold";
 "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu." = "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu.";
 "Bring" = "Bring";
@@ -104,6 +106,7 @@
 "Created %@\nEdited %@" = "Created %@\nEdited %@";
 "Created %@ · Edited %@" = "Created %@ · Edited %@";
 "Cut" = "Cut";
+"Cyan" = "Cyan";
 "Daily" = "Daily";
 "Daily Template" = "Daily Template";
 "Daily note" = "Daily note";
@@ -160,6 +163,7 @@
 "Get Started" = "Get Started";
 "Global" = "Global";
 "Got it" = "Got it";
+"Green" = "Green";
 "Heading" = "Heading";
 "Heading 1" = "Heading 1";
 "Heading 2" = "Heading 2";
@@ -177,6 +181,7 @@
 "Import…" = "Import…";
 "In use by another app" = "In use by another app";
 "Indent item" = "Indent item";
+"Indigo" = "Indigo";
 "Inline Code" = "Inline Code";
 "Inside a note" = "Inside a note";
 "Inside a note: %@." = "Inside a note: %@.";
@@ -200,6 +205,7 @@
 "Library" = "Library";
 "Lifts the note off the deck so it stays on screen" = "Lifts the note off the deck so it stays on screen";
 "Lilac" = "Lilac";
+"Lime" = "Lime";
 "Link" = "Link";
 "Lists" = "Lists";
 "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are." = "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are.";
@@ -256,12 +262,14 @@
 "Opens the note. The actions menu has its other commands." = "Opens the note. The actions menu has its other commands.";
 "Opens today’s daily note, or makes one" = "Opens today’s daily note, or makes one";
 "Option" = "Option";
+"Orange" = "Orange";
 "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note." = "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note.";
 "Outdent item" = "Outdent item";
 "Paste" = "Paste";
 "Pick a folder for your notes. iCloud Drive keeps them in sync between Macs." = "Pick a folder for your notes. iCloud Drive keeps them in sync between Macs.";
 "Pin to Center" = "Pin to Center";
 "Pin to Center holds up to five notes in the middle of the deck, always whole; Keep on Deck stops a note from being archived. Notes you have not opened for 14 days (you choose 7, 14 or 30 in Settings) move to the Archive on their own — never deleted, and a clock on the tab warns you for the last two days." = "Pin to Center holds up to five notes in the middle of the deck, always whole; Keep on Deck stops a note from being archived. Notes you have not opened for 14 days (you choose 7, 14 or 30 in Settings) move to the Archive on their own — never deleted, and a clock on the tab warns you for the last two days.";
+"Pink" = "Pink";
 "Pinned" = "Pinned";
 "Pinned and kept notes" = "Pinned and kept notes";
 "Pinned notes stay whole in the middle of the deck" = "Pinned notes stay whole in the middle of the deck";
@@ -271,6 +279,7 @@
 "Press to record a new shortcut." = "Press to record a new shortcut.";
 "Previous color" = "Previous color";
 "Previous match" = "Previous match";
+"Purple" = "Purple";
 "Puts the note back on the deck" = "Puts the note back on the deck";
 "Quit" = "Quit";
 "Quit KeepNote" = "Quit KeepNote";
@@ -278,6 +287,7 @@
 "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app’s window set." = "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app’s window set.";
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Reads notes, or a KeepNote archive, from files on this Mac.";
 "Recording" = "Recording";
+"Red" = "Red";
 "Redo" = "Redo";
 "Registered through the system’s hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registered through the system’s hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved.";
 "Relaunch Now" = "Relaunch Now";
@@ -316,6 +326,7 @@
 "Shows the earlier dailies" = "Shows the earlier dailies";
 "Single document — all selected notes" = "Single document — all selected notes";
 "Sky" = "Sky";
+"Slate" = "Slate";
 "Small" = "Small";
 "Space" = "Space";
 "Starts every new daily note" = "Starts every new daily note";
@@ -332,6 +343,7 @@
 "Tag %@" = "Tag %@";
 "Tags" = "Tags";
 "Tags: %@" = "Tags: %@";
+"Teal" = "Teal";
 "Text size" = "Text size";
 "That file is not a KeepNote archive." = "That file is not a KeepNote archive.";
 "That file is not a KeepNote note." = "That file is not a KeepNote note.";

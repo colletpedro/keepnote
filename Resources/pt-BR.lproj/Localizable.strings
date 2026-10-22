@@ -56,6 +56,7 @@
 "Add the daily tag to a note, or use Today’s Daily." = "Adicione a tag daily a uma nota ou use Daily de hoje.";
 "All" = "Todas";
 "All Notes" = "Todas as notas";
+"Amber" = "Âmbar";
 "Another app registered this shortcut first, so KeepNote does not receive it. The command still works from the menu." = "Outro app registrou este atalho antes, então o KeepNote não o recebe. O comando continua funcionando pelo menu.";
 "Archive" = "Arquivar";
 "Archive %d Notes" = "Arquivar %d notas";
@@ -68,6 +69,7 @@
 "Ask each time" = "Perguntar sempre";
 "Automatic" = "Automática";
 "Autosave after" = "Salvar automaticamente após";
+"Blue" = "Azul";
 "Bold" = "Negrito";
 "Bold, italic and strikethrough wrap the selection, or unwrap it if it is already wrapped. Link turns the selection into [text](url) and uses the URL on the clipboard; pasting a URL over selected text does the same. The lists apply to every selected line and toggle. The same commands sit at the top of the right-click menu." = "Negrito, itálico e tachado envolvem a seleção, ou a desembrulham se ela já estiver envolvida. Link transforma a seleção em [texto](url) e usa a URL da área de transferência; colar uma URL sobre um texto selecionado faz o mesmo. As listas valem para todas as linhas selecionadas e alternam. Os mesmos comandos ficam no topo do menu do clique direito.";
 "Bring" = "Trazer";
@@ -104,6 +106,7 @@
 "Created %@\nEdited %@" = "Criada em %@\nEditada em %@";
 "Created %@ · Edited %@" = "Criada %@ · editada %@";
 "Cut" = "Recortar";
+"Cyan" = "Ciano";
 "Daily" = "Daily";
 "Daily Template" = "Modelo da Daily";
 "Daily note" = "Nota daily";
@@ -160,6 +163,7 @@
 "Get Started" = "Começar";
 "Global" = "Globais";
 "Got it" = "Entendi";
+"Green" = "Verde";
 "Heading" = "Título";
 "Heading 1" = "Título 1";
 "Heading 2" = "Título 2";
@@ -177,6 +181,7 @@
 "Import…" = "Importar…";
 "In use by another app" = "Em uso por outro app";
 "Indent item" = "Recuar item";
+"Indigo" = "Índigo";
 "Inline Code" = "Código em linha";
 "Inside a note" = "Dentro de uma nota";
 "Inside a note: %@." = "Dentro de uma nota: %@.";
@@ -200,6 +205,7 @@
 "Library" = "Biblioteca";
 "Lifts the note off the deck so it stays on screen" = "Tira a nota da pilha para ela ficar na tela";
 "Lilac" = "Lilás";
+"Lime" = "Limão";
 "Link" = "Link";
 "Lists" = "Listas";
 "Locked notes could not be decrypted with the key on this Mac, so their tags were left as they are." = "Não foi possível decifrar as notas bloqueadas com a chave deste Mac, então as tags delas ficaram como estavam.";
@@ -256,12 +262,14 @@
 "Opens the note. The actions menu has its other commands." = "Abre a nota. O menu de ações tem os outros comandos.";
 "Opens today’s daily note, or makes one" = "Abre a nota daily de hoje, ou cria uma";
 "Option" = "Option";
+"Orange" = "Laranja";
 "Other tags cannot be renamed or merged into it. Add the tag to a note to make it a daily note." = "Outras tags não podem ser renomeadas para ela nem mescladas nela. Adicione a tag a uma nota para torná-la uma nota daily.";
 "Outdent item" = "Diminuir recuo do item";
 "Paste" = "Colar";
 "Pick a folder for your notes. iCloud Drive keeps them in sync between Macs." = "Escolha uma pasta para suas notas. O iCloud Drive as mantém sincronizadas entre os Macs.";
 "Pin to Center" = "Fixar no centro";
 "Pin to Center holds up to five notes in the middle of the deck, always whole; Keep on Deck stops a note from being archived. Notes you have not opened for 14 days (you choose 7, 14 or 30 in Settings) move to the Archive on their own — never deleted, and a clock on the tab warns you for the last two days." = "Fixar no centro mantém até cinco notas no meio da pilha, sempre inteiras; Manter na pilha impede que uma nota seja arquivada. Notas que você não abre há 14 dias (você escolhe 7, 14 ou 30 nos Ajustes) vão sozinhas para Arquivadas — nunca são apagadas, e um relógio na aba avisa nos dois últimos dias.";
+"Pink" = "Rosa";
 "Pinned" = "Fixada";
 "Pinned and kept notes" = "Notas fixadas e mantidas";
 "Pinned notes stay whole in the middle of the deck" = "As notas fixadas ficam inteiras no meio da pilha";
@@ -271,6 +279,7 @@
 "Press to record a new shortcut." = "Pressione para gravar um novo atalho.";
 "Previous color" = "Cor anterior";
 "Previous match" = "Resultado anterior";
+"Purple" = "Roxo";
 "Puts the note back on the deck" = "Devolve a nota à pilha";
 "Quit" = "Encerrar";
 "Quit KeepNote" = "Encerrar KeepNote";
@@ -278,6 +287,7 @@
 "Raises the deck above full-screen windows. Stage Manager leaves it alone either way, because a floating panel is not part of an app’s window set." = "Coloca a pilha acima das janelas em tela cheia. O Stage Manager não mexe nela de qualquer forma, porque um painel flutuante não faz parte do conjunto de janelas de um app.";
 "Reads notes, or a KeepNote archive, from files on this Mac." = "Lê notas, ou um arquivo do KeepNote, de arquivos deste Mac.";
 "Recording" = "Gravando";
+"Red" = "Vermelho";
 "Redo" = "Refazer";
 "Registered through the system’s hotkey API, which delivers only these combinations to KeepNote. No Accessibility or Input Monitoring permission is involved." = "Registrados pela API de atalhos do sistema, que entrega ao KeepNote só estas combinações. Nenhuma permissão de Acessibilidade ou de Monitoramento de Entrada é necessária.";
 "Relaunch Now" = "Reabrir agora";
@@ -316,6 +326,7 @@
 "Shows the earlier dailies" = "Mostra as dailies anteriores";
 "Single document — all selected notes" = "Documento único — todas as notas selecionadas";
 "Sky" = "Céu";
+"Slate" = "Ardósia";
 "Small" = "Pequeno";
 "Space" = "Espaço";
 "Starts every new daily note" = "Começa toda nova nota daily";
@@ -332,6 +343,7 @@
 "Tag %@" = "Tag %@";
 "Tags" = "Tags";
 "Tags: %@" = "Tags: %@";
+"Teal" = "Verde-azulado";
 "Text size" = "Tamanho do texto";
 "That file is not a KeepNote archive." = "Esse arquivo não é um arquivo do KeepNote.";
 "That file is not a KeepNote note." = "Esse arquivo não é uma nota do KeepNote.";
