@@ -32,10 +32,11 @@ final class DeckFixture {
         return collect(stack).sorted { (order[$0.noteID] ?? 0) < (order[$1.noteID] ?? 0) }
     }
 
-    /// The middle of the part of tab `index` that shows, in window coordinates.
+    /// The middle of the part of tab `index` the deck at rest shows — the part
+    /// that is the tab's whether or not it is lifted — in window coordinates.
     func pointOnSlice(_ index: Int) -> NSPoint {
         let card = cards[index]
-        return card.convert(NSPoint(x: card.bounds.midX + 4, y: card.bounds.maxY - card.visibleSlice / 2), to: nil)
+        return card.convert(NSPoint(x: card.bounds.midX + 4, y: card.bounds.maxY - stack.geometry.slices[index] / 2), to: nil)
     }
 
     func event(_ type: NSEvent.EventType, at point: NSPoint) -> NSEvent {
@@ -70,15 +71,21 @@ func runDeckTests() {
     expect("hover: reaches 12 pt further", String(Double(cards[12].frame.width)), String(Double(EdgeMetrics.tabWidth + 12)))
     let inClip = cards[12].superview!.convert(point, from: nil)
     expectTrue("hover: still under the cursor", cards[12].frame.contains(inClip))
-    expectTrue("hover: neighbours open part of the way",
-               cards[11].visibleSlice > cards[5].visibleSlice && cards[11].visibleSlice < EdgeMetrics.tabHeight)
-    expectTrue("hover: first and last tabs stay", cards[0].frame == resting[0] && cards[29].frame == resting[29])
+    expectTrue("hover: no other tab moves, neighbours included",
+               cards.indices.filter { $0 != 12 }.allSatisfy { cards[$0].frame == resting[$0] })
+    expectTrue("hover: nor shows more or less of itself",
+               cards.indices.filter { $0 != 12 }.allSatisfy { cards[$0].visibleSlice == deck.stack.geometry.slices[$0] })
+    expectTrue("hover: it is over its neighbours", cards[12].superview?.subviews.last === cards[12])
+    expectTrue("hover: grown out, not moved", cards[12].frame.minY == resting[12].minY && cards[12].frame.maxX == resting[12].maxX)
 
-    deck.move(to: NSPoint(x: point.x, y: point.y - 20))
-    expectTrue("hover: moving within the open tab keeps it", deck.stack.hoveredNoteID == deck.notes[12].id)
+    deck.move(to: NSPoint(x: point.x, y: point.y - 2))
+    expectTrue("hover: moving within the tab's slice keeps it", deck.stack.hoveredNoteID == deck.notes[12].id)
 
     deck.move(to: deck.pointOnSlice(13))
     expectTrue("hover: onto the neighbour below", deck.stack.hoveredNoteID == deck.notes[13].id)
+
+    expectTrue("hover: and the one before it is back under its neighbour",
+               cards[12].frame == resting[12] && cards[13].superview?.subviews.last === cards[13])
 
     deck.stack.mouseExited(with: deck.event(.mouseMoved, at: .zero))
     expectTrue("hover: leaving the deck closes it up", deck.stack.hoveredNoteID == nil && cards.map(\.frame) == resting)

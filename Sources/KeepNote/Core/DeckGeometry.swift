@@ -15,10 +15,12 @@ import CoreGraphics
 ///    there, the column scrolls, and a "+N" chip counts what is out of sight.
 ///
 /// With the cursor over a tab (`Hover`), that tab reaches `hoverLift` further
-/// out; where tabs overlap it is also uncovered entirely, the two tabs on
-/// either side open part of the way, and the rest close up to make the room,
-/// so the first and last tabs stay where they are. The open tab keeps its
-/// place under the cursor.
+/// out of the edge — and is drawn over its neighbours, which is the deck's
+/// job to do (it brings the tab to the front); where tabs overlap it shows
+/// whole. Nothing else moves: not a neighbour, not the first or last tab. Which
+/// tab is under the cursor is decided by the deck at rest — the slice each
+/// tab shows — so growing one never changes what the cursor is over, and a
+/// sweep down the deck lifts every tab in turn.
 ///
 /// With pinned notes (`PinnedBlock`) the deck is three parts, top to bottom:
 /// the unpinned tabs above, the pinned block, the unpinned tabs below. The
@@ -47,7 +49,9 @@ struct DeckGeometry: Equatable {
     /// Each tab's frame in the column, scrolled.
     var frames: [CGRect]
     /// How much of each tab shows, measured down from its top: the part the
-    /// tab below does not cover. The last tab always shows whole.
+    /// tab below does not cover. The last tab always shows whole. A hovered tab
+    /// is drawn over the ones below it, so it shows whole too; its slice here
+    /// is still the deck's, which is what decides which tab the cursor is on.
     var slices: [CGFloat]
     /// Opacity of each tab: tabs scrolled to the edge of the column fade over
     /// the last few points instead of being cut.
@@ -63,6 +67,10 @@ struct DeckGeometry: Equatable {
     var hiddenCount: Int
     /// The tab under the cursor, lifted.
     var hovered: Int?
+    /// How far a hovered tab reaches out of the edge, and which edge it is
+    /// flush with: the cursor is over a tab from the lift's width away too.
+    var lift: CGFloat = EdgeMetrics.hoverLift
+    var edge: ScreenEdge = .right
 
     /// The pinned block this was laid out around, if there was one.
     var pinned: PinnedBlock?
@@ -108,15 +116,29 @@ struct DeckGeometry: Equatable {
         var cursorY: CGFloat
     }
 
-    /// The tab drawn at `point`, in column coordinates. Lower tabs are drawn
-    /// over upper ones, so they are asked first. A tab only exists where its
-    /// side shows it: the unpinned tabs above the block stop at the block, the
-    /// ones below it stop at the foot of the column.
+    /// The tab the cursor is over at `point`, in column coordinates: the one
+    /// whose slice of the deck at rest is there — lower tabs cover upper ones —
+    /// reaching `lift` further towards the middle of the screen, as a hovered
+    /// tab does. A tab only exists where its side shows it: the unpinned tabs
+    /// above the block stop at the block, the ones below it stop at the foot
+    /// of the column.
     func tab(at point: CGPoint) -> Int? {
         guard point.y >= 0, point.y <= columnHeight else { return nil }
         return frames.indices.reversed().first { index in
-            frames[index].contains(point) && alphas[index] > 0.01 && clip(of: index).contains(point)
+            alphas[index] > 0.01 && clip(of: index).contains(point) && hitArea(of: index).contains(point)
         }
+    }
+
+    /// The part of tab `index` the cursor counts as over.
+    func hitArea(of index: Int) -> CGRect {
+        let frame = frames[index]
+        var area = CGRect(x: frame.minX, y: frame.maxY - slices[index], width: frame.width, height: slices[index])
+        if index != hovered {
+            // A tab that is not lifted still answers where it would reach.
+            if edge == .right { area.origin.x -= lift }
+            area.size.width += lift
+        }
+        return area
     }
 
     /// Where tab `index` can be seen: the whole column, or — around a pinned
@@ -141,16 +163,9 @@ struct DeckGeometry: Equatable {
         /// The "+N" chip and its gap, added under the column when scrolling.
         var overflowZone = EdgeMetrics.overflowHeight + EdgeMetrics.tabSpacing
         var fade: CGFloat = 26
+        /// How far a hovered tab reaches out of the edge: Settings > Deck >
+        /// Hover magnification. Nothing, with it off.
         var hoverLift = EdgeMetrics.hoverLift
-        /// How far the tabs next to an open one open, as a share of the way
-        /// from the resting step to a whole tab: one away, then two away.
-        var neighbourOpening: [CGFloat] = [0.5, 0.22]
-        /// The least of a tab that shows while another is open beside it.
-        var squeezedSlice: CGFloat = 10
-        /// How far inside the open tab the cursor is kept from its ends. Small
-        /// on purpose: a sweep down the deck leaves each open tab across its
-        /// bottom edge, and every point of margin pushes the next one down.
-        var cursorMargin: CGFloat = 2
     }
 
     /// How many tabs `usableHeight` holds before the deck has to scroll.
@@ -175,6 +190,7 @@ struct DeckGeometry: Equatable {
             count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
             lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, metrics: metrics)
         geometry.frames = geometry.frames.map { edge.mirrored($0, in: columnWidth) }
+        geometry.edge = edge
         return geometry
     }
 
@@ -226,32 +242,12 @@ struct DeckGeometry: Equatable {
         let offset = min(maxScroll, max(0, scrollOffset))
 
         // Each tab's top, measured down from the top of the content.
-        var tops = (0..<count).map { CGFloat($0) * step }
+        let tops = (0..<count).map { CGFloat($0) * step }
         var hovered: Int?
         if let hover, count > 0 {
             let cursor = column - hover.cursorY + offset
             let resting = (0..<count).last { tops[$0] <= cursor && cursor <= tops[$0] + height }
-            if let index = hover.index ?? resting, index < count {
-                if step < height {
-                    // While scrolling, only the tabs in view make room, between
-                    // the first and the last one showing, which stay put — so
-                    // opening a tab never pushes another out of sight.
-                    let restingTops = tops
-                    var first = 0
-                    var last = count - 1
-                    if mode == .scrolling {
-                        first = (0..<count).first { restingTops[$0] + step > offset } ?? 0
-                        last = (0..<count).last { restingTops[$0] < offset + column } ?? count - 1
-                        first = min(first, index)
-                        last = max(last, min(count - 1, index + 1))
-                    }
-                    hovered = index
-                    tops = openTops(restingTops, step: step, first: first, last: last,
-                                    open: index, cursor: cursor, metrics: metrics)
-                } else {
-                    hovered = index
-                }
-            }
+            if let index = hover.index ?? resting, index < count { hovered = index }
         }
 
         var frames: [CGRect] = []
@@ -280,7 +276,8 @@ struct DeckGeometry: Equatable {
         return DeckGeometry(
             mode: mode, step: step, frames: frames, slices: slices, alphas: alphas,
             columnHeight: column, columnBottom: bottom, deckHeight: column + bottom,
-            scrollOffset: offset, maxScrollOffset: maxScroll, hiddenCount: hidden, hovered: hovered
+            scrollOffset: offset, maxScrollOffset: maxScroll, hiddenCount: hidden, hovered: hovered,
+            lift: metrics.hoverLift
         )
     }
 
@@ -326,12 +323,11 @@ struct DeckGeometry: Equatable {
             }
             return (upper - shift, lower + shift, shift)
         }
-        func sides(_ room: (upper: CGFloat, lower: CGFloat, shift: CGFloat), upperHover: Hover? = nil, lowerHover: Hover? = nil)
-            -> (DeckGeometry, DeckGeometry) {
+        func sides(_ room: (upper: CGFloat, lower: CGFloat, shift: CGFloat)) -> (DeckGeometry, DeckGeometry) {
             (layout(count: above, usableHeight: room.upper, columnWidth: columnWidth, scrollOffset: scrollOffset,
-                    hover: upperHover, metrics: side),
+                    metrics: side),
              layout(count: below, usableHeight: room.lower, columnWidth: columnWidth, scrollOffset: lowerScrollOffset,
-                    hover: lowerHover, metrics: side))
+                    metrics: side))
         }
 
         var chip = false
@@ -349,50 +345,34 @@ struct DeckGeometry: Equatable {
         let lowerTop = shift - blockHeight / 2 - gap           // top of the lower side
         let blockTop = shift + blockHeight / 2
 
-        // A hover given in the column's coordinates is only known once the
-        // extent of the whole deck is; the column's origin is the bottom of the
-        // lower side (or of the block, without one).
+        // The column's origin is the bottom of the lower side (or of the
+        // block, without one).
         let bottom = below > 0 ? lowerTop - lower.columnHeight : blockTop - blockHeight
         let topEdge = above > 0 ? upperBase + upper.columnHeight : blockTop
         let zones = metrics.plusZone + (chip ? metrics.overflowZone : 0)
         let extent = min(half, max(topEdge, -(bottom - zones)))
         let columnBottomInMiddle = bottom
-        func middleY(fromColumn y: CGFloat) -> CGFloat { y + columnBottomInMiddle }
-
-        var hovered: Int?
-        if let hover {
-            let cursor = middleY(fromColumn: hover.cursorY)
-            var index = hover.index
-            if index == nil {
-                // The tab drawn under the cursor with nothing open.
-                var resting: [CGRect] = upper.frames.map { shifted($0, by: upperBase) }
-                resting += pinnedFrames(block, blockTop: blockTop, width: columnWidth, metrics: metrics)
-                resting += lower.frames.map { shifted($0, by: lowerTop - lower.columnHeight) }
-                index = resting.indices.reversed().first { resting[$0].minY <= cursor && cursor <= resting[$0].maxY }
-            }
-            if let index, index < count {
-                hovered = index
-                if index < above {
-                    (upper, lower) = sides(room, upperHover: Hover(index: index, cursorY: cursor - upperBase))
-                } else if index >= above + block.count {
-                    (upper, lower) = sides(room, lowerHover: Hover(
-                        index: index - above - block.count, cursorY: cursor - (lowerTop - lower.columnHeight)))
-                }
-            }
-        }
 
         // Everything in the column's coordinates, in the deck's order.
         var frames = upper.frames.map { shifted($0, by: upperBase - columnBottomInMiddle) }
-        var pinnedBlockFrames = pinnedFrames(block, blockTop: blockTop - columnBottomInMiddle, width: columnWidth, metrics: metrics)
-        if let hovered, hovered >= above, hovered < above + block.count {
-            let local = hovered - above
-            var frame = pinnedBlockFrames[local]
-            frame.origin.x -= metrics.hoverLift
-            frame.size.width += metrics.hoverLift
-            pinnedBlockFrames[local] = frame
-        }
-        frames += pinnedBlockFrames
+        frames += pinnedFrames(block, blockTop: blockTop - columnBottomInMiddle, width: columnWidth, metrics: metrics)
         frames += lower.frames.map { shifted($0, by: lowerTop - lower.columnHeight - columnBottomInMiddle) }
+        let slices = upper.slices + Array(repeating: height, count: block.count) + lower.slices
+
+        // The tab under the cursor is the one the deck at rest shows there
+        // (the lowest tab of those overlapping); growing it moves nothing.
+        var hovered: Int?
+        if let hover {
+            var index = hover.index
+            if index == nil {
+                index = frames.indices.reversed().first { frames[$0].maxY - slices[$0] <= hover.cursorY && hover.cursorY <= frames[$0].maxY }
+            }
+            if let index, index < count {
+                hovered = index
+                frames[index].origin.x -= metrics.hoverLift
+                frames[index].size.width += metrics.hoverLift
+            }
+        }
 
         let deckHeight = 2 * extent
         let columnBottom = columnBottomInMiddle + extent
@@ -403,7 +383,7 @@ struct DeckGeometry: Equatable {
             mode: mode,
             step: steps.min() ?? height + gap,
             frames: frames,
-            slices: upper.slices + Array(repeating: height, count: block.count) + lower.slices,
+            slices: slices,
             alphas: upper.alphas + Array(repeating: 1, count: block.count) + lower.alphas,
             columnHeight: deckHeight - columnBottom,
             columnBottom: columnBottom,
@@ -412,6 +392,7 @@ struct DeckGeometry: Equatable {
             maxScrollOffset: upper.maxScrollOffset,
             hiddenCount: upper.hiddenCount + lower.hiddenCount,
             hovered: hovered,
+            lift: metrics.hoverLift,
             pinned: block,
             chromeBottom: columnBottom - zones,
             upperClip: CGRect(x: 0, y: upperBase - columnBottomInMiddle, width: columnWidth,
@@ -434,87 +415,5 @@ struct DeckGeometry: Equatable {
             return CGRect(x: width - metrics.tabWidth, y: top - metrics.tabHeight,
                           width: metrics.tabWidth, height: metrics.tabHeight)
         }
-    }
-
-    /// Tops for overlapping tabs with tab `open` uncovered under `cursor`,
-    /// re-spacing the tabs from `first` to `last`, whose own tops stay put.
-    ///
-    /// The slices above the open tab and those from it down are worked out
-    /// separately, each side keeping its own total, which is what holds the
-    /// open tab in place: its top only moves as far as it must to keep the
-    /// cursor inside it, or for the side below to fit it whole.
-    private static func openTops(
-        _ resting: [CGFloat], step: CGFloat, first: Int, last: Int, open: Int, cursor: CGFloat, metrics: Metrics
-    ) -> [CGFloat] {
-        let height = metrics.tabHeight
-        let floor = min(metrics.squeezedSlice, step)
-        let origin = resting[first]
-        let total = resting[last] - origin
-        let cursor = cursor - origin
-        let below = Array(open..<last)
-        let required = (below.isEmpty ? 0 : height) + CGFloat(max(0, below.count - 1)) * floor
-
-        func desired(_ index: Int) -> (CGFloat, Int) {
-            let distance = abs(index - open)
-            if distance == 0 { return (height, 0) }
-            if distance <= metrics.neighbourOpening.count {
-                return (step + (height - step) * metrics.neighbourOpening[distance - 1], distance)
-            }
-            return (step, metrics.neighbourOpening.count + 1)
-        }
-        /// The least a side can close up to without squeezing the tabs
-        /// nearest the open one.
-        func roomForNeighbours(_ members: [Int]) -> CGFloat {
-            members.reduce(0) { sum, index in
-                let (value, tier) = desired(index)
-                return sum + (tier > metrics.neighbourOpening.count ? floor : value)
-            }
-        }
-
-        // Where the open tab's top goes: where it rests, moved only as far as
-        // its neighbours need for room on the short side, and never so far
-        // that the cursor is no longer on it.
-        let aboveMembers = Array(first..<open)
-        var above = resting[open] - origin
-        above = min(max(above, roomForNeighbours(aboveMembers)), total - roomForNeighbours(below))
-        above = min(max(above, cursor + metrics.cursorMargin - height), cursor - metrics.cursorMargin)
-        above = min(max(above, CGFloat(aboveMembers.count) * floor), total - required)
-        above = max(above, CGFloat(aboveMembers.count) * floor)
-        // Nothing above the first tab, nothing below the last: the end tabs
-        // stay put.
-        if open == first { above = 0 }
-        if below.isEmpty { above = total }
-
-        var slices: [Int: CGFloat] = [:]
-        for (members, sum) in [(aboveMembers, above), (below, total - above)] where !members.isEmpty {
-            var values = members.map { desired($0).0 }
-            let tiers = members.map { desired($0).1 }
-            var difference = sum - values.reduce(0, +)
-            // Room to spare goes to the farthest tabs; room wanting is taken
-            // from them first, down to the floor, and only then from tabs
-            // nearer the open one.
-            for tier in Set(tiers).sorted(by: >) where abs(difference) > 0.0001 {
-                let positions = members.indices.filter { tiers[$0] == tier }
-                if difference > 0 {
-                    for position in positions { values[position] += difference / CGFloat(positions.count) }
-                    difference = 0
-                } else {
-                    let available = positions.reduce(0) { $0 + max(0, values[$1] - floor) }
-                    let taken = min(available, -difference)
-                    guard available > 0 else { continue }
-                    for position in positions {
-                        values[position] -= taken * max(0, values[position] - floor) / available
-                    }
-                    difference += taken
-                }
-            }
-            for (position, index) in members.enumerated() { slices[index] = values[position] }
-        }
-
-        var tops = resting
-        for index in first..<last { tops[index + 1] = tops[index] + (slices[index] ?? step) }
-        // The end of the run stays exactly where it was, rounding aside.
-        tops[last] = resting[last]
-        return tops
     }
 }

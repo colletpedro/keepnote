@@ -15,6 +15,7 @@ final class AppSettings: ObservableObject {
         static let syncFolderBookmark = "syncFolderBookmark"
         static let fanStagger = "fanStaggerMilliseconds"
         static let openDelay = "openDelayMilliseconds"
+        static let hoverMagnification = "hoverMagnification"
         static let screenEdge = "screenEdge"
         static let carryOver = "dailyCarryOver"
         static let textSize = "textSize"
@@ -43,12 +44,14 @@ final class AppSettings: ObservableObject {
             Key.syncEnabled: false,
             Key.fanStagger: 45,
             Key.openDelay: Int(DeckIntent.defaultDelay * 1000),
+            Key.hoverMagnification: EdgeMetrics.defaultHoverMagnification,
             Key.autosaveDelay: 250,
             Key.undoWindow: 10,
             Key.archiveAfterDays: AutoArchive.defaultDays,
         ])
         fanStagger = Double(defaults.integer(forKey: Key.fanStagger)) / 1000.0
         openDelay = DeckIntent(delay: Double(defaults.integer(forKey: Key.openDelay)) / 1000.0).delay
+        hoverMagnification = min(max(defaults.integer(forKey: Key.hoverMagnification), 0), EdgeMetrics.hoverMagnificationLevels)
         autosaveDelay = Double(defaults.integer(forKey: Key.autosaveDelay)) / 1000.0
         undoWindow = Double(defaults.integer(forKey: Key.undoWindow))
         archiveAfterDays = AutoArchive.normalized(defaults.integer(forKey: Key.archiveAfterDays))
@@ -129,6 +132,22 @@ final class AppSettings: ObservableObject {
     @Published var openDelay: TimeInterval {
         didSet { defaults.set(Int((openDelay * 1000).rounded()), forKey: Key.openDelay) }
     }
+
+    /// Settings > Deck > Hover magnification, from 0 (Off) to
+    /// `EdgeMetrics.hoverMagnificationLevels` (Large): how far the tab under the
+    /// cursor reaches out of the edge. The default is the 12 pt the deck has
+    /// always lifted a tab by.
+    @Published var hoverMagnification: Int {
+        didSet {
+            let level = min(max(hoverMagnification, 0), EdgeMetrics.hoverMagnificationLevels)
+            if level != hoverMagnification { hoverMagnification = level; return }
+            defaults.set(level, forKey: Key.hoverMagnification)
+            NotificationCenter.default.post(name: .keepNoteWindowBehaviorChanged, object: nil)
+        }
+    }
+
+    /// The points a hovered tab reaches out, for the level set.
+    var hoverLift: CGFloat { EdgeMetrics.lift(forMagnification: hoverMagnification) }
 
     /// Which side of every screen the deck sits on. Takes effect at once.
     @Published var screenEdge: ScreenEdge = UserDefaults.standard.string(forKey: Key.screenEdge)

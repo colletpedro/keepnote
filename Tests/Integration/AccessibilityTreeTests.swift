@@ -55,10 +55,10 @@ func runAccessibilityTreeTests() {
         node.names.compactMap { $0 }.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? ""
     }
     /// The pieces inside the system's own controls: a scroller's arrows, a
-    /// stepper's halves, and the AppKit cells SwiftUI draws a Toggle, Picker
-    /// or Stepper with, whose name SwiftUI's node for the control carries.
+    /// stepper's halves, and the AppKit cells SwiftUI draws a Toggle, Picker,
+    /// Slider or Stepper with, whose name SwiftUI's node for the control carries.
     let systemParts = ["NSAccessibilityScrollerPart", "NSAccessibilityStepperArrowButton", "EditTrackingStepperCell",
-                       "PlatformSwitch", "SwiftUIPopupButtonCell"]
+                       "PlatformSwitch", "SwiftUIPopupButtonCell", "CustomMarkedSliderCell"]
     /// Every interactive element under `root`, counted, and the problems.
     func walk(_ root: Any, _ place: String) -> (count: Int, problems: [String]) {
         var count = 0

@@ -186,10 +186,12 @@ final class EdgePanelController: NSObject {
     /// The panel is wider than a tab: the extra strip on the inner side is
     /// where a hovered card grows into, so lifting one never clips it.
     private func deckFrame() -> NSRect {
-        let width = EdgeMetrics.tabWidth + EdgeMetrics.hoverGutter
+        let lift = AppSettings.shared.hoverLift
+        let width = EdgeMetrics.tabWidth + EdgeMetrics.gutter(forLift: lift)
         let geometry = DeckGeometry.layout(
-            count: notes.count, usableHeight: usableHeight, columnWidth: width, pinned: pinnedBlock, edge: edge)
-        return DeckPlacement.deckFrame(deckHeight: geometry.deckHeight, in: anchor, edge: edge)
+            count: notes.count, usableHeight: usableHeight, columnWidth: width, pinned: pinnedBlock, edge: edge,
+            metrics: DeckGeometry.Metrics(hoverLift: lift))
+        return DeckPlacement.deckFrame(deckHeight: geometry.deckHeight, in: anchor, edge: edge, lift: lift)
     }
 
     // MARK: - State

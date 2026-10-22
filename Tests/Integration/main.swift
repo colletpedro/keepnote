@@ -57,6 +57,7 @@ MainActor.assumeIsolated {
     runGroupArchiveTests()
     runDeckTests()
     runDeckClickTests()
+    runHoverMagnificationTests()
     runPinnedDeckTests()
     runExpiringMarkTests()
     runDeckUpdateTests()

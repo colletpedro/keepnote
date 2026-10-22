@@ -24,8 +24,8 @@ enum DeckPlacement {
 
     /// The open deck: as wide as a tab plus the room a hovered tab grows into,
     /// as tall as its geometry, never taller than the visible frame.
-    static func deckFrame(deckHeight: CGFloat, in visible: CGRect, edge: ScreenEdge) -> CGRect {
-        let width = EdgeMetrics.tabWidth + EdgeMetrics.hoverGutter
+    static func deckFrame(deckHeight: CGFloat, in visible: CGRect, edge: ScreenEdge, lift: CGFloat = EdgeMetrics.hoverLift) -> CGRect {
+        let width = EdgeMetrics.tabWidth + EdgeMetrics.gutter(forLift: lift)
         let height = min(deckHeight, visible.height)
         return CGRect(x: edge.flushX(width: width, in: visible), y: visible.midY - height / 2, width: width, height: height)
     }

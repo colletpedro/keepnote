@@ -31,6 +31,7 @@
 "%d notes were archived automatically" = "%d notes were archived automatically";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notes will lose this tag. The notes themselves are kept.";
 "%d of %@" = "%d of %@";
+"%d pt" = "%d pt";
 "%d tasks brought from %@" = "%d tasks brought from %@";
 "%d unfinished tasks from %@. Bring them?" = "%d unfinished tasks from %@. Bring them?";
 "1 locked note was not exported" = "1 locked note was not exported";
@@ -173,6 +174,8 @@
 "Hide KeepNote" = "Hide KeepNote";
 "Hide Others" = "Hide Others";
 "Highlight" = "Highlight";
+"Hover magnification" = "Hover magnification";
+"How far the tab under the cursor reaches out of the edge, over its neighbours; no other tab moves. The default is the 12 pt the deck has always lifted a tab by. With Reduce Motion on, a tab changes size at once." = "How far the tab under the cursor reaches out of the edge, over its neighbours; no other tab moves. The default is the 12 pt the deck has always lifted a tab by. With Reduce Motion on, a tab changes size at once.";
 "How long the cursor rests on the stripe before the deck opens. Arriving slowly opens it at once; crossing the edge quickly, on the way to another display, does not. Zero opens it on contact." = "How long the cursor rests on the stripe before the deck opens. Arriving slowly opens it at once; crossing the edge quickly, on the way to another display, does not. Zero opens it on contact.";
 "How long to wait after you stop typing before the note is written. Applies to notes opened from now on." = "How long to wait after you stop typing before the note is written. Applies to notes opened from now on.";
 "Import" = "Import";

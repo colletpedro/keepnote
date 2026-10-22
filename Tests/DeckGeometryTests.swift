@@ -97,59 +97,96 @@ func runDeckHoverTests() {
            deck(8, hover: .init(cursorY: spaced.frames[3].minY - 3)).hovered.map(String.init), nil)
 
     // Overlapping: every tab in turn, the cursor in the middle of its slice.
+    // The tab reaches out and nothing else moves: not a neighbour, not an end.
     let resting = deck(24)
-    var whole = true, anchored = true, ends = true, sticky = true, onScreen = true, neighbours = true, total = true
+    var lifted = true, stays = true, found = true, still = true, rest = true
     for open in 0..<24 {
-        let topEdge = resting.frames[open].maxY
-        let cursorY = topEdge - resting.slices[open] / 2
+        let cursorY = resting.frames[open].maxY - resting.slices[open] / 2
         let layout = deck(24, hover: .init(cursorY: cursorY))
-        if layout.hovered != open { sticky = false; continue }
-        if layout.slices[open] < full - 0.01 { whole = false }
-        if !(layout.frames[open].minY...layout.frames[open].maxY).contains(cursorY) { anchored = false }
-        if abs(layout.frames[0].maxY - layout.columnHeight) > 0.01 || abs(layout.frames[23].minY) > 0.01 { ends = false }
-        if layout.tab(at: CGPoint(x: 60, y: cursorY)) != open { sticky = false }
-        if layout.frames.contains(where: { $0.minY < -0.01 || $0.maxY > layout.columnHeight + 0.01 }) { onScreen = false }
-        if layout.slices.dropLast().contains(where: { $0 < 6 - 0.01 }) { onScreen = false }
-        if abs(layout.slices.dropLast().reduce(0, +) - resting.slices.dropLast().reduce(0, +)) > 0.01 { total = false }
-        // Two tabs from either end, the short side has no room for the
-        // second neighbour to open without the open tab leaving the cursor.
-        for distance in (3...19).contains(open) ? [1, 2] : [1] {
-            for index in [open - distance, open + distance] where index >= 0 && index < 23 && index != open {
-                let far = (0..<23).filter { abs($0 - open) > 2 }
-                if let other = far.first, layout.slices[index] <= layout.slices[other] { neighbours = false }
+        if layout.hovered != open { found = false; continue }
+        if f(layout.frames[open].width) != f(EdgeMetrics.tabWidth + lift) || f(layout.frames[open].maxX) != "74.00" { lifted = false }
+        if layout.frames[open].minY != resting.frames[open].minY || layout.frames[open].height != full { stays = false }
+        if layout.tab(at: CGPoint(x: 60, y: cursorY)) != open { found = false }
+        if !(0..<24).filter({ $0 != open }).allSatisfy({ layout.frames[$0] == resting.frames[$0] && layout.alphas[$0] == resting.alphas[$0] }) { still = false }
+        if layout.slices != resting.slices || layout.step != resting.step || layout.columnHeight != resting.columnHeight
+            || layout.deckHeight != resting.deckHeight || layout.hiddenCount != resting.hiddenCount { rest = false }
+    }
+    expectTrue("overlap hover: the tab under the cursor is found", found)
+    expectTrue("overlap hover: it reaches out 12 pt with its edge on the screen edge", lifted)
+    expectTrue("overlap hover: and stays where it was, whole height", stays)
+    expectTrue("overlap hover: no other tab moves, first and last included", still)
+    expectTrue("overlap hover: the deck's own numbers do not change", rest)
+
+    // The same on every mode and every size of lift, from Off to Large.
+    var nothingMoves = true, reaches = true
+    for count in [4, 9, 24, 60, 120] {
+        let base = DeckGeometry.layout(count: count, usableHeight: 926, columnWidth: 74)
+        for magnification in 0...EdgeMetrics.hoverMagnificationLevels {
+            let points = EdgeMetrics.lift(forMagnification: magnification)
+            let metrics = DeckGeometry.Metrics(hoverLift: points)
+            for index in stride(from: 0, to: count, by: max(1, count / 7)) {
+                let g = DeckGeometry.layout(count: count, usableHeight: 926, columnWidth: 74,
+                                            hover: .init(index: index, cursorY: base.frames[index].midY), metrics: metrics)
+                if g.hovered != index { nothingMoves = false; continue }
+                if f(g.frames[index].width) != f(EdgeMetrics.tabWidth + points) { reaches = false }
+                if !base.frames.indices.filter({ $0 != index }).allSatisfy({ g.frames[$0] == base.frames[$0] }) { nothingMoves = false }
+                if g.slices != base.slices || g.alphas != base.alphas { nothingMoves = false }
             }
         }
     }
-    expectTrue("overlap hover: the open tab is whole", whole)
-    expectTrue("overlap hover: it stays under the cursor", anchored)
-    expectTrue("overlap hover: the cursor still finds it there", sticky)
-    expectTrue("overlap hover: first and last tabs keep their places", ends)
-    expectTrue("overlap hover: no tab leaves the deck or vanishes", onScreen)
-    expectTrue("overlap hover: the others make exactly the room", total)
-    expectTrue("overlap hover: neighbours open more than the rest", neighbours)
+    expectTrue("magnification: a tab reaches out by the lift of the setting, Off to Large", reaches)
+    expectTrue("magnification: and nothing else moves at any of them, in any mode", nothingMoves)
+    expect("magnification: Off is no lift", f(EdgeMetrics.lift(forMagnification: 0)), "0.00")
+    expect("magnification: the default is the 12 pt of today", f(EdgeMetrics.lift(forMagnification: EdgeMetrics.defaultHoverMagnification)), f(EdgeMetrics.hoverLift))
+    expect("magnification: Large is three times that", f(EdgeMetrics.lift(forMagnification: EdgeMetrics.hoverMagnificationLevels)), f(3 * EdgeMetrics.hoverLift))
+    expect("magnification: past the ends is the ends", f(EdgeMetrics.lift(forMagnification: 99)) + f(EdgeMetrics.lift(forMagnification: -3)), "36.000.00")
+    expect("magnification: the gutter holds the default lift and its shadow", f(EdgeMetrics.gutter(forLift: EdgeMetrics.hoverLift)), f(EdgeMetrics.hoverGutter))
+    expectTrue("magnification: and grows with the lift", EdgeMetrics.gutter(forLift: 36) > EdgeMetrics.gutter(forLift: 12))
 
-    let middle = deck(24, hover: .init(cursorY: resting.frames[12].maxY - 5))
-    expectTrue("overlap hover: the nearer neighbour opens further",
-               middle.slices[11] > middle.slices[10] && middle.slices[13] > middle.slices[14])
-    expectTrue("overlap hover: neighbours open partly, not whole",
-               middle.slices[11] < full && middle.slices[13] < full && middle.slices[11] > resting.step)
-    expect("overlap hover: and reaches out 12 pt", f(middle.frames[12].width), f(EdgeMetrics.tabWidth + lift))
+    // Which tab the cursor is on is the deck at rest's answer, so growing a
+    // tab never changes it: wherever the cursor is, the tab it is over with
+    // nothing hovered is the one it is over once that tab has grown.
+    var agrees = true
+    var disagreement: [String] = []
+    for count in [9, 24, 60] {
+        let base = DeckGeometry.layout(count: count, usableHeight: 926, columnWidth: 74)
+        for magnification in [0, 2, 6] {
+            let metrics = DeckGeometry.Metrics(hoverLift: EdgeMetrics.lift(forMagnification: magnification))
+            var y = base.columnHeight
+            while y >= 0 {
+                for x in [50.0, 60.0, 73.0] as [CGFloat] {
+                    let point = CGPoint(x: x, y: y)
+                    let was = base.tab(at: point)
+                    guard let was else { continue }
+                    let g = DeckGeometry.layout(count: count, usableHeight: 926, columnWidth: 74,
+                                                hover: .init(index: was, cursorY: y), metrics: metrics)
+                    if g.tab(at: point) != was { agrees = false; disagreement.append("\(count)/\(magnification)@\(Int(y))") }
+                }
+                y -= 2
+            }
+        }
+    }
+    expectTrue("hover: growing a tab never changes the tab the cursor is over \(disagreement.prefix(3))", agrees)
 
-    // Moving onto the neighbour below keeps the cursor on the tab it reached.
-    let point = CGPoint(x: 60, y: middle.frames[13].maxY - middle.slices[13] / 2)
-    let next = middle.tab(at: point)
-    expect("overlap hover: the neighbour is found where it is drawn", next.map(String.init), "13")
-    let moved = deck(24, hover: .init(index: next, cursorY: point.y))
-    expectTrue("overlap hover: the newly open tab opens under the cursor",
-               moved.hovered == 13 && (moved.frames[13].minY...moved.frames[13].maxY).contains(point.y)
-               && moved.tab(at: point) == 13)
+    // The part to its inner side that a lifted tab covers still belongs to it,
+    // and to its neighbours at their own heights.
+    let atRest = deck(24)
+    let target = 10
+    let over = CGPoint(x: 74 - EdgeMetrics.tabWidth - lift / 2, y: atRest.frames[target].maxY - atRest.slices[target] / 2)
+    let grown = deck(24, hover: .init(index: target, cursorY: over.y))
+    expectTrue("hover: the lifted part is over the tab", grown.tab(at: over) == target)
+    expectTrue("hover: and so, from where it is, is the part beside it for a neighbour",
+               grown.tab(at: CGPoint(x: over.x, y: atRest.frames[target + 1].maxY - atRest.slices[target + 1] / 2)) == target + 1)
+    expectTrue("hover: past the lift is over nothing", grown.tab(at: CGPoint(x: 74 - EdgeMetrics.tabWidth - lift - 3, y: over.y)) == nil)
 
-    // Scrolling decks open the same way, inside their content.
+    // Scrolling decks do the same, inside their content.
     let sixty = deck(60, scroll: 200)
     let cursorY = sixty.frames[30].maxY - 4
     let scrolled = deck(60, scroll: 200, hover: .init(cursorY: cursorY))
-    expectTrue("scrolling hover: open and whole under the cursor", scrolled.hovered == 30
-               && scrolled.slices[30] >= full - 0.01 && (scrolled.frames[30].minY...scrolled.frames[30].maxY).contains(cursorY))
+    expectTrue("scrolling hover: the tab under the cursor reaches out and stays", scrolled.hovered == 30
+               && scrolled.frames[30].minY == sixty.frames[30].minY && f(scrolled.frames[30].width) == f(EdgeMetrics.tabWidth + lift))
+    expectTrue("scrolling hover: and nothing else moves",
+               (0..<60).filter { $0 != 30 }.allSatisfy { scrolled.frames[$0] == sixty.frames[$0] } && scrolled.scrollOffset == sixty.scrollOffset)
     expect("scrolling hover: the content keeps its length",
            f(scrolled.frames[59].minY - scrolled.frames[0].maxY), f(sixty.frames[59].minY - sixty.frames[0].maxY))
     expectTrue("no hover is the resting deck", deck(24, hover: nil) == resting)

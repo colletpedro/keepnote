@@ -42,6 +42,11 @@ final class EdgeStackView: NSView {
     private var roundButtons: [PlusButtonView] { [plusButton, dailyButton].compactMap { $0 } }
     private var trackingArea: NSTrackingArea?
 
+    /// How far the tab under the cursor reaches out of the edge: Settings >
+    /// Deck > Hover magnification.
+    private var lift: CGFloat { AppSettings.shared.hoverLift }
+    private var metrics: DeckGeometry.Metrics { DeckGeometry.Metrics(hoverLift: lift) }
+
     /// The cursor over the column, while it is over a tab.
     private var hover: DeckGeometry.Hover?
     /// The height the screen leaves for the deck, and where everything in it
@@ -235,9 +240,13 @@ final class EdgeStackView: NSView {
 
     private func setHover(_ newHover: DeckGeometry.Hover?) {
         let previous = geometry.hovered.map { cards[$0].noteID }
+        let before = geometry.hovered
         hover = newHover
         guard !cards.isEmpty else { return }
         relayout()
+        // The tab under the cursor is drawn over its neighbours; the others
+        // stay where they are.
+        if geometry.hovered != before { arrangeSides() }
         layoutCards(animated: true, config: .hover)
         let current = geometry.hovered.map { cards[$0].noteID }
         guard previous != current else { return }
@@ -301,7 +310,8 @@ final class EdgeStackView: NSView {
             lowerScrollOffset: lowerScrollOffset ?? self.lowerScrollOffset,
             pinned: pinnedBlock,
             hover: hover,
-            edge: edge
+            edge: edge,
+            metrics: metrics
         )
     }
 
@@ -324,13 +334,17 @@ final class EdgeStackView: NSView {
     }
 
     /// Puts every card in the part its place calls for, lower tabs over
-    /// upper ones, and `leaving` cards underneath their part's tabs.
+    /// upper ones — but for the hovered one, which is over all of them — and
+    /// `leaving` cards underneath their part's tabs.
     private func arrangeSides(leaving: [NoteCardView] = []) {
         for (index, card) in cards.enumerated() where card.superview !== side(forIndex: index) {
             side(forIndex: index).addSubview(card)
         }
+        let raised = geometry.hovered.flatMap { cards.indices.contains($0) ? cards[$0] : nil }
         for side in [upperSide, blockSide, lowerSide] {
-            let mine = cards.enumerated().filter { self.side(forIndex: $0.offset) === side }.map(\.element)
+            var mine = cards.enumerated().filter { self.side(forIndex: $0.offset) === side }.map(\.element)
+            // The hovered tab goes over the rest of its part of the column.
+            if let raised, let at = mine.firstIndex(of: raised) { mine.append(mine.remove(at: at)) }
             let going = leaving.filter { $0.superview === side }
             side.subviews = going + mine
         }
@@ -347,7 +361,8 @@ final class EdgeStackView: NSView {
     /// vanish — that hard cut is what made paging feel like a re-render.
     private func layoutCards(animated: Bool, config: SpringConfig = .scroll) {
         for (index, card) in cards.enumerated() {
-            card.visibleSlice = geometry.slices[index]
+            // A hovered tab is over its neighbours: it shows whole.
+            card.visibleSlice = index == geometry.hovered ? EdgeMetrics.tabHeight : geometry.slices[index]
             card.isHovered = index == geometry.hovered
             card.setTarget(geometry.frames[index], alpha: geometry.alphas[index], animated: animated, config: config)
         }
@@ -426,11 +441,11 @@ final class EdgeStackView: NSView {
         pinnedBlock = pinned
         let tabHeight = EdgeMetrics.tabHeight
         geometry = DeckGeometry.layout(count: notes.count, usableHeight: usableHeight, columnWidth: bounds.width,
-                                       pinned: pinned, edge: edge)
+                                       pinned: pinned, edge: edge, metrics: metrics)
 
         layoutChrome(showsOverflow: geometry.showsOverflow)
 
-        let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + EdgeMetrics.hoverLift, in: bounds.width)
+        let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + lift, in: bounds.width)
         for (index, note) in notes.enumerated() {
             let card = makeCard(for: note)
             side(forIndex: index).addSubview(card)
@@ -538,7 +553,7 @@ final class EdgeStackView: NSView {
         func local(_ rect: NSRect, in view: NSView) -> NSRect {
             view.convert(window.convertFromScreen(rect), from: nil)
         }
-        let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + EdgeMetrics.hoverLift, in: clip.bounds.width)
+        let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + lift, in: clip.bounds.width)
         for (index, card) in cards.enumerated() {
             let target = geometry.frames[index]
             if let was = snapshot.cards[card.noteID] {

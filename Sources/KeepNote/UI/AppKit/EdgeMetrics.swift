@@ -29,10 +29,29 @@ enum EdgeMetrics {
     /// lift plus the shadow's reach, or the highlight ends in a hard vertical
     /// cut — which is exactly what it is there to avoid.
     static let hoverGutter: CGFloat = 26
-    /// How much further a hovered tab reaches out of the deck. It grows
+    /// How much further a hovered tab reaches out of the deck, at the setting
+    /// the deck is made with (Settings > Deck > Hover magnification). It grows
     /// leftward with its right edge pinned: sliding it would peel it off the
     /// screen edge, which reads as the card being cut rather than picked up.
     static let hoverLift: CGFloat = 12
+    /// What the shadow of a lifted tab needs past the lift itself.
+    static let hoverShadowReach: CGFloat = 14
+    /// The magnification slider: Off at 0, each step this many points more,
+    /// Large at `hoverMagnificationLevels`. The deck's own 12 pt is level 2.
+    static let hoverMagnificationStep: CGFloat = 6
+    static let hoverMagnificationLevels = 6
+    static let defaultHoverMagnification = 2
+
+    /// How far a tab reaches at `level` of the slider.
+    static func lift(forMagnification level: Int) -> CGFloat {
+        CGFloat(min(max(level, 0), hoverMagnificationLevels)) * hoverMagnificationStep
+    }
+
+    /// The room beside the tabs for a lift of `lift` and its shadow. At the
+    /// deck's own 12 pt it is `hoverGutter`.
+    static func gutter(forLift lift: CGFloat) -> CGFloat {
+        lift + hoverShadowReach
+    }
     /// Every tab is this tall, however many there are: a deck that does not
     /// fit stacks its tabs more tightly, it never shrinks them.
     static let tabHeight: CGFloat = 104

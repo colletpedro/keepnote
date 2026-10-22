@@ -340,6 +340,13 @@ struct DailySettingsPane: View {
 struct DeckSettingsPane: View {
     @ObservedObject var settings: AppSettings
 
+    /// What VoiceOver hears for the slider: the ends by name, the rest in points.
+    static func magnificationWords(_ level: Int) -> String {
+        if level <= 0 { return L("Off") }
+        if level >= EdgeMetrics.hoverMagnificationLevels { return L("Large") }
+        return L("%d pt", Int(EdgeMetrics.lift(forMagnification: level)))
+    }
+
     var body: some View {
         Form {
             Section {
@@ -354,6 +361,28 @@ struct DeckSettingsPane: View {
                         .pickerStyle(.segmented)
                         .labelsHidden()
                         .fixedSize()
+                    }
+                }
+            }
+
+            Section {
+                Option(help: L("How far the tab under the cursor reaches out of the edge, over its neighbours; no other tab moves. The default is the 12 pt the deck has always lifted a tab by. With Reduce Motion on, a tab changes size at once.")) {
+                    LabeledContent(L("Hover magnification")) {
+                        HStack(spacing: 8) {
+                            Text(L("Off")).font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
+                            Slider(
+                                value: Binding(
+                                    get: { Double(settings.hoverMagnification) },
+                                    set: { settings.hoverMagnification = Int($0.rounded()) }
+                                ),
+                                in: 0...Double(EdgeMetrics.hoverMagnificationLevels), step: 1
+                            )
+                            .labelsHidden()
+                            .frame(width: 170)
+                            .accessibilityLabel(L("Hover magnification"))
+                            .accessibilityValue(Self.magnificationWords(settings.hoverMagnification))
+                            Text(L("Large")).font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
+                        }
                     }
                 }
             }

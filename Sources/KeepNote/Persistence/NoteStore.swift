@@ -739,7 +739,10 @@ final class NoteStore: ObservableObject {
     func createGroup(name: String, color: GroupColor? = nil) -> NoteGroup? {
         guard let name = NoteGroup.cleaned(name) else { return nil }
         let chosen = color ?? groups.last?.color.next ?? .default
-        let now = Date()
+        // To the millisecond, which is all a file in the sync folder keeps:
+        // two Macs must read the same moment, or two groups made at once could
+        // sort one way here and the other way there.
+        let now = Date(timeIntervalSince1970: (Date().timeIntervalSince1970 * 1000).rounded() / 1000)
         let group = NoteGroup(name: name, color: chosen, order: (groups.map(\.order).max() ?? -1) + 1,
                               createdAt: now, updatedAt: now)
         commit(GroupRecord(group: group, deletedAt: nil), origin: .local)

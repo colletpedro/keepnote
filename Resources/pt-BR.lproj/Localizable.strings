@@ -31,6 +31,7 @@
 "%d notes were archived automatically" = "%d notas foram arquivadas automaticamente";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notas vão perder esta tag. As notas em si são mantidas.";
 "%d of %@" = "%d de %@";
+"%d pt" = "%d pt";
 "%d tasks brought from %@" = "%d tarefas trazidas de %@";
 "%d unfinished tasks from %@. Bring them?" = "%d tarefas pendentes de %@. Trazer?";
 "1 locked note was not exported" = "1 nota bloqueada não foi exportada";
@@ -173,6 +174,8 @@
 "Hide KeepNote" = "Ocultar KeepNote";
 "Hide Others" = "Ocultar outros";
 "Highlight" = "Realce";
+"Hover magnification" = "Ampliação ao passar o mouse";
+"How far the tab under the cursor reaches out of the edge, over its neighbours; no other tab moves. The default is the 12 pt the deck has always lifted a tab by. With Reduce Motion on, a tab changes size at once." = "Quanto a aba sob o cursor avança para fora da borda, por cima das vizinhas; nenhuma outra aba se move. O padrão são os 12 pt que a pilha sempre usou. Com Reduzir movimento ligado, a aba muda de tamanho de uma vez.";
 "How long the cursor rests on the stripe before the deck opens. Arriving slowly opens it at once; crossing the edge quickly, on the way to another display, does not. Zero opens it on contact." = "Quanto tempo o cursor fica na faixa antes de a pilha abrir. Chegar devagar a abre na hora; cruzar a borda rápido, a caminho de outro monitor, não. Zero abre ao toque.";
 "How long to wait after you stop typing before the note is written. Applies to notes opened from now on." = "Quanto esperar depois que você para de digitar antes de gravar a nota. Vale para as notas abertas daqui em diante.";
 "Import" = "Importar";
