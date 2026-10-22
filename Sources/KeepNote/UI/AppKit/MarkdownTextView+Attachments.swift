@@ -330,6 +330,21 @@ extension MarkdownTextView {
         return []
     }
 
+    /// Whether ⌘V should attach rather than paste text: files copied in the
+    /// Finder, or a picture with no text of its own (a screenshot; an image
+    /// copied in a browser, which comes with at most its address). Text
+    /// copied from a document can carry a picture of itself too; it pastes as
+    /// text.
+    static func pastesAsAttachment(_ pasteboard: NSPasteboard) -> Bool {
+        if pasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) { return true }
+        let types = pasteboard.types ?? []
+        guard types.contains(.png) || types.contains(.tiff) else { return false }
+        guard let text = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            return true
+        }
+        return Formatting.url(from: text) != nil
+    }
+
     static func canAttach(from pasteboard: NSPasteboard) -> Bool {
         let types = pasteboard.types ?? []
         if pasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) { return true }

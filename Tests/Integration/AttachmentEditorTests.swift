@@ -249,3 +249,56 @@ func runAttachmentAccessibilityTests() {
     }
     window.close()
 }
+
+// MARK: - ⌘V with a picture on the clipboard
+
+@MainActor
+func runPasteImageTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("paste.sqlite"), key: SymmetricKey(size: .bits256))
+    let note = try! store.create(title: "Paste", body: "Before")
+    let window = NoteWindowController(note: note, store: store, originFrame: nil, cascadeIndex: 0, floating: true)
+    window.window.contentView?.layoutSubtreeIfNeeded()
+    spin(0.2)
+    guard let body = window.window.contentView.flatMap(textView(in:)) as? MarkdownTextView else {
+        expectTrue("paste: the editor is there", false)
+        return
+    }
+    let board = NSPasteboard(name: NSPasteboard.Name("keepnote-tests-\(UUID().uuidString)"))
+    body.pasteSource = board
+    let pasteItem = NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+    func paste(_ fill: () -> Void) {
+        board.clearContents()
+        fill()
+        body.setSelectedRange(NSRange(location: (body.string as NSString).length, length: 0))
+        body.paste(nil)
+        spin(0.05)
+    }
+
+    // A screenshot: a picture and nothing else.
+    board.clearContents()
+    board.setData(samplePNG(width: 200, height: 100), forType: .png)
+    expectTrue("paste: Paste is enabled with only a picture on the clipboard", body.validateUserInterfaceItem(pasteItem))
+    paste { board.setData(samplePNG(width: 200, height: 100), forType: .png) }
+    expect("paste: a screenshot becomes an image", String(AttachmentText.references(in: body.string).filter(\.isImage).count), "1")
+
+    // A picture copied in a browser: TIFF and its address.
+    paste {
+        let tiff = NSImage(data: samplePNG(width: 120, height: 90, color: .systemOrange))!.tiffRepresentation!
+        board.declareTypes([.tiff, .string], owner: nil)
+        board.setData(tiff, forType: .tiff)
+        board.setString("https://example.com/photo.jpg", forType: .string)
+    }
+    expect("paste: an image copied in a browser becomes an image too", String(AttachmentText.references(in: body.string).count), "2")
+
+    // Text from a document that carries a picture of itself: text.
+    paste {
+        board.declareTypes([.string, .tiff], owner: nil)
+        board.setString("Plain words", forType: .string)
+        board.setData(NSImage(data: samplePNG())!.tiffRepresentation!, forType: .tiff)
+    }
+    expectTrue("paste: copied text stays text", body.string.hasSuffix("Plain words"))
+    expect("paste: and adds no image", String(AttachmentText.references(in: body.string).count), "2")
+    window.flush()
+    expectTrue("paste: the images are saved with the note", AttachmentText.references(in: store.note(id: note.id)!.body).count == 2)
+    window.close()
+}

@@ -40,6 +40,8 @@ final class MarkdownTextView: NSTextView {
     var hasKeyboardFocus: Bool { window?.firstResponder === self }
     /// Where the note's attachments are kept, for drawing and adding them.
     weak var library: NoteStore?
+    /// Where ⌘V reads from: the clipboard (the tests hand in their own).
+    var pasteSource: NSPasteboard = .general
     /// The file Quick Look is showing, while it is.
     var quickLookURL: URL?
     var quickLookHolding = false
@@ -559,18 +561,20 @@ final class MarkdownTextView: NSTextView {
     /// A URL pasted over selected text becomes a link on that text. Files
     /// and pictures on the clipboard (a screenshot, say) become attachments.
     override func paste(_ sender: Any?) {
-        let board = NSPasteboard.general
-        if isEditable, library != nil, Self.canAttach(from: board), board.string(forType: .string) == nil
-            || board.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) {
+        let board = pasteSource
+        if isEditable, library != nil, Self.pastesAsAttachment(board) {
             let candidates = Self.candidates(from: board)
             if !candidates.isEmpty {
                 insertAttachments(candidates, at: selectedRange())
                 return
             }
         }
-        if isEditable, let pasted = NSPasteboard.general.string(forType: .string),
+        if isEditable, let pasted = board.string(forType: .string),
            let result = Formatting.pasteURL(currentEdit, pasted: pasted) {
             apply(result)
+        } else if isEditable, board !== NSPasteboard.general, let pasted = board.string(forType: .string) {
+            // The tests' own clipboard: the text as the system would paste it.
+            insertText(pasted, replacementRange: selectedRange())
         } else {
             super.paste(sender)
         }
@@ -600,6 +604,11 @@ final class MarkdownTextView: NSTextView {
     override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         if let action = item.action, FormatCommand.allCases.contains(where: { $0.action == action }) {
             return isEditable
+        }
+        // A plain-text view only enables Paste for text: with a screenshot
+        // alone on the clipboard, ⌘V did nothing at all.
+        if item.action == #selector(paste(_:)), isEditable, library != nil, Self.pastesAsAttachment(pasteSource) {
+            return true
         }
         return super.validateUserInterfaceItem(item)
     }

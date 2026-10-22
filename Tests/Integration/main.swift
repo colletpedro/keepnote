@@ -103,6 +103,7 @@ MainActor.assumeIsolated {
     runBackupSpaceTests()
     runAttachmentEditorTests()
     runAttachmentCardTests()
+    runPasteImageTests()
     runAttachmentDisplayTests()
     runAttachmentAccessibilityTests()
     runLinkHoverTests()
