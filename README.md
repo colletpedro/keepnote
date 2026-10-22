@@ -22,7 +22,7 @@ Requires a Mac with an Apple chip (M1 or later) and macOS 13 or newer. The downl
 
 ## Updates
 
-KeepNote does not check for updates by itself, because it has no network access. New versions are published on [the site](https://colletpedro.github.io/keepnote/) and on the [releases page](https://github.com/colletpedro/keepnote/releases). **Settings → About → Check for Updates…** opens the site in your browser.
+KeepNote does not check for updates by itself, because it has no network access. New versions are published on [the site](https://colletpedro.github.io/keepnote/) and on the [releases page](https://github.com/colletpedro/keepnote/releases). **Settings → About → Check for Updates…** opens the site in your browser. After updating, macOS may ask for access to the Keychain key that encrypts your notes; choose **Always Allow**, no notes are lost.
 
 ## Why does macOS show a warning?
 

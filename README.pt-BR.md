@@ -22,7 +22,7 @@ Requer um Mac com chip Apple (M1 ou mais novo) e macOS 13 ou mais recente. O dow
 
 ## Atualizações
 
-O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem [no site](https://colletpedro.github.io/keepnote/pt-br/) e na [página de releases](https://github.com/colletpedro/keepnote/releases). **Ajustes → Sobre → Buscar atualizações…** abre o site no navegador.
+O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem [no site](https://colletpedro.github.io/keepnote/pt-br/) e na [página de releases](https://github.com/colletpedro/keepnote/releases). **Ajustes → Sobre → Buscar atualizações…** abre o site no navegador. Depois de atualizar, o macOS pode pedir acesso à chave do Keychain que cifra as notas; escolha **Sempre permitir**, nenhuma nota se perde.
 
 ## Por que o macOS mostra um aviso?
 
