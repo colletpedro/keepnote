@@ -298,3 +298,30 @@ func runPaneKeyboardTests() {
     _ = first
     window.close()
 }
+
+/// A note without the keyboard shows no markup, wherever its caret was left;
+/// with the keyboard, the markup around the caret shows.
+@MainActor
+func runRestingMarkupTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("resting.sqlite"), key: SymmetricKey(size: .bits256))
+    let note = try! store.create(title: "Plan", body: "## Today\nText")
+    let window = NoteWindowController(note: note, store: store, originFrame: nil, cascadeIndex: 0, floating: true)
+    window.window.contentView?.layoutSubtreeIfNeeded()
+    spin(0.2)
+    guard let body = window.window.contentView.flatMap(textView(in:)) as? MarkdownTextView, let storage = body.textStorage else {
+        expectTrue("resting: the editor is there", false)
+        return
+    }
+    func hashHidden() -> Bool { ((storage.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)?.pointSize ?? 14) < 1 }
+    window.window.makeFirstResponder(nil)
+    spin(0.1)
+    expectTrue("resting: without the keyboard, \"##\" is hidden even with the caret on its line", hashHidden())
+    window.window.makeFirstResponder(body)
+    body.setSelectedRange(NSRange(location: 3, length: 0))
+    spin(0.1)
+    expectTrue("resting: with the keyboard and the caret there, it shows", !hashHidden())
+    window.window.makeFirstResponder(nil)
+    spin(0.1)
+    expectTrue("resting: and hides again when the keyboard goes", hashHidden())
+    window.close()
+}

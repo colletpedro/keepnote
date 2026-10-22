@@ -35,7 +35,7 @@ enum SettingsTab: Int, CaseIterable {
     /// Each pane is a fixed size; the window animates between them.
     var paneHeight: CGFloat {
         switch self {
-        case .general: return 600
+        case .general: return 625
         case .notes: return 270
         case .deck: return 370
         case .daily: return 330

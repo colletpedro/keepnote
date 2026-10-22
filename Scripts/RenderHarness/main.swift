@@ -313,7 +313,7 @@ MainActor.assumeIsolated {
         open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in }, delete: { _ in }, export: { _ in })))
     render("settings-deck", size: CGSize(width: SettingsWindowController.paneWidth, height: SettingsTab.deck.paneHeight),
            DeckSettingsPane(settings: AppSettings.shared))
-    render("welcome", size: CGSize(width: 440, height: 690), WelcomeView(onDone: {}))
+    render("welcome", size: CGSize(width: 440, height: 724), WelcomeView(onDone: {}))
     render("settings-shortcuts", size: CGSize(width: SettingsWindowController.paneWidth, height: SettingsTab.shortcuts.paneHeight),
            ShortcutsSettingsPane())
     render("settings-about", size: CGSize(width: SettingsWindowController.paneWidth, height: SettingsTab.about.paneHeight),

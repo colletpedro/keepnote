@@ -1112,7 +1112,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         }
         let controller = HostingWindowController(
             title: L("Welcome to KeepNote"),
-            size: NSSize(width: 440, height: 690),
+            size: NSSize(width: 440, height: 724),
             autosaveName: "KeepNote.Welcome",
             styleMask: [.titled, .closable],
             minSize: NSSize(width: 440, height: 300),

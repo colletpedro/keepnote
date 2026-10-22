@@ -78,6 +78,7 @@ struct NoteTextView: NSViewRepresentable {
         coordinator.styler = MarkdownStyler(ink: color.ink, accent: color.accent, highlight: color.spine, increaseContrast: DisplayOptions.increaseContrast,
                                     scale: context.environment.textScale)
         textView.onWidthChange = { [weak coordinator] in coordinator?.restyle(force: true) }
+        textView.onFocusChange = { [weak coordinator] in coordinator?.restyle(force: true) }
         // Setting the text leaves the selection at its end, and AppKit
         // scrolls to it: a note whose last line is tall (an image) would open
         // scrolled past its first lines. It starts at the top; whoever opens
@@ -191,7 +192,11 @@ struct NoteTextView: NSViewRepresentable {
             let tableWidth = (container?.size.width ?? 0) - 2 * (container?.lineFragmentPadding ?? 0)
 
             let attachments = (textView as? MarkdownTextView)?.library?.attachments ?? [:]
-            styler.apply(to: storage, selection: selection, tableWidth: tableWidth, attachments: attachments)
+            // Without the keyboard nothing is revealed: a note at rest shows
+            // no markup, wherever its caret was left.
+            let focused = (textView as? MarkdownTextView)?.hasKeyboardFocus ?? true
+            let revealing = focused ? selection : NSRange(location: NSNotFound, length: 0)
+            styler.apply(to: storage, selection: revealing, tableWidth: tableWidth, attachments: attachments)
             textView.typingAttributes = styler.baseAttributes
             if let markdownView = textView as? MarkdownTextView {
                 markdownView.accentColor = styler.accent

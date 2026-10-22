@@ -492,3 +492,4 @@
 "Dismiss" = "Fechar";
 "Use {date} for today’s date and {weekday} for the day of the week. They are filled in when a new daily note is created." = "Use {date} para a data de hoje e {weekday} para o dia da semana. Eles são preenchidos quando uma nova nota daily é criada.";
 "One plain-text file per note, written where you choose — iCloud Drive by default, with the notes’ images and files as plain copies in its Attachments folder. The folder’s own provider moves them between Macs; KeepNote has no server and uses no CloudKit." = "Um arquivo de texto simples por nota, gravado onde você escolher — o iCloud Drive por padrão, com as imagens e os arquivos das notas como cópias comuns na pasta Attachments dele. O próprio serviço da pasta os leva entre os Macs; o KeepNote não tem servidor nem usa o CloudKit.";
+"1 archived" = "1 arquivada";

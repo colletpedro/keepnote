@@ -72,7 +72,7 @@ struct ArchiveView: View {
 
     private var footer: some View {
         HStack {
-            Text(L("%d archived", results.count))
+            Text(Lplural(results.count, L("1 archived"), L("%d archived")))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             Spacer()

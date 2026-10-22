@@ -20,6 +20,24 @@ final class MarkdownTextView: NSTextView {
     var currentFindMatch: Int? { didSet { if currentFindMatch != oldValue { needsDisplay = true } } }
     /// Tables are laid out for a width, so a resize has to restyle.
     var onWidthChange: (() -> Void)?
+    /// The markup shows around the caret only while the text has the
+    /// keyboard, so gaining or losing it restyles.
+    var onFocusChange: (() -> Void)?
+
+    override func becomeFirstResponder() -> Bool {
+        let became = super.becomeFirstResponder()
+        if became { onFocusChange?() }
+        return became
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let resigned = super.resignFirstResponder()
+        if resigned { DispatchQueue.main.async { [weak self] in self?.onFocusChange?() } }
+        return resigned
+    }
+
+    /// Whether the text has the keyboard (its window's first responder).
+    var hasKeyboardFocus: Bool { window?.firstResponder === self }
     /// Where the note's attachments are kept, for drawing and adding them.
     weak var library: NoteStore?
     /// The file Quick Look is showing, while it is.

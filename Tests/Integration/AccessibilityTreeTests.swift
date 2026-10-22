@@ -148,7 +148,7 @@ func runAccessibilityTreeTests() {
     settingsWindow.window.close()
 
     // Welcome.
-    let welcome = HostingWindowController(title: "Welcome", size: NSSize(width: 440, height: 690), autosaveName: "ax-welcome",
+    let welcome = HostingWindowController(title: "Welcome", size: NSSize(width: 440, height: 724), autosaveName: "ax-welcome",
                                           rootView: WelcomeView(onDone: {}))
     welcome.window.layoutIfNeeded()
     check("Welcome", welcome.window.contentView!, atLeast: 0)

@@ -226,7 +226,7 @@ MainActor.assumeIsolated {
     // MARK: Welcome, Archive
 
     for (appearanceName, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-        shoot("welcome-\(appearanceName)", size: CGSize(width: 440, height: 690), appearance: appearance, titled: true,
+        shoot("welcome-\(appearanceName)", size: CGSize(width: 440, height: 724), appearance: appearance, titled: true,
               title: L("Welcome to KeepNote"), WelcomeView(onDone: {}))
         shoot("archive-\(appearanceName)", size: CGSize(width: 560, height: 440), appearance: appearance, titled: true,
               title: L("[noun] Archive"), ArchiveView(store: store, actions: actions))

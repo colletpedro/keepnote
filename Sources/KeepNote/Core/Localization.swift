@@ -130,8 +130,8 @@ func Lplural(_ count: Int, _ one: String, _ other: String) -> String {
     String(format: count == 1 ? one : other, locale: Localization.locale, count)
 }
 
-/// A file size in the interface's language: "9.7 MB", "9,7 MB" — not in the
-/// Mac's, which `ByteCountFormatter` uses whatever the app is set to.
+/// A file size as the Finder writes it, "245 KB", "9,7 MB": the units and the
+/// decimal mark of this Mac's region, like every other number in the app.
 func Lbytes(_ count: Int) -> String {
-    Int64(count).formatted(.byteCount(style: .file).locale(Localization.locale))
+    ByteCountFormatter.string(fromByteCount: Int64(count), countStyle: .file)
 }

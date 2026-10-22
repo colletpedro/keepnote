@@ -1,3 +1,4 @@
+import CryptoKit
 import AppKit
 import SwiftUI
 
@@ -152,5 +153,33 @@ enum SwiftLiteralsLite {
             }
         }
         return result
+    }
+}
+
+// MARK: - All Notes fits its smallest window, whatever the pane shows
+
+@MainActor
+func runAllNotesHeightTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("heights.sqlite"), key: SymmetricKey(size: .bits256))
+    let plain = try! store.create(title: "Plain", body: "Some text\n- [ ] a task")
+    let archived = try! store.create(title: "Old", body: "Kept for the record")
+    try! store.archive(id: archived.id)
+    let locked = Note(title: "Bank", body: "\u{26A0}\u{FE0F} " + L("This note could not be decrypted with the key on this Mac."),
+                      color: .lilac, state: .active, tags: ["home"], isLocked: true)
+    try! store.insert(locked, origin: .local)
+    let daily = try! store.create(title: "Daily", body: "x", tags: ["daily"])
+    store.setDailyTemplate("# {weekday}\n- [ ] ")
+    let actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in }, delete: { _ in }, export: { _ in })
+    let states: [(String, NoteSelection, Set<UUID>)] = [
+        ("a note", .default, [plain.id]), ("an archived note", .library(.archived), [archived.id]),
+        ("a locked note", .default, [locked.id]), ("two notes", .default, [plain.id, archived.id]),
+        ("nothing", .default, []), ("the template", .library(.daily), [DailyTemplatePane.rowID]),
+        ("a daily", .library(.daily), [daily.id]),
+    ]
+    for (name, sidebar, selection) in states {
+        let (_, hosting) = hostAllNotes(store, actions: actions, sidebar: sidebar, selecting: selection)
+        let need = hosting.fittingSize
+        expectTrue("All Notes (\(Localization.language)) with \(name) fits its smallest window (\(Int(need.width))×\(Int(need.height)))",
+                   need.width <= 900 + 1 && need.height <= 480 + 1)
     }
 }

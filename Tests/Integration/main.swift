@@ -34,6 +34,7 @@ MainActor.assumeIsolated {
     // the buttons alone.
     if ProcessInfo.processInfo.environment["KEEPNOTE_TESTS"] == "buttons" {
         runButtonTextTests()
+        runAllNotesHeightTests()
         finish()
     }
     runLockedNoteTests()
@@ -109,7 +110,9 @@ MainActor.assumeIsolated {
     runAttachmentStorageTests()
     runMarkGeometryTests()
     runButtonTextTests()
+    runAllNotesHeightTests()
     runEllipsisTests()
+    runRestingMarkupTests()
     removeScratch()
     UserDefaults.standard.removePersistentDomain(forName: ProcessInfo.processInfo.processName)
 }

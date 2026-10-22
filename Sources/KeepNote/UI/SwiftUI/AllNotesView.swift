@@ -694,6 +694,9 @@ struct NoteRow: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = Localization.locale
         formatter.unitsStyle = .abbreviated
+        // A column of its own, so it starts with a capital like "Just now":
+        // "Há 5 min", not "há 5 min" under "Agora mesmo".
+        formatter.formattingContext = .beginningOfSentence
         return formatter
     }()
 }
@@ -773,9 +776,14 @@ struct NoteReadingPane: View {
     /// stays archived.
     private func paneNotice(_ symbol: String, _ text: String) -> some View {
         Label {
+            // Wraps to the pane's width, never asks for more height than
+            // three lines: a fixed height here made the split view measure
+            // the text at its narrowest, a word a line, and the whole window
+            // grew taller than the screen.
             Text(text)
                 .scaledFont(11.5)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(3)
+                .truncationMode(.tail)
         } icon: {
             Image(systemName: symbol)
                 .scaledFont(11)
