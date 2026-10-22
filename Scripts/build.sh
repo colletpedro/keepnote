@@ -2,8 +2,9 @@
 #
 # Builds KeepNote.app without Xcode: swiftc straight to a binary, then the
 # bundle assembled around it, then a signature so the sandbox entitlements
-# actually apply. The identity is KEEPNOTE_SIGN_ID (default "KeepNote Dev", a
-# self-signed Code Signing certificate). On a fresh clone that certificate does
+# actually apply. The identity is KEEPNOTE_SIGN_ID (default: the release
+# identity of Scripts/signing-identity.sh, a self-signed Code Signing
+# certificate; releases always use it, see Scripts/SIGNING.md). On a fresh clone that certificate does
 # not exist: the build then signs ad-hoc, with a warning, so one command works.
 # A KEEPNOTE_SIGN_ID that is set and missing is an error. An "Apple
 # Development" identity, if the keychain has one, is used before "KeepNote
@@ -212,7 +213,9 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 # with every build — so each rebuild asked for the key again.
 TEAM_ID_IDENTITY="$(security find-identity -p codesigning -v 2>/dev/null \
     | sed -n 's/.*"\(Apple Development: [^"]*([A-Z0-9]\{10\})\)".*/\1/p' | head -1)"
-SIGN_ID="${KEEPNOTE_SIGN_ID:-${TEAM_ID_IDENTITY:-KeepNote Dev}}"
+# shellcheck source=signing-identity.sh
+. "$ROOT/Scripts/signing-identity.sh"
+SIGN_ID="${KEEPNOTE_SIGN_ID:-${TEAM_ID_IDENTITY:-$RELEASE_SIGN_ID}}"
 ADHOC_REASON=""
 if [ "${KEEPNOTE_ALLOW_ADHOC:-0}" = "1" ]; then
     ADHOC_REASON="KEEPNOTE_ALLOW_ADHOC=1"
@@ -231,8 +234,8 @@ warn_adhoc() {
         echo "#  for access to the Keychain key that encrypts your notes."
         echo "#  Your notes are not lost; choose Allow."
         echo "#"
-        echo "#  To stop the prompts, create the \"$SIGN_ID\" certificate once:"
-        echo "#  see \"Build from source\" in the README."
+        echo "#  To stop the prompts, sign with a certificate that has a Team ID"
+        echo "#  (a free Apple Development one): see \"Build from source\" in the README."
         echo "################################################################"
         echo
     } >&2
@@ -264,7 +267,7 @@ if [ "$INSTALL" = "1" ]; then
     # would make the Keychain ask for the notes key again.
     if [ "${KEEPNOTE_ALLOW_ADHOC:-0}" != "1" ] && codesign -dvv "$APP" 2>&1 | grep -q "^Signature=adhoc"; then
         echo "error: the build is signed ad-hoc; refusing to install it." >&2
-        echo "       Create the \"$SIGN_ID\" certificate, or set KEEPNOTE_ALLOW_ADHOC=1 to install it anyway." >&2
+        echo "       Sign with a certificate (see \"Build from source\" in the README), or set KEEPNOTE_ALLOW_ADHOC=1 to install it anyway." >&2
         exit 1
     fi
 

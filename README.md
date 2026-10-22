@@ -62,7 +62,7 @@ cd keepnote
 
 That builds the app into `build/` and opens it. On a fresh clone there is no signing certificate, so the build is signed **ad-hoc** and prints a visible warning. An ad-hoc signature changes with every build, so after each rebuild macOS asks again for access to the Keychain item holding the key that encrypts your notes; choose Allow, no notes are lost.
 
-To stop those prompts, sign with a certificate that has a **Team ID**: an **Apple Development** certificate, which Xcode makes for any Apple ID, free (Xcode → Settings → Accounts → Manage Certificates → +). The build finds it and uses it by itself. The Keychain keeps the key's permission per team for such an app, so every build is the same app to it. A self-signed certificate (**KeepNote Dev**: Keychain Access, **Certificate Assistant → Create a Certificate…**, **Self-Signed Root**, **Code Signing**) keeps the signature stable but has no Team ID, so the Keychain still asks after each rebuild. Another certificate works with `KEEPNOTE_SIGN_ID="Name"`.
+To stop those prompts, sign with a certificate that has a **Team ID**: an **Apple Development** certificate, which Xcode makes for any Apple ID, free (Xcode → Settings → Accounts → Manage Certificates → +). The build finds it and uses it by itself. The Keychain keeps the key's permission per team for such an app, so every build is the same app to it. A self-signed certificate does not do this: it has no Team ID, so the Keychain asks again after every rebuild, however stable its signature. Another certificate with a Team ID works with `KEEPNOTE_SIGN_ID="Name"`. Releases are signed differently, by a fixed identity; see `Scripts/SIGNING.md`.
 
 | Command | What it does |
 |---|---|

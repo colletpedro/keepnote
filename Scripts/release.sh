@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Builds the downloadable KeepNote: an optimised arm64 build signed with
-# KEEPNOTE_SIGN_ID (default "KeepNote Dev"), packed into a disk image.
+# the fixed release identity (Scripts/signing-identity.sh), packed into a disk image.
 #
 #   ./Scripts/release.sh
 #
@@ -18,7 +18,8 @@
 # The app is not notarised (that needs a paid Apple Developer ID), so macOS
 # shows its "could not verify" warning on the first open. Unlike build.sh this
 # script never falls back to an ad-hoc signature by itself; set
-# KEEPNOTE_ALLOW_ADHOC=1 to ship one on purpose.
+# KEEPNOTE_ALLOW_ADHOC=1 to ship one on purpose. The identity cannot be changed
+# from the environment: see Scripts/SIGNING.md.
 #
 set -euo pipefail
 
@@ -33,12 +34,15 @@ SITE_VERSION="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p
 WORK="$(mktemp -d)"
 APP="$WORK/KeepNote.app"
 DMG="$DIST/KeepNote.dmg"
-SIGN_ID="${KEEPNOTE_SIGN_ID:-KeepNote Dev}"
+# shellcheck source=signing-identity.sh
+. "$ROOT/Scripts/signing-identity.sh"
+SIGN_ID="$RELEASE_SIGN_ID"
 
 if [ "${KEEPNOTE_ALLOW_ADHOC:-0}" != "1" ] \
-    && ! security find-identity -p codesigning 2>/dev/null | grep -qF "\"$SIGN_ID\""; then
-    echo "error: no \"$SIGN_ID\" code-signing certificate in the keychain." >&2
-    echo "       Set KEEPNOTE_SIGN_ID to one that exists, or KEEPNOTE_ALLOW_ADHOC=1 to ship an ad-hoc build." >&2
+    && ! security find-identity -p codesigning 2>/dev/null | grep -qF "$RELEASE_SIGN_SHA1 \"$SIGN_ID\""; then
+    echo "error: the \"$SIGN_ID\" certificate with SHA-1 $RELEASE_SIGN_SHA1 is not in the keychain." >&2
+    echo "       A certificate of the same name made later is a different signature, not this one." >&2
+    echo "       Restore the original, or KEEPNOTE_ALLOW_ADHOC=1 to ship an ad-hoc build." >&2
     exit 1
 fi
 
@@ -57,6 +61,10 @@ echo "==> checking the build"
 ARCHS="$(lipo -archs "$APP/Contents/MacOS/KeepNote")"
 [ "$ARCHS" = "arm64" ] || { echo "error: the binary is \"$ARCHS\", expected arm64" >&2; exit 1; }
 codesign --verify --deep --strict "$APP"
+if [ "${KEEPNOTE_ALLOW_ADHOC:-0}" != "1" ]; then
+    codesign -d -r- "$APP" 2>&1 | grep -qi "certificate leaf = H\"$RELEASE_SIGN_SHA1\"" \
+        || { echo "error: the app is not signed by the release certificate $RELEASE_SIGN_SHA1" >&2; exit 1; }
+fi
 codesign -d --entitlements - "$APP" 2>/dev/null | grep -q "com.apple.security.app-sandbox" \
     || { echo "error: the app-sandbox entitlement is missing from the signature" >&2; exit 1; }
 
