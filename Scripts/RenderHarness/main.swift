@@ -577,9 +577,8 @@ MainActor.assumeIsolated {
         )
         let titles = ["Ideas", "Weekly plan", "Groceries and errands", "Call Ana", "Trip to Lisbon",
                       "Reading list", "Q3", "Book the room", "Release notes for 2.0", "Gym"]
-        // Every fifth note is a daily, so the deck shows its calendar mark.
         let deckNotes = try! deckStore.create((0..<60).map {
-            NoteDraft(title: titles[$0 % titles.count], tags: $0 % 5 == 1 ? ["daily"] : [])
+            NoteDraft(title: titles[$0 % titles.count])
         })
         Motion.reduceMotionOverride = true
         let usable: CGFloat = 926
@@ -597,10 +596,10 @@ MainActor.assumeIsolated {
                 listed[position].pinnedAt = Date(timeIntervalSince1970: 1_790_000_000 + Double(rank))
                 listed[position].keepOnDeck = true
             }
-            let arrangement = PinnedDeck.arrange(listed)
-            let notes = arrangement.items
-            let block: DeckGeometry.PinnedBlock? = arrangement.pinned > 0 ? .init(above: arrangement.above, count: arrangement.pinned) : nil
-            let geometry = DeckGeometry.layout(count: count, usableHeight: usable, columnWidth: width, pinned: block, edge: edge)
+            let plan = DeckPlan.make(notes: listed, groups: [], open: nil, usableHeight: usable)
+            let content = DeckContent.make(notes: listed, groups: [], dailyColor: .default, plan: plan)
+            let notes = plan.entries.compactMap { entry in entry.noteID.flatMap { id in listed.first { $0.id == id } } }
+            let geometry = plan.geometry(usableHeight: usable, columnWidth: width, edge: edge)
             let size = CGSize(width: width + 40, height: usable)
             let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless],
                                   backing: .buffered, defer: false)
@@ -615,7 +614,7 @@ MainActor.assumeIsolated {
                                                     width: width, height: geometry.deckHeight))
             stack.edge = edge
             backdrop.addSubview(stack)
-            stack.fanOut(notes: notes, usableHeight: usable, pinned: block, stagger: 0, preserveScroll: false)
+            stack.fanOut(plan: plan, content: content, usableHeight: usable, stagger: 0, preserveScroll: false)
             stack.setFloating([notes[min(2, count - 1)].id])
             RunLoop.main.run(until: Date().addingTimeInterval(0.4))
             if let hoverTab {
@@ -657,6 +656,79 @@ MainActor.assumeIsolated {
         renderDeck("deck-left-20-hover", count: 20, hoverTab: 8, edge: .left)
         renderDeck("deck-left-pinned-hover", count: 30, hoverTab: 10, pinned: [2, 8, 14], edge: .left)
         renderDeck("deck-left-expiring", count: 6, pinned: [3], expiring: [0, 1, 4], edge: .left)
+        // Groups: closed tabs, one open that fits with the others, one open that
+        // takes the room and sends the others away. Both edges.
+        let groupNames = ["Work", "Home", "Reading and long names for a tab", "Ideas", "Trips"]
+        let sampleGroups = groupNames.enumerated().map { NoteGroup(name: $1, color: GroupColor.allCases[$0 * 2 % 12], order: $0) }
+        @MainActor func groupedNotes(inGroups sizes: [Int], loose: Int, dailies: Int) -> [Note] {
+            var drafts: [NoteDraft] = []
+            for (index, size) in sizes.enumerated() {
+                for n in 0..<size { drafts.append(NoteDraft(title: "\(groupNames[index].prefix(8)) \(n + 1)", groupID: sampleGroups[index].id)) }
+            }
+            for n in 0..<dailies { drafts.append(NoteDraft(title: "Daily \(n + 1)", tags: ["daily"])) }
+            for n in 0..<loose { drafts.append(NoteDraft(title: titles[n % titles.count])) }
+            let store = try! NoteStore(
+                databaseURL: FileManager.default.temporaryDirectory.appendingPathComponent("keepnote-groups-\(UUID().uuidString).sqlite"),
+                cipher: BodyCipher(key: SymmetricKey(size: .bits256)))
+            for group in sampleGroups { store.applyIncomingGroup(group, origin: .importer) }
+            return try! store.create(drafts)
+        }
+        @MainActor func renderGroups(_ name: String, notes: [Note], open: DeckGroupRef?, usable: CGFloat = 926, edge: ScreenEdge = .right,
+                                     dailyColor: NoteColor = .sky, hoverGroup: Bool = false) {
+            let plan = DeckPlan.make(notes: notes, groups: sampleGroups, open: open, usableHeight: usable)
+            let content = DeckContent.make(notes: notes, groups: sampleGroups, dailyColor: dailyColor, plan: plan)
+            let geometry = plan.geometry(usableHeight: usable, columnWidth: width, edge: edge)
+            let size = CGSize(width: width + 40, height: usable)
+            let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
+            window.appearance = NSAppearance(named: .aqua)
+            let backdrop = NSView(frame: NSRect(origin: .zero, size: size))
+            backdrop.wantsLayer = true
+            backdrop.layer?.backgroundColor = NSColor(white: 0.55, alpha: 1).cgColor
+            window.contentView = backdrop
+            let stack = EdgeStackView(frame: NSRect(x: edge == .right ? 40 : 0, y: (usable - geometry.deckHeight) / 2,
+                                                    width: width, height: geometry.deckHeight))
+            stack.edge = edge
+            backdrop.addSubview(stack)
+            stack.fanOut(plan: plan, content: content, usableHeight: usable, stagger: 0, preserveScroll: false)
+            RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+            if hoverGroup, let index = plan.entries.firstIndex(where: { $0.groupRef != nil }) {
+                let frame = stack.geometry.frames[index]
+                let point = stack.convert(NSPoint(x: frame.midX, y: frame.maxY - 20 + stack.geometry.columnBottom), to: nil)
+                stack.mouseMoved(with: NSEvent.mouseEvent(with: .mouseMoved, location: point, modifierFlags: [], timestamp: 0,
+                                                          windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+            }
+            backdrop.layoutSubtreeIfNeeded()
+            let rep = backdrop.bitmapImageRepForCachingDisplay(in: backdrop.bounds)!
+            backdrop.cacheDisplay(in: backdrop.bounds, to: rep)
+            let url = outDir.appendingPathComponent("\(name).png")
+            try! rep.representation(using: .png, properties: [:])!.write(to: url)
+            print("wrote", url.path)
+            check("\(name): drawn", rep.pixelsWide > 0)
+        }
+        let few = groupedNotes(inGroups: [4, 3, 6, 2, 5], loose: 3, dailies: 2)
+        let busy = groupedNotes(inGroups: [14, 3, 6, 2, 5], loose: 40, dailies: 2)
+        let huge = groupedNotes(inGroups: [60, 3, 6, 2, 5], loose: 20, dailies: 2)
+        for edge in ScreenEdge.allCases {
+            let tag = edge == .right ? "" : "-left"
+            renderGroups("groups-closed\(tag)", notes: few, open: nil, edge: edge)
+            renderGroups("groups-closed-hover\(tag)", notes: few, open: nil, edge: edge, hoverGroup: true)
+            renderGroups("groups-open-fits\(tag)", notes: few, open: .user(sampleGroups[2].id), edge: edge)
+            renderGroups("groups-open-daily\(tag)", notes: few, open: .daily, edge: edge)
+            renderGroups("groups-open-expels\(tag)", notes: busy, open: .user(sampleGroups[0].id), edge: edge)
+            renderGroups("groups-open-scrolls\(tag)", notes: huge, open: .user(sampleGroups[0].id), edge: edge)
+        }
+        renderGroups("groups-open-small-screen", notes: busy, open: .user(sampleGroups[1].id), usable: 480)
+        renderGroups("groups-open-expels-small", notes: busy, open: .user(sampleGroups[0].id), usable: 480)
+        var pinnedGroups = few
+        pinnedGroups[1].pinnedAt = Date(timeIntervalSince1970: 1_790_000_000)
+        pinnedGroups[9].pinnedAt = Date(timeIntervalSince1970: 1_790_000_001)
+        renderGroups("groups-pinned-open", notes: pinnedGroups, open: .user(sampleGroups[0].id))
+        // With Increase contrast and Reduce transparency on.
+        DisplayOptions.increaseContrastOverride = true
+        renderGroups("groups-contrast-closed", notes: few, open: nil)
+        renderGroups("groups-contrast-open", notes: few, open: .user(sampleGroups[2].id))
+        DisplayOptions.increaseContrastOverride = nil
         // With Increase contrast and Reduce transparency on.
         DisplayOptions.increaseContrastOverride = true
         DisplayOptions.reduceTransparencyOverride = true
@@ -706,7 +778,9 @@ MainActor.assumeIsolated {
             }
             // The deck over the card, as the app orders it.
             backdrop.addSubview(stack)
-            stack.fanOut(notes: notes, usableHeight: area.height - 24, stagger: 0, preserveScroll: false)
+            let plan = DeckPlan.make(notes: notes, groups: [], open: nil, usableHeight: area.height - 24)
+            stack.fanOut(plan: plan, content: DeckContent.make(notes: notes, groups: [], dailyColor: .default, plan: plan),
+                         usableHeight: area.height - 24, stagger: 0, preserveScroll: false)
             RunLoop.main.run(until: Date().addingTimeInterval(0.5))
             backdrop.layoutSubtreeIfNeeded()
             let rep = backdrop.bitmapImageRepForCachingDisplay(in: backdrop.bounds)!
