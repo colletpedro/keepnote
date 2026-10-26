@@ -1,11 +1,13 @@
 import Foundation
 
 /// A plain note for the group rules.
-private struct Item: GroupedItem {
+private struct Item: GroupedItem, TaggedItem {
     var id = UUID()
     var groupID: UUID?
     var isArchived = false
     var isDeleted = false
+    var tags: [String] = []
+    var isLocked = false
 }
 
 func runNoteGroupTests() {
@@ -68,4 +70,20 @@ func runNoteGroupTests() {
     expect("ungrouped: the two", String(GroupLibrary.ungrouped(items, groups: [work, home]).count), "2")
     expect("ungrouped: with the group gone from here, its note is loose",
            String(GroupLibrary.ungrouped(items, groups: [home]).count), "4")
+
+    // MARK: The sidebar's selections
+
+    expect("selection: a group stored", NoteSelection.group(work.id).storageValue, "group:\(work.id.uuidString)")
+    expectTrue("selection: and read back", NoteSelection(storageValue: "group:\(work.id.uuidString)") == .group(work.id))
+    expectTrue("selection: No Group stored and read back", NoteSelection(storageValue: NoteSelection.noGroup.storageValue) == .noGroup)
+    expectTrue("selection: a broken group id is nothing", NoteSelection(storageValue: "group:nope") == nil)
+    expect("selection: No Group is titled", NoteSelection.noGroup.title, "No Group")
+    let daily = Item(groupID: nil, tags: ["daily"])
+    let all = items + [daily]
+    expect("filter: a group's list, archived included", String(GroupLibrary.filter(all, by: .group(work.id), groups: [work, home]).count), "2")
+    expect("filter: No Group leaves out the dailies, and counts a note naming a group that is gone",
+           String(GroupLibrary.filter(all, by: .noGroup, groups: [work, home]).count), "2")
+    expect("filter: a group that is gone lists nothing", String(GroupLibrary.filter(all, by: .group(gone), groups: [work]).count), "0")
+    expect("filter: any other selection is the tag library's",
+           String(GroupLibrary.filter(all, by: .library(.daily), groups: [work, home]).count), "1")
 }

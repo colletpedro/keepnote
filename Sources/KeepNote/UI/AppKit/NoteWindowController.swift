@@ -73,6 +73,9 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     var onDelete: ((UUID) -> Void)?
     /// Pin to Center on or off, from the header's pin or the Tools menu.
     var onSetPinned: ((UUID, Bool) -> Void)?
+    /// Tools > Move to Group: a group or none, and New Group….
+    var onMoveToGroup: ((UUID, UUID?) -> Void)?
+    var onNewGroup: ((UUID) -> Void)?
     /// Floated or returned to the deck — by the button, ⌥⌘P or a drag.
     var onPresentationChange: ((UUID, NotePresentation) -> Void)?
     /// Opens another note, from the `daily` chip's menu.
@@ -190,11 +193,17 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         keep.target = self
         keep.state = store.note(id: noteID)?.keepOnDeck == true ? .on : .off
         menu.addItem(keep)
+        let note = store.note(id: noteID)
+        let move = GroupMenu.Target(
+            choose: { [weak self] group in self.map { $0.onMoveToGroup?($0.noteID, group) } },
+            newGroup: { [weak self] in self.map { $0.onNewGroup?($0.noteID) } })
+        menu.addItem(GroupMenu.makeItem(choices: GroupMenu.choices(store.groups), current: note?.groupID,
+                                        enabled: note?.isDaily != true, target: move))
         let point = hosting.convert(window.mouseLocationOutsideOfEventStream, from: nil)
         let textBefore = textView.string
 
         menuDepth += 1
-        menu.popUp(positioning: nil, at: point, in: hosting)
+        withExtendedLifetime(move) { menu.popUp(positioning: nil, at: point, in: hosting) }
         menuDepth -= 1
         menuClosedAt = Date()
         if clickedAwayWhileMenuWasUp() { return }

@@ -98,6 +98,7 @@
 "Closes the group" = "Fecha o grupo";
 "Closes the note. What you wrote is saved." = "Fecha a nota. O que você escreveu fica salvo.";
 "Code Block" = "Bloco de código";
+"Color" = "Cor";
 "Colors, states and dates came across unchanged." = "Cores, estados e datas vieram sem alteração.";
 "Command" = "Command";
 "Continue" = "Continuar";
@@ -127,6 +128,7 @@
 "Delete %d Notes" = "Apagar %d notas";
 "Delete (undoable)" = "Apagar (pode desfazer)";
 "Delete Group" = "Apagar grupo";
+"Delete Group…" = "Apagar grupo…";
 "Delete Tag" = "Apagar tag";
 "Delete Tag…" = "Apagar tag…";
 "Delete the group “%@”?" = "Apagar o grupo “%@”?";
@@ -175,12 +177,14 @@
 "Global" = "Globais";
 "Got it" = "Entendi";
 "Green" = "Verde";
+"Group" = "Grupo";
 "Group %@" = "Grupo %@";
 "Group %@ closed" = "Grupo %@ fechado";
 "Group %@ opened, %@" = "Grupo %@ aberto, %@";
 "Group deleted" = "Grupo apagado";
 "Group name" = "Nome do grupo";
 "Group: %@" = "Grupo: %@";
+"Groups" = "Grupos";
 "Heading" = "Título";
 "Heading 1" = "Título 1";
 "Heading 2" = "Título 2";
@@ -326,6 +330,7 @@
 "Remove a tag from %@" = "Remover uma tag de %@";
 "Remove tag" = "Remover tag";
 "Rename" = "Renomear";
+"Rename Group…" = "Renomear grupo…";
 "Rename Tag…" = "Renomear tag…";
 "Rename “#%@”" = "Renomear “#%@”";
 "Rename “%@”" = "Renomear “%@”";

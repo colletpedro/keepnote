@@ -361,3 +361,52 @@ func runGroupArchiveTests() {
     let looseText = try! String(contentsOf: target.appendingPathComponent("loose.md"), encoding: .utf8)
     expectTrue("export: and a loose note's does not", !looseText.contains("Group:"))
 }
+
+// MARK: - Moving notes to groups, from the menus
+
+@MainActor
+func runMoveToGroupTests() {
+    let store = reopened(scratchDirectory().appendingPathComponent("move.sqlite"), key: SymmetricKey(size: .bits256))
+    let work = store.createGroup(name: "Work", color: .red)!
+    let home = store.createGroup(name: "Home", color: .teal)!
+    let note = try! store.create(title: "n")
+    let daily = try! store.create(title: "d", tags: [DailyNotes.tag])
+    let coordinator = AppCoordinator(store: store)
+
+    coordinator.moveToGroup([note.id], group: work.id)
+    expectTrue("move: a note into a group", store.note(id: note.id)?.groupID == work.id)
+    expect("move: said", Announcer.last, "Note moved to Work")
+    coordinator.moveToGroup([note.id], group: nil)
+    expectTrue("move: and out of every group", store.note(id: note.id)?.groupID == nil)
+    expect("move: said", Announcer.last, "Note moved out of its group")
+    coordinator.moveToGroup([daily.id], group: home.id)
+    expectTrue("move: a daily stays in Daily", store.note(id: daily.id)?.groupID == nil)
+    expect("move: and that is said", Announcer.last, "Daily notes stay in Daily")
+    coordinator.moveToGroup([note.id, daily.id], group: home.id)
+    expectTrue("move: several at once, the daily left out", store.note(id: note.id)?.groupID == home.id && store.note(id: daily.id)?.groupID == nil)
+
+    // The menu every place shares.
+    var chosen: [UUID?] = []
+    var made = 0
+    let target = GroupMenu.Target(choose: { chosen.append($0) }, newGroup: { made += 1 })
+    let item = GroupMenu.makeItem(choices: GroupMenu.choices(store.groups), current: home.id, target: target)
+    let titles = item.submenu?.items.map(\.title) ?? []
+    expect("menu: named", item.title, "Move to Group")
+    expect("menu: No Group, the groups in order, New Group…", titles.filter { !$0.isEmpty }.joined(separator: "|"), "No Group|Work|Home|New Group\u{2026}")
+    let rows = item.submenu?.items.filter { !$0.isSeparatorItem } ?? []
+    expectTrue("menu: the note's group is ticked, No Group is not", rows[2].state == .on && rows[0].state == .off && rows[1].state == .off)
+    expectTrue("menu: a swatch in each group's colour", rows[1].image != nil && rows[2].image != nil)
+    _ = target.perform(#selector(GroupMenu.Target.choose(_:)), with: rows[1])
+    _ = target.perform(#selector(GroupMenu.Target.choose(_:)), with: rows[0])
+    _ = target.perform(#selector(GroupMenu.Target.newGroup))
+    expectTrue("menu: choosing a group, No Group and New Group… reach the target", chosen == [work.id, nil] && made == 1)
+    expectTrue("menu: for a daily it is there and off",
+               !GroupMenu.makeItem(choices: [], current: nil, enabled: false, target: target).isEnabled)
+    expect("menu: with no groups, only No Group and New Group…",
+           GroupMenu.makeItem(choices: [], current: nil, target: target).submenu?.items.filter { !$0.isSeparatorItem }.map(\.title).joined(separator: "|"),
+           "No Group|New Group\u{2026}")
+    // A tab's right-click menu has it too.
+    let card = NoteCardView(note: store.note(id: note.id)!, height: EdgeMetrics.tabHeight)
+    card.groupChoices = GroupMenu.choices(store.groups)
+    expect("tab: its group", card.currentGroup.map { store.group(id: $0)?.name ?? "" }, "Home")
+}

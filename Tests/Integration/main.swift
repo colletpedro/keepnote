@@ -55,6 +55,7 @@ MainActor.assumeIsolated {
     runGroupStoreTests()
     runGroupSyncTests()
     runGroupArchiveTests()
+    runMoveToGroupTests()
     runDeckTests()
     runDeckClickTests()
     runGroupDeckTests()

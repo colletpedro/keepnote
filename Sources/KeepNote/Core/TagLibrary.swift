@@ -43,6 +43,10 @@ enum NoteSelection: Hashable, Sendable {
     case library(NoteLibrary)
     case tag(String)
     case untagged
+    /// The notes in one of the user's groups, archived ones included.
+    case group(UUID)
+    /// The notes in no group (a daily is in Daily, not here).
+    case noGroup
 
     static let `default` = NoteSelection.library(.all)
 
@@ -51,6 +55,8 @@ enum NoteSelection: Hashable, Sendable {
         case .library(let library): return library.title
         case .tag(let name): return "#" + name
         case .untagged: return L("Untagged")
+        case .group: return L("Group")
+        case .noGroup: return L("No Group")
         }
     }
 
@@ -61,6 +67,8 @@ enum NoteSelection: Hashable, Sendable {
         case .library(let library): return "library:" + library.rawValue
         case .tag(let name): return "tag:" + name
         case .untagged: return "untagged"
+        case .group(let id): return "group:" + id.uuidString
+        case .noGroup: return "nogroup"
         }
     }
 
@@ -68,6 +76,10 @@ enum NoteSelection: Hashable, Sendable {
     init?(storageValue: String) {
         if storageValue == "untagged" {
             self = .untagged
+        } else if storageValue == "nogroup" {
+            self = .noGroup
+        } else if storageValue.hasPrefix("group:"), let id = UUID(uuidString: String(storageValue.dropFirst("group:".count))) {
+            self = .group(id)
         } else if storageValue.hasPrefix("library:"),
                   let library = NoteLibrary(rawValue: String(storageValue.dropFirst("library:".count))) {
             self = .library(library)
@@ -170,6 +182,8 @@ enum TagLibrary {
             case .library(.daily): return DailyNotes.hasTag(note.tags)
             case .tag(let name): return TagText.matches(tags: note.tags, filter: name)
             case .untagged: return TagText.normalize(note.tags).isEmpty
+            // Groups are not tags: `GroupLibrary.filter` does these two.
+            case .group, .noGroup: return true
             }
         }
     }

@@ -80,7 +80,13 @@ struct AllNotesView: View {
     private var index: TagLibrary.Index { TagLibrary.index(store.notes) }
 
     private var results: [Note] {
-        settings.allNotesSort.sorted(TagLibrary.filter(store.search(query), by: sidebarSelection))
+        settings.allNotesSort.sorted(GroupLibrary.filter(store.search(query), by: sidebarSelection, groups: store.groups))
+    }
+
+    /// What the list is called: a group by its name.
+    private var selectionTitle: String {
+        if case .group(let id) = sidebarSelection { return store.group(id: id)?.name ?? sidebarSelection.title }
+        return sidebarSelection.title
     }
 
     private var selectedNotes: [Note] {
@@ -119,6 +125,9 @@ struct AllNotesView: View {
         NavigationSplitView(columnVisibility: $columns) {
             AllNotesSidebar(
                 index: index,
+                groups: store.groups,
+                groupCounts: GroupLibrary.counts(store.notes.filter { !DailyNotes.hasTag($0.tags) }, groups: store.groups),
+                actions: actions,
                 selection: $sidebarSelection,
                 onRename: renameTag,
                 onDelete: actions.deleteTag,
@@ -133,7 +142,7 @@ struct AllNotesView: View {
         } detail: {
             detail
         }
-        .searchable(text: $query, placement: .toolbar, prompt: L("Search %@", sidebarSelection.title))
+        .searchable(text: $query, placement: .toolbar, prompt: L("Search %@", selectionTitle))
         .toolbar { toolbarContent }
         .frame(minWidth: 900, minHeight: 480)
         .onChange(of: sidebarSelection) { newValue in
@@ -147,6 +156,7 @@ struct AllNotesView: View {
         .onChange(of: paneNoteID) { actions.select($0) }
         .onAppear { keyboard.hasSingleNote = { [weak keyboard] in keyboard?.pane != nil } }
         .onChange(of: index.tags.map(\.name)) { _ in dropMissingTag() }
+        .onChange(of: store.groups.map(\.id)) { _ in dropMissingGroup() }
         // "Show All Dailies" and the like, while the window is already open.
         .onReceive(NotificationCenter.default.publisher(for: .keepNoteShowNotesSelection)) { note in
             if let value = note.userInfo?["selection"] as? String, let wanted = NoteSelection(storageValue: value) {
@@ -238,6 +248,11 @@ struct AllNotesView: View {
         }
     }
 
+    /// A selected group that was deleted falls back to All Notes.
+    private func dropMissingGroup() {
+        if case .group(let id) = sidebarSelection, store.group(id: id) == nil { sidebarSelection = .default }
+    }
+
     private func noteRow(_ note: Note) -> some View {
         NoteRow(note: note, onTag: showTag)
             .tag(note.id)
@@ -253,7 +268,7 @@ struct AllNotesView: View {
     /// The selection's name and how many notes it shows.
     private var listHeader: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(sidebarSelection.title)
+            Text(selectionTitle)
                 .scaledFont(15, weight: .semibold)
                 .lineLimit(1)
             Spacer(minLength: 8)
@@ -307,6 +322,7 @@ struct AllNotesView: View {
                 Button(L("Archive")) { actions.archive([note.id]) }
             }
             Button(L("Export\u{2026}")) { actions.export([note.id]) }
+            moveToGroupMenu(for: [note])
             Divider()
             Button(L("Delete"), role: .destructive) { actions.delete([note.id]) }
         } else if notes.count > 1 {
@@ -323,12 +339,33 @@ struct AllNotesView: View {
             Button(L("Add Tag\u{2026}")) { actions.addTagToNotes(idList) }
             Button(L("Remove Tag\u{2026}")) { actions.removeTagFromNotes(idList) }
                 .disabled(notes.allSatisfy { $0.tags.isEmpty })
+            moveToGroupMenu(for: notes)
             Divider()
             Button(L("Delete %d Notes", notes.count), role: .destructive) {
                 actions.delete(idList)
                 selection.subtract(ids)
             }
         }
+    }
+
+    /// Move to Group ›: No Group, each group (ticked when all of `notes` are in
+    /// it), New Group…. A daily belongs to Daily and is not moved.
+    private func moveToGroupMenu(for notes: [Note]) -> some View {
+        let ids = notes.map(\.id)
+        let common = Set(notes.map(\.groupID)).count == 1 ? notes.first?.groupID : nil
+        return Menu(L("Move to Group")) {
+            Toggle(L("No Group"), isOn: Binding(get: { common == nil && notes.allSatisfy { $0.groupID == nil } },
+                                                set: { _ in actions.moveToGroup(ids, nil) }))
+            if !store.groups.isEmpty { Divider() }
+            ForEach(store.groups) { group in
+                Toggle(isOn: Binding(get: { common == group.id }, set: { _ in actions.moveToGroup(ids, group.id) })) {
+                    Label { Text(group.name) } icon: { Image(nsImage: GroupMenu.swatch(group.color)) }
+                }
+            }
+            Divider()
+            Button(L("New Group\u{2026}")) { actions.newGroupWithNotes(ids) }
+        }
+        .disabled(notes.allSatisfy(\.isDaily))
     }
 
     /// The Pin to Center entry, ticked when every one of `notes` is pinned.
@@ -395,6 +432,11 @@ struct AllNotesView: View {
 /// Library, then Tags and Untagged. Each row carries its count.
 struct AllNotesSidebar: View {
     let index: TagLibrary.Index
+    var groups: [NoteGroup] = []
+    /// How many notes each group holds, and how many are in none (dailies not
+    /// counted: they are in Daily).
+    var groupCounts = GroupLibrary.Counts(byGroup: [:], ungrouped: 0)
+    var actions = NoteListActions(open: { _ in }, newNote: {}, archive: { _ in }, unarchive: { _ in }, delete: { _ in }, export: { _ in })
     @Binding var selection: NoteSelection
     var onRename: (String) -> Void = { _ in }
     var onDelete: (String) -> Void = { _ in }
@@ -404,6 +446,8 @@ struct AllNotesSidebar: View {
 
     /// The tag row notes are being dragged over.
     @State private var dropTarget: String?
+    /// The group row notes are being dragged over.
+    @State private var groupDropTarget: UUID?
 
     var body: some View {
         List(selection: Binding<NoteSelection?>(
@@ -411,7 +455,8 @@ struct AllNotesSidebar: View {
             set: { if let value = $0 { selection = value } }
         )) {
             Section(L("Library")) {
-                ForEach(NoteLibrary.allCases, id: \.self) { library in
+                // Daily is listed among the groups.
+                ForEach(NoteLibrary.allCases.filter { $0 != .daily }, id: \.self) { library in
                     SidebarRow(count: index.count(of: library)) {
                         Label(library.title, systemImage: library.symbolName)
                     }
@@ -421,6 +466,57 @@ struct AllNotesSidebar: View {
                             Button(L("Edit Daily Template\u{2026}"), action: onEditDailyTemplate)
                         }
                     }
+                }
+            }
+            Section {
+                // Daily is a group of its own, fixed: it has no menu to rename
+                // or delete it, and notes cannot be dropped on it.
+                SidebarRow(count: index.daily) {
+                    Label(L("Daily"), systemImage: "calendar")
+                }
+                .tag(NoteSelection.library(.daily))
+                .contextMenu {
+                    Button(L("Edit Daily Template\u{2026}"), action: onEditDailyTemplate)
+                }
+                ForEach(groups) { group in
+                    SidebarRow(count: groupCounts.count(of: group.id)) {
+                        Label { Text(group.name) } icon: { Image(nsImage: GroupMenu.swatch(group.color, size: 12)) }
+                    }
+                    .tag(NoteSelection.group(group.id))
+                    .listRowBackground(
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(Color.accentColor.opacity(groupDropTarget == group.id ? 0.25 : 0))
+                            .padding(.horizontal, 8)
+                    )
+                    .onDrop(of: [.utf8PlainText], isTargeted: Binding(
+                        get: { groupDropTarget == group.id },
+                        set: { inside in
+                            if inside { groupDropTarget = group.id } else if groupDropTarget == group.id { groupDropTarget = nil }
+                        }
+                    )) { providers in
+                        dropNotes(providers) { actions.moveToGroup($0, group.id) }
+                    }
+                    .contextMenu { groupMenu(group) }
+                    .accessibilityAction(named: L("Rename Group\u{2026}")) { actions.renameGroup(group.id) }
+                    .accessibilityAction(named: L("Delete Group\u{2026}")) { actions.deleteGroup(group.id) }
+                }
+                .onMove { source, destination in
+                    var ids = groups.map(\.id)
+                    ids.move(fromOffsets: source, toOffset: destination)
+                    actions.reorderGroups(ids)
+                }
+                SidebarRow(count: groupCounts.ungrouped) {
+                    Label(L("No Group"), systemImage: "tray")
+                }
+                .tag(NoteSelection.noGroup)
+            } header: {
+                HStack {
+                    Text(L("Groups"))
+                    Spacer()
+                    Button { actions.createGroup() } label: { Image(systemName: "plus") }
+                        .buttonStyle(.borderless)
+                        .help(L("New Group\u{2026}"))
+                        .accessibilityLabel(L("New Group\u{2026}"))
                 }
             }
             Section(L("Tags")) {
@@ -461,6 +557,32 @@ struct AllNotesSidebar: View {
             }
         }
         .listStyle(.sidebar)
+    }
+
+    /// Rename, a colour, Delete (which asks, and never deletes a note).
+    @ViewBuilder
+    private func groupMenu(_ group: NoteGroup) -> some View {
+        Button(L("Rename Group\u{2026}")) { actions.renameGroup(group.id) }
+        Menu(L("Color")) {
+            ForEach(GroupColor.allCases, id: \.self) { color in
+                Toggle(isOn: Binding(get: { group.color == color }, set: { _ in actions.setGroupColor(group.id, color) })) {
+                    Label { Text(color.displayName) } icon: { Image(nsImage: GroupMenu.swatch(color)) }
+                }
+            }
+        }
+        Divider()
+        Button(L("Delete Group\u{2026}"), role: .destructive) { actions.deleteGroup(group.id) }
+    }
+
+    private func dropNotes(_ providers: [NSItemProvider], then move: @escaping ([UUID]) -> Void) -> Bool {
+        guard let provider = providers.first(where: { $0.canLoadObject(ofClass: NSString.self) }) else { return false }
+        _ = provider.loadObject(ofClass: NSString.self) { object, _ in
+            guard let text = object as? String else { return }
+            let ids = NoteDragPayload.decode(text)
+            guard !ids.isEmpty else { return }
+            DispatchQueue.main.async { move(ids) }
+        }
+        return true
     }
 
     private func drop(_ providers: [NSItemProvider], on tag: String) -> Bool {
@@ -820,6 +942,13 @@ struct NoteReadingPane: View {
         let id = note.id
         let actions = actions
         editor.onSetPinned = { actions.setPinned([id], $0) }
+        let store = store
+        editor.groupMenu = {
+            let note = store.note(id: id)
+            return (GroupMenu.choices(store.groups), note?.groupID, note?.isDaily != true)
+        }
+        editor.onMoveToGroup = { actions.moveToGroup([id], $0) }
+        editor.onNewGroup = { actions.newGroupWithNotes([id]) }
         editor.onSetKeepOnDeck = { actions.setKeepOnDeck([id], $0) }
         editor.onDelete = { actions.delete([id]) }
         editor.onOpen = { actions.open(id) }

@@ -13,6 +13,10 @@ import SwiftUI
 final class PaneEditorController: ObservableObject {
     weak var model: NoteEditorModel?
     var onSetPinned: (Bool) -> Void = { _ in }
+    /// Tools > Move to Group: what to offer, and what choosing does.
+    var groupMenu: () -> (choices: [GroupMenu.Choice], current: UUID?, enabled: Bool) = { ([], nil, false) }
+    var onMoveToGroup: (UUID?) -> Void = { _ in }
+    var onNewGroup: () -> Void = {}
     var onSetKeepOnDeck: (Bool) -> Void = { _ in }
     var onDelete: () -> Void = {}
     var onOpen: () -> Void = {}
@@ -133,11 +137,14 @@ final class PaneEditorController: ObservableObject {
         menu.autoenablesItems = false
         menu.addItem(pin)
         menu.addItem(keep)
+        let groups = groupMenu()
+        let move = GroupMenu.Target(choose: { [weak self] in self?.onMoveToGroup($0) }, newGroup: { [weak self] in self?.onNewGroup() })
+        menu.addItem(GroupMenu.makeItem(choices: groups.choices, current: groups.current, enabled: groups.enabled, target: move))
         let point = anchor.convert(window.mouseLocationOutsideOfEventStream, from: nil)
         let kept = body.selectedRange()
         let textBefore = body.string
         menu.popUp(positioning: nil, at: point, in: anchor)
-        withExtendedLifetime(target) {}
+        withExtendedLifetime((target, move)) {}
         window.makeFirstResponder(body)
         if body.string == textBefore { body.setSelectedRange(kept) }
     }

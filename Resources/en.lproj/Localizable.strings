@@ -98,6 +98,7 @@
 "Closes the group" = "Closes the group";
 "Closes the note. What you wrote is saved." = "Closes the note. What you wrote is saved.";
 "Code Block" = "Code Block";
+"Color" = "Color";
 "Colors, states and dates came across unchanged." = "Colors, states and dates came across unchanged.";
 "Command" = "Command";
 "Continue" = "Continue";
@@ -127,6 +128,7 @@
 "Delete %d Notes" = "Delete %d Notes";
 "Delete (undoable)" = "Delete (undoable)";
 "Delete Group" = "Delete Group";
+"Delete Group…" = "Delete Group…";
 "Delete Tag" = "Delete Tag";
 "Delete Tag…" = "Delete Tag…";
 "Delete the group “%@”?" = "Delete the group “%@”?";
@@ -175,12 +177,14 @@
 "Global" = "Global";
 "Got it" = "Got it";
 "Green" = "Green";
+"Group" = "Group";
 "Group %@" = "Group %@";
 "Group %@ closed" = "Group %@ closed";
 "Group %@ opened, %@" = "Group %@ opened, %@";
 "Group deleted" = "Group deleted";
 "Group name" = "Group name";
 "Group: %@" = "Group: %@";
+"Groups" = "Groups";
 "Heading" = "Heading";
 "Heading 1" = "Heading 1";
 "Heading 2" = "Heading 2";
@@ -326,6 +330,7 @@
 "Remove a tag from %@" = "Remove a tag from %@";
 "Remove tag" = "Remove tag";
 "Rename" = "Rename";
+"Rename Group…" = "Rename Group…";
 "Rename Tag…" = "Rename Tag…";
 "Rename “#%@”" = "Rename “#%@”";
 "Rename “%@”" = "Rename “%@”";

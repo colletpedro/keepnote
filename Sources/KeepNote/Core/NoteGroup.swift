@@ -115,6 +115,19 @@ enum GroupLibrary {
         return counts
     }
 
+    /// A list for the sidebar's group rows: the notes in one group, or in none.
+    /// Any other selection is left to `TagLibrary.filter`.
+    static func filter<T: GroupedItem & TaggedItem>(_ items: [T], by selection: NoteSelection, groups: [NoteGroup]) -> [T] {
+        switch selection {
+        case .group(let id):
+            return members(of: id, in: items, groups: groups)
+        case .noGroup:
+            return ungrouped(items, groups: groups).filter { !DailyNotes.hasTag($0.tags) }
+        default:
+            return TagLibrary.filter(items, by: selection)
+        }
+    }
+
     /// The notes in `group` and not deleted, in the order given.
     static func members<T: GroupedItem>(of group: UUID, in items: [T], groups: [NoteGroup]) -> [T] {
         guard groups.contains(where: { $0.id == group }) else { return [] }

@@ -530,6 +530,12 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         controller.onSetPinned = { [weak self] id, on in
             self?.setPinned(on, ids: [id])
         }
+        controller.onMoveToGroup = { [weak self] id, group in
+            self?.moveToGroup([id], group: group)
+        }
+        controller.onNewGroup = { [weak self] id in
+            self?.promptNewGroup(for: [id])
+        }
         controller.onOpenNote = { [weak self] id in
             self?.open(noteID: id, from: nil)
         }
