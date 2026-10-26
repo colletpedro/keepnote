@@ -4,7 +4,7 @@ import AppKit
 /// per note. No window frame, no chrome, nothing to click — reaching it with
 /// the cursor is the whole interaction.
 final class PillView: NSView {
-    var colors: [NoteColor] = [] {
+    var colors: [NSColor] = [] {
         didSet { needsDisplay = true }
     }
 
@@ -56,7 +56,7 @@ final class PillView: NSView {
                 xRadius: EdgeMetrics.dashWidth / 2,
                 yRadius: EdgeMetrics.dashWidth / 2
             )
-            color.spine.withAlphaComponent(isHighlighted ? 1.0 : 0.92).setFill()
+            color.withAlphaComponent(isHighlighted ? 1.0 : 0.92).setFill()
             path.fill()
             y -= EdgeMetrics.dashHeight + EdgeMetrics.dashSpacing
         }

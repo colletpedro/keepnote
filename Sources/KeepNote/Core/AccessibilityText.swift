@@ -27,6 +27,23 @@ enum AccessibilityText {
         return parts.joined(separator: ", ")
     }
 
+    /// A group's tab: read as "Group Work, 6 notes, closed" — the label, then
+    /// the value.
+    static func groupLabel(name: String) -> String {
+        L("Group %@", name)
+    }
+
+    static func groupValue(count: Int, isOpen: Bool) -> String {
+        L("%@, %@", deckValue(count: count), isOpen ? L("open") : L("closed"))
+    }
+
+    /// What is said when a group opens or closes.
+    static func groupAnnouncement(name: String, count: Int, isOpen: Bool) -> String {
+        isOpen
+            ? L("Group %@ opened, %@", name, deckValue(count: count))
+            : L("Group %@ closed", name)
+    }
+
     /// The resting stripe: "8 notes".
     static func deckValue(count: Int) -> String {
         Lplural(count, L("1 note"), L("%d notes"))

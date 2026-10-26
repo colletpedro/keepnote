@@ -30,9 +30,13 @@ final class EdgeStackView: NSView {
     private let upperSide = DeckClipView(frame: .zero)
     private let blockSide = DeckClipView(frame: .zero)
     private let lowerSide = DeckClipView(frame: .zero)
-    /// The pinned block the deck is laid out around, if any.
-    private var pinnedBlock: DeckGeometry.PinnedBlock?
-    private var cards: [NoteCardView] = []
+    private var cards: [DeckTabView] = []
+    /// What each card is, in the deck's order, top to bottom: the plan the
+    /// deck was last made from.
+    private var plan = DeckPlan.empty
+    private var entries: [DeckEntry] { plan.entries }
+    /// What the cards draw: the notes and groups the plan names.
+    private var content = DeckContent()
     private var overflowCard: OverflowCardView?
     private var plusButton: PlusButtonView?
     /// Today's Daily, the round calendar button beside the "+".
@@ -138,8 +142,14 @@ final class EdgeStackView: NSView {
         case 36, 76:                                             // Return
             if let stop = keyboardStop { controller?.pressFromKeyboard(stop) }
         case 49:                                                 // Space
-            if let card = keyboardStop as? NoteCardView { controller?.peekFromKeyboard(noteID: card.noteID) }
-        case 53: controller?.endKeyboardFocus(giveBack: true)    // Esc
+            if let card = keyboardStop as? NoteCardView {
+                controller?.peekFromKeyboard(noteID: card.noteID)
+            } else if let group = keyboardStop as? GroupCardView {
+                controller?.pressFromKeyboard(group)
+            }
+        case 53:                                                 // Esc
+            // An open group closes first; the keyboard stays on its header.
+            if plan.open != nil { controller?.closeGroup() } else { controller?.endKeyboardFocus(giveBack: true) }
         default: super.keyDown(with: event)
         }
     }
@@ -151,13 +161,21 @@ final class EdgeStackView: NSView {
         for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }].joined() {
             (view as? KeyboardFocusable)?.showsKeyboardFocus = view === stop
         }
-        if let card = stop as? NoteCardView, let index = cards.firstIndex(of: card) {
+        if let card = stop as? DeckTabView, let index = cards.firstIndex(of: card) {
             revealTab(index)
             setHover(DeckGeometry.Hover(index: index, cursorY: geometry.frames[index].midY))
         } else if stop != nil, hover != nil {
             setHover(nil)
         }
         if let stop { NSAccessibility.post(element: stop, notification: .focusedUIElementChanged) }
+    }
+
+    /// The ring on the focused stop only, with nothing else moved.
+    private func refreshKeyboardRing() {
+        let stop = keyboardStop
+        for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }].joined() {
+            (view as? KeyboardFocusable)?.showsKeyboardFocus = view === stop
+        }
     }
 
     /// Scrolls the part of the deck tab `index` is in until it is whole.
@@ -220,7 +238,12 @@ final class EdgeStackView: NSView {
     }
 
     var hoveredNoteID: UUID? {
-        geometry.hovered.flatMap { cards.indices.contains($0) ? cards[$0].noteID : nil }
+        geometry.hovered.flatMap { entries.indices.contains($0) ? entries[$0].noteID : nil }
+    }
+
+    /// The entry under the cursor: a note, or a group's tab.
+    private var hoveredEntry: DeckEntry? {
+        geometry.hovered.flatMap { entries.indices.contains($0) ? entries[$0] : nil }
     }
 
     /// The tab under the cursor is the one drawn there now — lower tabs over
@@ -239,7 +262,7 @@ final class EdgeStackView: NSView {
     }
 
     private func setHover(_ newHover: DeckGeometry.Hover?) {
-        let previous = geometry.hovered.map { cards[$0].noteID }
+        let previous = hoveredEntry
         let before = geometry.hovered
         hover = newHover
         guard !cards.isEmpty else { return }
@@ -248,10 +271,10 @@ final class EdgeStackView: NSView {
         // stay where they are.
         if geometry.hovered != before { arrangeSides() }
         layoutCards(animated: true, config: .hover)
-        let current = geometry.hovered.map { cards[$0].noteID }
+        let current = hoveredEntry
         guard previous != current else { return }
-        if let previous { controller?.cardHoverChanged(noteID: previous, entered: false) }
-        if let current { controller?.cardHoverChanged(noteID: current, entered: true) }
+        if let previous { controller?.tabHoverChanged(previous, entered: false) }
+        if let current { controller?.tabHoverChanged(current, entered: true) }
     }
 
     /// A click on the resting stripe starts a note. The deck is hover-driven,
@@ -282,9 +305,9 @@ final class EdgeStackView: NSView {
         controller?.deckDidScroll()
         // The deck lies flat while it scrolls; the next move of the cursor
         // opens whatever tab is under it then.
-        if let hovered = geometry.hovered {
+        if let hovered = hoveredEntry {
             hover = nil
-            controller?.cardHoverChanged(noteID: cards[hovered].noteID, entered: false)
+            controller?.tabHoverChanged(hovered, entered: false)
         }
         // Around a pinned block each side scrolls on its own: the wheel moves
         // the side the cursor is on.
@@ -308,8 +331,9 @@ final class EdgeStackView: NSView {
             columnWidth: clip.bounds.width,
             scrollOffset: scrollOffset ?? self.scrollOffset,
             lowerScrollOffset: lowerScrollOffset ?? self.lowerScrollOffset,
-            pinned: pinnedBlock,
+            pinned: plan.pinned,
             hover: hover,
+            stickyFirst: plan.stickyHeader,
             edge: edge,
             metrics: metrics
         )
@@ -318,8 +342,10 @@ final class EdgeStackView: NSView {
     /// The part of the column each group of tabs shows in.
     private func layoutSides() {
         let column = clip.bounds
-        let upper = geometry.pinned == nil ? column : geometry.upperClip
+        var upper = geometry.pinned == nil ? column : geometry.upperClip
         let lower = geometry.pinned == nil ? column : geometry.lowerClip
+        // A header that stays: what follows it is seen under it.
+        if geometry.stickyHeader != nil { upper = geometry.stickyNotesClip }
         for (side, rect) in [(upperSide, upper), (blockSide, column), (lowerSide, lower)] {
             if side.frame != rect { side.frame = rect }
             if side.bounds != rect { side.bounds = rect }
@@ -328,6 +354,8 @@ final class EdgeStackView: NSView {
 
     /// The part of the column card `index` is drawn in.
     private func side(forIndex index: Int) -> NSView {
+        // A header that stays is over the notes that scroll under it.
+        if geometry.stickyHeader == index { return blockSide }
         guard let pinned = geometry.pinned else { return upperSide }
         if index < pinned.above { return upperSide }
         return index < pinned.above + pinned.count ? blockSide : lowerSide
@@ -336,7 +364,7 @@ final class EdgeStackView: NSView {
     /// Puts every card in the part its place calls for, lower tabs over
     /// upper ones — but for the hovered one, which is over all of them — and
     /// `leaving` cards underneath their part's tabs.
-    private func arrangeSides(leaving: [NoteCardView] = []) {
+    private func arrangeSides(leaving: [DeckTabView] = []) {
         for (index, card) in cards.enumerated() where card.superview !== side(forIndex: index) {
             side(forIndex: index).addSubview(card)
         }
@@ -381,10 +409,10 @@ final class EdgeStackView: NSView {
 
     /// Marks the tabs of floating notes, live, without re-dealing the deck.
     func setFloating(_ ids: Set<UUID>) {
-        cards.forEach { $0.isFloating = ids.contains($0.noteID) }
+        cards.compactMap { $0 as? NoteCardView }.forEach { $0.isFloating = ids.contains($0.noteID) }
     }
 
-    func updatePill(colors: [NoteColor], highlighted: Bool) {
+    func updatePill(colors: [NSColor], highlighted: Bool) {
         pill.colors = colors
         pill.isHighlighted = highlighted
     }
@@ -415,20 +443,21 @@ final class EdgeStackView: NSView {
 
     /// Builds the deck and shingles it down the edge.
     ///
-    /// Every note gets a card, however many there are; the clip view decides
-    /// what is on screen. Card *i* slides in at `i * stagger` — the spec's
-    /// 45 ms — which is what makes the deck read as dealing itself out.
+    /// Every tab of the plan gets a card, however many there are; the clip view
+    /// decides what is on screen. Card *i* slides in at `i * stagger` — the
+    /// spec's 45 ms — which is what makes the deck read as dealing itself out.
     func fanOut(
-        notes: [Note],
+        plan: DeckPlan,
+        content: DeckContent,
         usableHeight: CGFloat,
-        pinned: DeckGeometry.PinnedBlock? = nil,
         stagger: Double,
         preserveScroll: Bool
     ) {
         // The cursor came back while the deck was still folding away: the same
         // cards turn around where they are, instead of vanishing and being
         // dealt out again from the edge.
-        if isFanningIn, !preserveScroll, cards.map(\.noteID) == notes.map(\.id), self.usableHeight == usableHeight {
+        if isFanningIn, !preserveScroll, entries == plan.entries, self.usableHeight == usableHeight {
+            self.content = content
             reviveDeck(stagger: stagger)
             return
         }
@@ -438,16 +467,17 @@ final class EdgeStackView: NSView {
         clearDeck()
         state = .fanned
         self.usableHeight = usableHeight
-        pinnedBlock = pinned
+        self.plan = plan
+        self.content = content
         let tabHeight = EdgeMetrics.tabHeight
-        geometry = DeckGeometry.layout(count: notes.count, usableHeight: usableHeight, columnWidth: bounds.width,
-                                       pinned: pinned, edge: edge, metrics: metrics)
+        geometry = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: bounds.width,
+                                       pinned: plan.pinned, stickyFirst: plan.stickyHeader, edge: edge, metrics: metrics)
 
         layoutChrome(showsOverflow: geometry.showsOverflow)
 
         let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + lift, in: bounds.width)
-        for (index, note) in notes.enumerated() {
-            let card = makeCard(for: note)
+        for (index, entry) in entries.enumerated() {
+            let card = makeCard(for: entry)
             side(forIndex: index).addSubview(card)
             cards.append(card)
 
@@ -463,6 +493,7 @@ final class EdgeStackView: NSView {
                 slideIn(card, to: target, after: Double(index) * stagger)
             }
         }
+        arrangeSides()
 
         if previousOffset != 0 || previousLowerOffset != 0 {
             relayout(scrollOffset: previousOffset, lowerScrollOffset: previousLowerOffset)
@@ -475,24 +506,51 @@ final class EdgeStackView: NSView {
             for button in roundButtons {
                 let target = button.baseOrigin
                 button.place(frame: NSRect(origin: NSPoint(x: offscreenX, y: target.y), size: button.frame.size), alpha: 0)
-                slideIn(button, to: target, after: Double(min(notes.count, 8)) * stagger)
+                slideIn(button, to: target, after: Double(min(entries.count, 8)) * stagger)
             }
         }
         if let overflowCard, !overflowCard.isHidden, !preserveScroll {
             let target = overflowCard.baseOrigin
             overflowCard.place(frame: NSRect(origin: NSPoint(x: offscreenX, y: target.y), size: overflowCard.frame.size), alpha: 0)
-            slideIn(overflowCard, to: target, after: Double(min(notes.count, 8)) * stagger)
+            slideIn(overflowCard, to: target, after: Double(min(entries.count, 8)) * stagger)
         }
     }
 
-    private func makeCard(for note: Note) -> NoteCardView {
-        let card = NoteCardView(note: note, height: EdgeMetrics.tabHeight, edge: edge)
-        card.isFloating = controller?.floatingNoteIDs.contains(note.id) ?? false
-        card.onActivate = { [weak self] id in self?.controller?.activate(noteID: id) }
-        card.onContextAction = { [weak self] id, action in
-            self?.controller?.performContextAction(action, on: id)
+    private func makeCard(for entry: DeckEntry) -> DeckTabView {
+        switch entry {
+        case .note(let id):
+            let card = NoteCardView(note: content.notes[id] ?? Note(id: id), height: EdgeMetrics.tabHeight, edge: edge)
+            card.isFloating = controller?.floatingNoteIDs.contains(id) ?? false
+            card.groupChoices = content.choices
+            card.onActivate = { [weak self] id in self?.controller?.activate(noteID: id) }
+            card.onDragBegan = { [weak self] in self?.controller?.deckDidScroll() }
+            card.onContextAction = { [weak self] id, action in
+                self?.controller?.performContextAction(action, on: id)
+            }
+            return card
+        case .group(let ref), .header(let ref):
+            let info = content.group(ref)
+            let card = GroupCardView(ref: ref, name: info.name, count: info.count, look: info.look,
+                                     isOpen: entry == .header(ref), height: EdgeMetrics.tabHeight, edge: edge)
+            card.onToggle = { [weak self] ref in self?.controller?.toggleGroup(ref) }
+            card.onDropNotes = { [weak self] ids in self?.controller?.dropNotes(ids, onGroup: ref) }
+            return card
         }
-        return card
+    }
+
+    /// The same tab, changed: what it shows is drawn on the card already in
+    /// the deck instead of on a replacement.
+    private func refresh(_ card: DeckTabView, for entry: DeckEntry) {
+        switch entry {
+        case .note(let id):
+            guard let card = card as? NoteCardView, let note = content.notes[id] else { return }
+            card.show(note)
+            card.groupChoices = content.choices
+        case .group(let ref), .header(let ref):
+            guard let card = card as? GroupCardView else { return }
+            let info = content.group(ref)
+            card.show(name: info.name, count: info.count, look: info.look, isOpen: entry == .header(ref))
+        }
     }
 
     // MARK: - Notes added and removed
@@ -501,7 +559,7 @@ final class EdgeStackView: NSView {
     /// panel is resized, so the pieces can be carried over to where they
     /// were and spring on from there instead of jumping with the panel.
     struct Snapshot {
-        var cards: [UUID: NSRect] = [:]
+        var cards: [DeckEntry.Key: NSRect] = [:]
         var plus: NSRect?
         var daily: NSRect?
         var chip: NSRect?
@@ -511,36 +569,46 @@ final class EdgeStackView: NSView {
         guard state == .fanned, let window else { return Snapshot() }
         func onScreen(_ view: NSView) -> NSRect { window.convertToScreen(view.convert(view.bounds, to: nil)) }
         var snapshot = Snapshot()
-        for card in cards { snapshot.cards[card.noteID] = onScreen(card) }
+        for (card, entry) in zip(cards, entries) { snapshot.cards[entry.key] = onScreen(card) }
         snapshot.plus = plusButton.map(onScreen)
         snapshot.daily = dailyButton.map(onScreen)
         snapshot.chip = overflowCard.map(onScreen)
         return snapshot
     }
 
-    /// The open deck after notes were added, removed or changed. Cards that
-    /// stay spring from where they are to the new step, new ones slide in
-    /// from the edge, removed ones slide out.
-    func update(notes: [Note], usableHeight: CGFloat, pinned: DeckGeometry.PinnedBlock? = nil, from snapshot: Snapshot) {
+    /// The open deck after tabs were added, removed or changed — a note made, a
+    /// group opened or closed. Cards that stay spring from where they are to
+    /// the new step; new ones slide in from the edge — those of a group that
+    /// has just opened unfold from its header — and removed ones slide out,
+    /// those of a group that has just closed folding back into its tab.
+    func update(plan newPlan: DeckPlan, content newContent: DeckContent, usableHeight: CGFloat, from snapshot: Snapshot) {
         guard state == .fanned, !isFanningIn, let window else {
-            fanOut(notes: notes, usableHeight: usableHeight, pinned: pinned, stagger: 0, preserveScroll: true)
+            fanOut(plan: newPlan, content: newContent, usableHeight: usableHeight, stagger: 0, preserveScroll: true)
             return
         }
         self.usableHeight = usableHeight
-        pinnedBlock = pinned
-        let hoveredID = hoveredNoteID
+        let oldPlan = plan
+        let hoveredKey = hoveredEntry?.key
+        let focused = keyboardStop
+        plan = newPlan
+        content = newContent
 
-        var remaining = Dictionary(uniqueKeysWithValues: cards.map { ($0.noteID, $0) })
-        cards = notes.map { note in
-            if let card = remaining.removeValue(forKey: note.id) {
-                card.show(note)
+        var remaining = Dictionary(uniqueKeysWithValues: zip(cards, oldPlan.entries).map { ($1.key, $0) })
+        cards = newPlan.entries.map { entry in
+            if let card = remaining.removeValue(forKey: entry.key) {
+                refresh(card, for: entry)
                 return card
             }
-            return makeCard(for: note)
+            return makeCard(for: entry)
         }
         let leaving = Array(remaining.values)
+        // Where a group's notes come from and go to: its tab.
+        let opened = newPlan.open.flatMap { $0 == oldPlan.open ? nil : $0 }
+        let closed = oldPlan.open.flatMap { $0 == newPlan.open ? nil : $0 }
+        let unfolding = Set(opened.map { Self.members(of: $0, in: newPlan) } ?? [])
+        let folding = Set(closed.map { Self.members(of: $0, in: oldPlan) } ?? [])
 
-        if let hoveredID, let hover, let index = cards.firstIndex(where: { $0.noteID == hoveredID }) {
+        if let hoveredKey, let hover, let index = entries.firstIndex(where: { $0.key == hoveredKey }) {
             self.hover = DeckGeometry.Hover(index: index, cursorY: hover.cursorY)
         } else {
             hover = nil
@@ -555,9 +623,14 @@ final class EdgeStackView: NSView {
         }
         let offscreenX = edge.offscreenX(itemWidth: EdgeMetrics.tabWidth + lift, in: clip.bounds.width)
         for (index, card) in cards.enumerated() {
+            let entry = entries[index]
             let target = geometry.frames[index]
-            if let was = snapshot.cards[card.noteID] {
+            if let was = snapshot.cards[entry.key] {
                 card.place(frame: local(was, in: clip))
+            } else if let ref = opened, unfolding.contains(entry.key), let headerAt = entries.firstIndex(of: .header(ref)) {
+                // Unfolds out of its group's header, in place.
+                let header = snapshot.cards[.group(ref)].map { local($0, in: clip) } ?? geometry.frames[headerAt]
+                card.place(frame: NSRect(x: target.minX, y: header.minY, width: target.width, height: target.height), alpha: 0)
             } else {
                 card.place(frame: NSRect(x: offscreenX, y: target.minY, width: target.width, height: target.height), alpha: 0)
             }
@@ -576,12 +649,29 @@ final class EdgeStackView: NSView {
             view.move(to: NSRect(origin: origin, size: view.frame.size), alpha: 1, config: .deck)
         }
 
-        for card in leaving {
-            if let was = snapshot.cards[card.noteID] { card.place(frame: local(was, in: clip)) }
-            card.move(to: NSRect(origin: NSPoint(x: offscreenX, y: card.frame.minY), size: card.frame.size),
-                      alpha: 0, config: .deck)
+        for (card, key) in leaving.map({ card in (card, remainingKey(of: card, in: oldPlan)) }) {
+            if let key, let was = snapshot.cards[key] { card.place(frame: local(was, in: clip)) }
+            if let key, folding.contains(key), let ref = closed, let tab = entries.firstIndex(of: .group(ref)) {
+                // Folds back into its group's tab.
+                let into = geometry.frames[tab]
+                card.move(to: NSRect(x: into.minX, y: into.minY, width: card.frame.width, height: card.frame.height),
+                          alpha: 0, config: .deck)
+            } else {
+                card.move(to: NSRect(origin: NSPoint(x: offscreenX, y: card.frame.minY), size: card.frame.size),
+                          alpha: 0, config: .deck)
+            }
         }
         leavingCards.append(contentsOf: leaving)
+        // The keyboard stays on the tab it was on, wherever the tab went.
+        if keyboardIndex != nil {
+            let stops = keyboardStops
+            if let focused, let index = stops.firstIndex(where: { $0 === focused }) {
+                keyboardIndex = index
+            } else {
+                keyboardIndex = stops.isEmpty ? nil : min(keyboardIndex ?? 0, stops.count - 1)
+            }
+            refreshKeyboardRing()
+        }
         let settle = Motion.reduceMotion ? 0.25 : 0.5
         DispatchQueue.main.asyncAfter(deadline: .now() + settle) { [weak self] in
             for card in leaving {
@@ -593,8 +683,21 @@ final class EdgeStackView: NSView {
         updateOverflowCount()
     }
 
+    /// The notes of `ref` in a plan: those right after its header.
+    private static func members(of ref: DeckGroupRef, in plan: DeckPlan) -> [DeckEntry.Key] {
+        guard let header = plan.entries.firstIndex(of: .header(ref)), let count = plan.counts[ref] else { return [] }
+        return plan.entries.dropFirst(header + 1).prefix(count).compactMap { $0.noteID.map { DeckEntry.Key.note($0) } }
+    }
+
+    /// The key a card that is leaving had in the plan it left.
+    private func remainingKey(of card: DeckTabView, in old: DeckPlan) -> DeckEntry.Key? {
+        if let note = card as? NoteCardView { return .note(note.noteID) }
+        if let group = card as? GroupCardView { return .group(group.ref) }
+        return nil
+    }
+
     /// Cards on their way out after their note was removed.
-    private var leavingCards: [NoteCardView] = []
+    private var leavingCards: [DeckTabView] = []
 
     /// The "+" stays; the "+N" chip comes and goes with scrolling; the column
     /// takes the height the geometry gives it.
@@ -765,7 +868,7 @@ final class EdgeStackView: NSView {
         leavingCards.forEach { $0.stopMotion(); $0.removeFromSuperview() }
         leavingCards.removeAll()
         geometry = DeckGeometry.layout(count: 0, usableHeight: usableHeight, columnWidth: bounds.width, edge: edge)
-        pinnedBlock = nil
+        plan = .empty
         cards.forEach { $0.stopMotion(); $0.removeFromSuperview() }
         cards.removeAll()
         overflowCard?.stopMotion()
@@ -787,7 +890,7 @@ final class EdgeStackView: NSView {
     /// peek or a note opened while the deck is still opening a tab lines up
     /// with where that tab comes to rest.
     func screenFrame(forNoteID noteID: UUID) -> NSRect? {
-        guard let index = cards.firstIndex(where: { $0.noteID == noteID }), let window,
+        guard let index = entries.firstIndex(of: .note(noteID)), let window,
               geometry.frames.indices.contains(index) else { return nil }
         return window.convertToScreen(clip.convert(geometry.frames[index], to: nil))
     }
@@ -796,7 +899,7 @@ final class EdgeStackView: NSView {
     /// rule as hovering — not to whichever card's bounds happen to be there.
     override func hitTest(_ point: NSPoint) -> NSView? {
         let hit = super.hitTest(point)
-        guard state == .fanned, hit === self || hit is NoteCardView, let superview else { return hit }
+        guard state == .fanned, hit === self || hit is DeckTabView, let superview else { return hit }
         let inClip = clip.convert(point, from: superview)
         guard clip.bounds.contains(inClip) else { return hit }
         guard let index = geometry.tab(at: inClip), cards.indices.contains(index) else { return self }

@@ -13,13 +13,16 @@ final class DeckFixture {
         self.init(notes: (0..<count).map { Note(title: "Note \($0)", body: "", sortIndex: $0) })
     }
 
-    init(notes: [Note]) {
+    init(notes: [Note], groups: [NoteGroup] = [], dailyColor: NoteColor = .default) {
         Motion.reduceMotionOverride = true
         self.notes = notes
         controller = EdgePanelController(screen: NSScreen.main!)
-        controller.update(notes: notes)
+        controller.update(notes: notes, groups: groups, dailyColor: dailyColor)
         controller.cursorDidEnter()
     }
+
+    /// The groups' tabs, top to bottom.
+    var groupCards: [GroupCardView] { stack.accessibilityOrderForTesting.compactMap { $0 as? GroupCardView } }
 
     var stack: EdgeStackView { controller.stackViewForTesting }
 
@@ -116,6 +119,7 @@ func runDeckClickTests() {
         delegate.activated.removeAll()
         let target = deck.stack.hitTest(deck.stack.superview?.convert(point, from: nil) ?? point)
         target?.mouseDown(with: deck.event(.leftMouseDown, at: point))
+        target?.mouseUp(with: deck.event(.leftMouseUp, at: point))
         return delegate.activated.last
     }
 
@@ -308,7 +312,8 @@ func runExpiringMarkTests() {
     expectTrue("expiring: none once it is due — the rule archives it", !marked("due"))
     expectTrue("expiring: none on a kept note", !marked("kept"))
     expectTrue("expiring: nor a pinned one", !marked("pinned"))
-    expectTrue("expiring: nor a daily", !marked("daily"))
+    expectTrue("expiring: a daily is in the Daily group, with no tab of its own",
+               deck.cards.first { $0.noteID == notes.first { $0.title == "daily" }!.id } == nil)
 
     // Opened today, the clock goes: the deck redraws for a change nobody announced.
     var refreshed = notes

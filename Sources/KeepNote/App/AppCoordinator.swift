@@ -63,6 +63,21 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             }
             .store(in: &cancellables)
 
+        // The groups, and the colour Daily takes from its template, are on the
+        // deck too.
+        store.$groups
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.panelsDidChange(activeNotes: self?.store.activeNotes ?? []) }
+            .store(in: &cancellables)
+        store.$dailyTemplate
+            .map(\.color)
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.panelsDidChange(activeNotes: self?.store.activeNotes ?? []) }
+            .store(in: &cancellables)
+
         store.changes
             .sink { [weak self] event in
                 self?.refreshOpenWindows(for: event.0)
@@ -389,7 +404,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     private func panelsDidChange(activeNotes: [Note]) {
         for controller in panels.values {
-            controller.update(notes: activeNotes)
+            controller.update(notes: activeNotes, groups: store.groups, dailyColor: store.dailyTemplate.color)
         }
     }
 
@@ -402,7 +417,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     private func registerHotkeys() {
         HotkeyService.shared.register([
-            .newNote: { [weak self] in self?.newNote() },
+            .newNote: { [weak self] in self?.newNote(group: self?.openGroupOnDeck()) },
             .allNotes: { [weak self] in self?.showAllNotes() },
             .todaysDaily: { [weak self] in self?.openTodaysDaily() },
             .archive: { [weak self] in self?.showArchive() },
@@ -420,9 +435,17 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
 
     // MARK: - Commands
 
-    func newNote(tags: [String] = []) {
+    /// The user's group that is open on a deck that is showing, if one is: a
+    /// note made now with no deck to say (⌥⌘N, the menu) is born in it.
+    func openGroupOnDeck() -> UUID? {
+        panels.values.first { $0.isFanned && $0.openUserGroupID != nil }?.openUserGroupID
+    }
+
+    /// A new note, at the end of the stack — or of `group`, when it is made
+    /// with one open — and open for typing.
+    func newNote(tags: [String] = [], group: UUID? = nil) {
         do {
-            let note = try store.create(color: settings.defaultNoteColor, tags: tags)
+            let note = try store.create(color: settings.defaultNoteColor, tags: tags, group: group)
             open(noteID: note.id, from: nil)
             Announcer.say(L("New note"))
         } catch {
@@ -697,6 +720,89 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         alert.runModal()
     }
 
+    // MARK: - Groups
+
+    /// Moves notes into a group, or out of every group (`nil`): from a tab's
+    /// menu, a note's Tools, All Notes, or a drop on a group's tab. Dailies stay
+    /// in Daily and are left as they are.
+    func moveToGroup(_ ids: [UUID], group: UUID?) {
+        do {
+            let moved = try store.setGroup(group, for: ids)
+            guard moved > 0 else {
+                if ids.contains(where: { store.note(id: $0)?.isDaily == true }) {
+                    undoToast.notice(L("Daily notes stay in Daily"))
+                    Announcer.say(L("Daily notes stay in Daily"))
+                }
+                return
+            }
+            // Said without `Lplural`: a group's name is the user's text, and
+            // must not be read as a format.
+            if let name = group.flatMap({ store.group(id: $0)?.name }) {
+                Announcer.say(moved == 1 ? L("Note moved to %@", name) : L("%d notes moved to %@", moved, name))
+            } else {
+                Announcer.say(Lplural(moved, L("Note moved out of its group"), L("%d notes moved out of their group")))
+            }
+        } catch {
+            present(error)
+        }
+    }
+
+    /// New Group…: a name, then the notes go into it. Returns the group made.
+    @discardableResult
+    func promptNewGroup(for ids: [UUID] = []) -> NoteGroup? {
+        guard let name = promptGroupName(title: L("New Group"), detail: ids.isEmpty ? L("Name the group.") : L("The notes go into it."),
+                                         confirm: L("Create"), current: ""),
+              let group = store.createGroup(name: name) else { return nil }
+        if !ids.isEmpty { moveToGroup(ids, group: group.id) }
+        return group
+    }
+
+    /// Rename Group…
+    func promptRenameGroup(_ id: UUID) {
+        guard let group = store.group(id: id),
+              let name = promptGroupName(title: L("Rename \u{201C}%@\u{201D}", group.name), detail: L("Every note in the group stays in it."),
+                                         confirm: L("Rename"), current: group.name) else { return }
+        store.renameGroup(id: id, to: name)
+    }
+
+    /// Delete Group…: says how many notes are left in none; no note is deleted.
+    func promptDeleteGroup(_ id: UUID) {
+        guard let group = store.group(id: id) else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let count = store.notes(inGroup: id).count
+        let alert = NSAlert()
+        alert.messageText = L("Delete the group \u{201C}%@\u{201D}?", group.name)
+        alert.informativeText = count == 0
+            ? L("The group is empty.")
+            : Lplural(count, L("Its 1 note stays, in no group. No note is deleted."), L("Its %d notes stay, in no group. No note is deleted.", count))
+        alert.addButton(withTitle: L("Delete Group"))
+        alert.addButton(withTitle: L("Cancel"))
+        alert.buttons.first?.hasDestructiveAction = true
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        do {
+            try store.deleteGroup(id: id)
+            Announcer.say(L("Group deleted"))
+        } catch {
+            present(error)
+        }
+    }
+
+    private func promptGroupName(title: String, detail: String, confirm: String, current: String) -> String? {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = detail
+        let field = NSTextField(string: current)
+        field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
+        field.placeholderString = L("Group name")
+        alert.accessoryView = field
+        alert.addButton(withTitle: confirm)
+        alert.addButton(withTitle: L("Cancel"))
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        return NoteGroup.cleaned(field.stringValue)
+    }
+
     // MARK: - Tags across notes
 
     /// Writes a tag edit and says so when locked notes had to be left out.
@@ -871,7 +977,14 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             addTagToNotes: { [weak self] ids in self?.promptAddTag(to: ids) },
             removeTagFromNotes: { [weak self] ids in self?.promptRemoveTag(from: ids) },
             tagNotes: { [weak self] name, ids in self?.addTag(name, to: ids) },
-            select: { [weak self] id in self?.allNotesDidSelect(id) }
+            select: { [weak self] id in self?.allNotesDidSelect(id) },
+            moveToGroup: { [weak self] ids, group in self?.moveToGroup(ids, group: group) },
+            newGroupWithNotes: { [weak self] ids in self?.promptNewGroup(for: ids) },
+            createGroup: { [weak self] in self?.promptNewGroup() },
+            renameGroup: { [weak self] id in self?.promptRenameGroup(id) },
+            deleteGroup: { [weak self] id in self?.promptDeleteGroup(id) },
+            setGroupColor: { [weak self] id, color in self?.store.setGroupColor(color, id: id) },
+            reorderGroups: { [weak self] ids in self?.store.reorderGroups(ids: ids) }
         )
     }
 
@@ -1221,11 +1334,21 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         case .toggleKeep:
             if let note = store.note(id: id) { setKeepOnDeck(!note.keepOnDeck, ids: [id]) }
         case .delete: delete(ids: [id])
+        case .moveToGroup(let group): moveToGroup([id], group: group)
+        case .newGroup: promptNewGroup(for: [id])
         }
     }
 
     func edgePanelDidRequestNewNote(_ controller: EdgePanelController) {
-        newNote()
+        newNote(group: controller.openUserGroupID)
+    }
+
+    func edgePanelOpenGroup(_ controller: EdgePanelController) -> UUID? {
+        controller.openUserGroupID
+    }
+
+    func edgePanel(_ controller: EdgePanelController, didDropNotes ids: [UUID], onGroup id: UUID) {
+        moveToGroup(ids, group: id)
     }
 
     func edgePanelDidRequestTodaysDaily(_ controller: EdgePanelController) {
@@ -1269,7 +1392,7 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         return menu
     }
 
-    @objc func menuNewNote() { newNote() }
+    @objc func menuNewNote() { newNote(group: openGroupOnDeck()) }
     @objc func menuTodaysDaily() { openTodaysDaily() }
     @objc func menuEditDailyTemplate() { showDailyTemplate() }
     @objc func menuAllNotes() { showAllNotes() }

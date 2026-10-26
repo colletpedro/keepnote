@@ -30,6 +30,17 @@ struct NoteListActions {
     /// The note in the pane now, or `nil`: selecting a note opens it, for the
     /// time rule as for everything else.
     var select: (UUID?) -> Void = { _ in }
+    /// Move to Group › for these notes: a group, or none.
+    var moveToGroup: ([UUID], UUID?) -> Void = { _, _ in }
+    /// Move to Group › New Group…: asks for the name, then moves them in.
+    var newGroupWithNotes: ([UUID]) -> Void = { _ in }
+    /// The sidebar's Groups: New Group…, Rename Group…, Delete Group… (asks
+    /// first), a colour, and the order.
+    var createGroup: () -> Void = {}
+    var renameGroup: (UUID) -> Void = { _ in }
+    var deleteGroup: (UUID) -> Void = { _ in }
+    var setGroupColor: (UUID, GroupColor) -> Void = { _, _ in }
+    var reorderGroups: ([UUID]) -> Void = { _ in }
 }
 
 /// The full list: a sidebar of libraries and tags, the notes in the selected

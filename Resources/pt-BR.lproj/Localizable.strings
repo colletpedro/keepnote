@@ -14,6 +14,7 @@
 "%@ now has no shortcut" = "%@ agora está sem atalho";
 "%@ set to %@" = "%@ definido como %@";
 "%@ unchanged: %@" = "%@ sem alteração: %@";
+"%@, %@" = "%@, %@";
 "%@. %@ keeps %@" = "%@. %@ continua com %@";
 "%d archived" = "%d arquivadas";
 "%d days" = "%d dias";
@@ -27,6 +28,8 @@
 "%d notes archived" = "%d notas arquivadas";
 "%d notes back on the deck" = "%d notas de volta à pilha";
 "%d notes deleted" = "%d notas apagadas";
+"%d notes moved out of their group" = "%d notas tiradas do grupo";
+"%d notes moved to %@" = "%d notas movidas para %@";
 "%d notes selected" = "%d notas selecionadas";
 "%d notes were archived automatically" = "%d notas foram arquivadas automaticamente";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notas vão perder esta tag. As notas em si são mantidas.";
@@ -90,7 +93,9 @@
 "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Clique num atalho e pressione a nova combinação; ela precisa de ⌘, ⌥ ou ⌃. Esc cancela, Delete deixa o comando sem atalho.";
 "Close" = "Fechar";
 "Close (esc)" = "Fechar (esc)";
+"Close Group" = "Fechar grupo";
 "Close find" = "Fechar busca";
+"Closes the group" = "Fecha o grupo";
 "Closes the note. What you wrote is saved." = "Fecha a nota. O que você escreveu fica salvo.";
 "Code Block" = "Bloco de código";
 "Colors, states and dates came across unchanged." = "Cores, estados e datas vieram sem alteração.";
@@ -103,6 +108,7 @@
 "Could not change this: %@" = "Não foi possível alterar: %@";
 "Could not keep access to that folder: %@" = "Não foi possível manter o acesso a essa pasta: %@";
 "Could not write %@: %@" = "Não foi possível gravar %@: %@";
+"Create" = "Criar";
 "Create \"#%@\"" = "Criar \"#%@\"";
 "Created %@\nEdited %@" = "Criada em %@\nEditada em %@";
 "Created %@ · Edited %@" = "Criada %@ · editada %@";
@@ -112,6 +118,7 @@
 "Daily Template" = "Modelo da Daily";
 "Daily note" = "Nota daily";
 "Daily notes" = "Notas daily";
+"Daily notes stay in Daily" = "As notas daily ficam em Daily";
 "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes." = "Notas daily. Adicione a tag daily a qualquer nota, quantas quiser por dia. As notas dos seus dois dias mais recentes ficam na pilha. As mais antigas são arquivadas automaticamente e guardadas aqui. Você pode definir um modelo para as novas notas daily.";
 "Deck" = "Pilha";
 "Default" = "Padrão";
@@ -119,8 +126,10 @@
 "Delete" = "Apagar";
 "Delete %d Notes" = "Apagar %d notas";
 "Delete (undoable)" = "Apagar (pode desfazer)";
+"Delete Group" = "Apagar grupo";
 "Delete Tag" = "Apagar tag";
 "Delete Tag…" = "Apagar tag…";
+"Delete the group “%@”?" = "Apagar o grupo “%@”?";
 "Delete the tag “#%@”?" = "Apagar a tag “#%@”?";
 "Divider" = "Divisor";
 "Don’t bring" = "Não trazer";
@@ -136,6 +145,7 @@
 "Empty task" = "Tarefa vazia";
 "End the list, or outdent when nested" = "Encerrar a lista, ou recuar quando aninhada";
 "Escape" = "Esc";
+"Every note in the group stays in it." = "Todas as notas do grupo continuam nele.";
 "Every note with this tag gets the new name." = "Todas as notas com esta tag recebem o novo nome.";
 "Export %d Notes…" = "Exportar %d notas…";
 "Export All Notes…" = "Exportar todas as notas…";
@@ -165,6 +175,11 @@
 "Global" = "Globais";
 "Got it" = "Entendi";
 "Green" = "Verde";
+"Group %@" = "Grupo %@";
+"Group %@ closed" = "Grupo %@ fechado";
+"Group %@ opened, %@" = "Grupo %@ aberto, %@";
+"Group deleted" = "Grupo apagado";
+"Group name" = "Nome do grupo";
 "Group: %@" = "Grupo: %@";
 "Heading" = "Título";
 "Heading 1" = "Título 1";
@@ -191,6 +206,8 @@
 "Inside a note: %@." = "Dentro de uma nota: %@.";
 "It is the tag daily notes are made with, so it keeps its name." = "É a tag com que as notas daily são feitas, então mantém o nome.";
 "Italic" = "Itálico";
+"Its %d notes stay, in no group. No note is deleted." = "As %d notas dele continuam, sem grupo. Nenhuma nota é apagada.";
+"Its 1 note stays, in no group. No note is deleted." = "A nota dele continua, sem grupo. Nenhuma nota é apagada.";
 "Keep on Deck" = "Manter na pilha";
 "KeepNote Export" = "Exportação do KeepNote";
 "KeepNote archive — colors, states and dates" = "Arquivo do KeepNote — cores, estados e datas";
@@ -226,8 +243,12 @@
 "Move %d Notes to Deck" = "Mover %d notas para a pilha";
 "Move back to the stack" = "Devolver à pilha";
 "Move to Deck" = "Mover para a pilha";
+"Move to Group" = "Mover para o grupo";
 "Move to Stack" = "Mover para a pilha";
+"Name the group." = "Dê um nome ao grupo.";
 "Needs ⌘, ⌥ or ⌃" = "Precisa de ⌘, ⌥ ou ⌃";
+"New Group" = "Novo grupo";
+"New Group…" = "Novo grupo…";
 "New Note" = "Nova nota";
 "New Note with Tag" = "Nova nota com a tag";
 "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes." = "As novas notas daily começam com este texto em vez de uma página em branco. Ele não é uma nota: fica fora da pilha, das listas e da busca, e é sincronizado e exportado com suas notas.";
@@ -235,6 +256,7 @@
 "Next Color" = "Próxima cor";
 "Next color" = "Próxima cor";
 "Next match" = "Próximo resultado";
+"No Group" = "Sem grupo";
 "No additional text" = "Nenhum texto adicional";
 "No archived note matches that" = "Nenhuma nota arquivada corresponde a isso";
 "No daily notes yet" = "Nenhuma nota daily ainda";
@@ -246,6 +268,8 @@
 "Note back on the deck" = "Nota de volta à pilha";
 "Note deleted" = "Nota apagada";
 "Note floating" = "Nota flutuando";
+"Note moved out of its group" = "Nota tirada do grupo";
+"Note moved to %@" = "Nota movida para %@";
 "Notes" = "Notas";
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "As notas são markdown: # títulos, **negrito**, - listas, - [ ] tarefas,";
 "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date." = "Notas não abertas pelo tempo definido em Pilha (7, 14 ou 30 dias; 14 por padrão) são arquivadas sozinhas, nunca apagadas. Abrir uma nota, presa à pilha ou flutuando, recomeça a contagem; uma espiada pela pilha não. Nos dois últimos dias, um relógio aparece na aba e a nota diz “Arquiva em 2 dias” ou “Arquiva amanhã”. As notas daily seguem uma regra própria. Em Arquivadas, essas notas dizem “Arquivada automaticamente” e a data.";
@@ -255,6 +279,7 @@
 "On the Deck" = "Na pilha";
 "Only notes on the deck can be pinned" = "Só notas da pilha podem ser fixadas";
 "Open" = "Abrir";
+"Open Group" = "Abrir grupo";
 "Open Login Items…" = "Abrir Itens de Início…";
 "Open delay" = "Atraso para abrir";
 "Open source, MIT License" = "Código aberto, Licença MIT";
@@ -263,6 +288,7 @@
 "Opens KeepNote’s issues on GitHub in your browser" = "Abre as issues do KeepNote no GitHub, no navegador";
 "Opens the KeepNote site in your browser" = "Abre o site do KeepNote no navegador";
 "Opens the deck" = "Abre a pilha";
+"Opens the group" = "Abre o grupo";
 "Opens the note. The actions menu has its other commands." = "Abre a nota. O menu de ações tem os outros comandos.";
 "Opens today’s daily note, or makes one" = "Abre a nota daily de hoje, ou cria uma";
 "Option" = "Option";
@@ -302,6 +328,7 @@
 "Rename" = "Renomear";
 "Rename Tag…" = "Renomear tag…";
 "Rename “#%@”" = "Renomear “#%@”";
+"Rename “%@”" = "Renomear “%@”";
 "Reopen" = "Reabrir";
 "Report a problem" = "Relatar um problema";
 "Restore Defaults" = "Restaurar padrões";
@@ -354,8 +381,10 @@
 "That note was deleted." = "Essa nota foi apagada.";
 "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes." = "O botão de calendário ao lado do + abre a daily de hoje. Dê a tag daily a qualquer nota para torná-la uma daily: os dois últimos dias ficam na pilha, os mais antigos vão para Daily em Todas as notas.";
 "The color a new note starts with. Automatic takes the color after the previous note’s. You can still change it inside the note." = "A cor com que uma nova nota começa. Automática usa a cor seguinte à da nota anterior. Você ainda pode mudá-la dentro da nota.";
+"The group is empty." = "O grupo está vazio.";
 "The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac." = "O idioma dos menus e janelas do KeepNote e do que ele escreve nas notas, como datas e dias da semana. Sistema segue o idioma deste Mac.";
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "O ícone de nota à direita da barra de menus, com Nova nota, Todas as notas, Ajustes e Encerrar.";
+"The notes go into it." = "As notas vão para ele.";
 "The notes themselves are kept." = "As notas em si são mantidas.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "A pausa entre um cartão deslizar para fora e o seguinte. Zero abre todos de uma vez.";
 "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "O lado da tela em que a pilha fica, em todos os monitores. As notas, as espiadas e o arrasto de volta para a pilha acompanham.";
@@ -412,13 +441,16 @@
 "archives tomorrow" = "arquiva amanhã";
 "chosen" = "escolhida";
 "click the daily chip in a note" = "clique na tag daily de uma nota";
+"closed" = "fechado";
 "daily" = "daily";
 "esc closes" = "esc fecha";
 "esc · ⌘W" = "esc · ⌘W";
 "floating" = "flutuando";
+"group tab" = "aba de grupo";
 "just now" = "agora mesmo";
 "kept on deck" = "mantida na pilha";
 "note tab" = "aba de nota";
+"open" = "aberto";
 "pinned to center" = "fixada no centro";
 "the calendar button beside +" = "o botão de calendário ao lado do +";
 "the pin in a note’s header · Tools · right-click a tab · All Notes" = "alfinete da nota · Ferramentas · clique direito na aba · Todas as notas";

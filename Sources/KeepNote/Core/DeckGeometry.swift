@@ -30,6 +30,11 @@ import CoreGraphics
 /// leaves it, exactly as an unpinned deck would in a column that size; the
 /// side above ends at the block and the side below starts at it.
 ///
+/// With an open group (`DeckPlan`) the first tab of a side can be its header, which
+/// never scrolls away (`stickyFirst`): when the side's tabs do not fit, the
+/// header stays at the top of the column and the rest scrolls in the room under it,
+/// clipped there.
+///
 /// Coordinates are the column's: origin at its bottom left, y up, tab 0 at
 /// the top. Nothing here knows about views, so all of it is tested directly.
 ///
@@ -85,6 +90,11 @@ struct DeckGeometry: Equatable {
     /// The part below the pinned block scrolls on its own.
     var lowerScrollOffset: CGFloat = 0
     var lowerMaxScrollOffset: CGFloat = 0
+    /// The header that stays at the top while the tabs after it scroll
+    /// (`stickyFirst`), when the side it heads did not fit: its index (always
+    /// the first tab) and the part of the column the others show in, under it.
+    var stickyHeader: Int?
+    var stickyNotesClip: CGRect = .zero
 
     /// The pinned notes in the deck's order: `above` unpinned tabs come
     /// first, then the `count` pinned ones, then the rest.
@@ -145,6 +155,13 @@ struct DeckGeometry: Equatable {
     /// block — the part of it that belongs to the tab's side.
     func clip(of index: Int) -> CGRect {
         let column = CGRect(x: 0, y: 0, width: frames.first?.maxX ?? 0, height: columnHeight)
+        if let sticky = stickyHeader {
+            // The header is seen over the whole of its side; what follows it
+            // is only seen under it.
+            let end = pinned?.above ?? frames.count
+            if index == sticky { return pinned == nil ? column : upperClip }
+            if index < end { return stickyNotesClip }
+        }
         guard let pinned, pinned.count > 0 else { return column }
         if index < pinned.above { return upperClip }
         if index >= pinned.above + pinned.count { return lowerClip }
@@ -183,12 +200,13 @@ struct DeckGeometry: Equatable {
         lowerScrollOffset: CGFloat = 0,
         pinned: PinnedBlock? = nil,
         hover: Hover? = nil,
+        stickyFirst: Bool = false,
         edge: ScreenEdge,
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         var geometry = layout(
             count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
-            lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, metrics: metrics)
+            lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst, metrics: metrics)
         geometry.frames = geometry.frames.map { edge.mirrored($0, in: columnWidth) }
         geometry.edge = edge
         return geometry
@@ -203,13 +221,24 @@ struct DeckGeometry: Equatable {
         lowerScrollOffset: CGFloat = 0,
         pinned: PinnedBlock? = nil,
         hover: Hover? = nil,
+        stickyFirst: Bool = false,
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         if let pinned, pinned.count > 0, pinned.above + pinned.count <= count {
             return layoutAround(
                 pinned, count: count, usableHeight: usableHeight, columnWidth: columnWidth,
-                scrollOffset: scrollOffset, lowerScrollOffset: lowerScrollOffset, hover: hover, metrics: metrics
+                scrollOffset: scrollOffset, lowerScrollOffset: lowerScrollOffset, hover: hover,
+                stickyFirst: stickyFirst, metrics: metrics
             )
+        }
+        if stickyFirst, count > 1 {
+            let plain = layout(count: count, usableHeight: usableHeight, columnWidth: columnWidth,
+                               scrollOffset: scrollOffset, hover: hover, metrics: metrics)
+            if plain.mode == .scrolling {
+                return stickyLayout(count: count, usableHeight: usableHeight, columnWidth: columnWidth,
+                                    scrollOffset: scrollOffset, hover: hover, metrics: metrics)
+            }
+            return plain
         }
         let height = metrics.tabHeight
         let spacedStep = height + metrics.spacing
@@ -294,6 +323,7 @@ struct DeckGeometry: Equatable {
         scrollOffset: CGFloat,
         lowerScrollOffset: CGFloat,
         hover: Hover?,
+        stickyFirst: Bool,
         metrics: Metrics
     ) -> DeckGeometry {
         let height = metrics.tabHeight
@@ -325,7 +355,7 @@ struct DeckGeometry: Equatable {
         }
         func sides(_ room: (upper: CGFloat, lower: CGFloat, shift: CGFloat)) -> (DeckGeometry, DeckGeometry) {
             (layout(count: above, usableHeight: room.upper, columnWidth: columnWidth, scrollOffset: scrollOffset,
-                    metrics: side),
+                    stickyFirst: stickyFirst, metrics: side),
              layout(count: below, usableHeight: room.lower, columnWidth: columnWidth, scrollOffset: lowerScrollOffset,
                     metrics: side))
         }
@@ -399,8 +429,53 @@ struct DeckGeometry: Equatable {
                               height: max(0, deckHeight - columnBottom - (upperBase - columnBottomInMiddle))),
             lowerClip: CGRect(x: 0, y: 0, width: columnWidth, height: max(0, lowerTop - columnBottomInMiddle)),
             lowerScrollOffset: lower.scrollOffset,
-            lowerMaxScrollOffset: lower.maxScrollOffset
+            lowerMaxScrollOffset: lower.maxScrollOffset,
+            stickyHeader: upper.stickyHeader,
+            stickyNotesClip: upper.stickyHeader == nil ? .zero
+                : shifted(upper.stickyNotesClip, by: upperBase - columnBottomInMiddle)
         )
+    }
+
+    /// A side whose first tab is a header that stays: the header on top, a gap,
+    /// and the other tabs as an ordinary deck — spaced, packed or scrolling — in
+    /// the room that is left.
+    private static func stickyLayout(
+        count: Int, usableHeight: CGFloat, columnWidth: CGFloat, scrollOffset: CGFloat, hover: Hover?, metrics: Metrics
+    ) -> DeckGeometry {
+        let room = metrics.tabHeight + metrics.spacing
+        let rest = layout(count: count - 1, usableHeight: usableHeight - room, columnWidth: columnWidth,
+                          scrollOffset: scrollOffset, metrics: metrics)
+        let header = CGRect(x: columnWidth - metrics.tabWidth, y: rest.columnHeight + metrics.spacing,
+                            width: metrics.tabWidth, height: metrics.tabHeight)
+        var geometry = DeckGeometry(
+            mode: rest.mode == .scrolling ? .scrolling : .packed,
+            step: rest.step,
+            frames: [header] + rest.frames,
+            slices: [metrics.tabHeight] + rest.slices,
+            alphas: [1] + rest.alphas,
+            columnHeight: rest.columnHeight + room,
+            columnBottom: rest.columnBottom,
+            deckHeight: rest.deckHeight + room,
+            scrollOffset: rest.scrollOffset,
+            maxScrollOffset: rest.maxScrollOffset,
+            hiddenCount: rest.hiddenCount,
+            hovered: nil,
+            lift: metrics.hoverLift,
+            stickyHeader: 0,
+            stickyNotesClip: CGRect(x: 0, y: 0, width: columnWidth, height: rest.columnHeight)
+        )
+        if let hover {
+            let index = hover.index ?? geometry.frames.indices.reversed().first {
+                geometry.frames[$0].maxY - geometry.slices[$0] <= hover.cursorY && hover.cursorY <= geometry.frames[$0].maxY
+                    && geometry.clip(of: $0).contains(CGPoint(x: columnWidth - 1, y: hover.cursorY))
+            }
+            if let index, index < count {
+                geometry.hovered = index
+                geometry.frames[index].origin.x -= metrics.hoverLift
+                geometry.frames[index].size.width += metrics.hoverLift
+            }
+        }
+        return geometry
     }
 
     private static func shifted(_ rect: CGRect, by dy: CGFloat) -> CGRect {

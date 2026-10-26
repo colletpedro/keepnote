@@ -14,6 +14,7 @@
 "%@ now has no shortcut" = "%@ now has no shortcut";
 "%@ set to %@" = "%@ set to %@";
 "%@ unchanged: %@" = "%@ unchanged: %@";
+"%@, %@" = "%@, %@";
 "%@. %@ keeps %@" = "%@. %@ keeps %@";
 "%d archived" = "%d archived";
 "%d days" = "%d days";
@@ -27,6 +28,8 @@
 "%d notes archived" = "%d notes archived";
 "%d notes back on the deck" = "%d notes back on the deck";
 "%d notes deleted" = "%d notes deleted";
+"%d notes moved out of their group" = "%d notes moved out of their group";
+"%d notes moved to %@" = "%d notes moved to %@";
 "%d notes selected" = "%d notes selected";
 "%d notes were archived automatically" = "%d notes were archived automatically";
 "%d notes will lose this tag. The notes themselves are kept." = "%d notes will lose this tag. The notes themselves are kept.";
@@ -90,7 +93,9 @@
 "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one." = "Click a shortcut and press the new combination; it needs ⌘, ⌥ or ⌃. Esc cancels, Delete leaves the command without one.";
 "Close" = "Close";
 "Close (esc)" = "Close (esc)";
+"Close Group" = "Close Group";
 "Close find" = "Close find";
+"Closes the group" = "Closes the group";
 "Closes the note. What you wrote is saved." = "Closes the note. What you wrote is saved.";
 "Code Block" = "Code Block";
 "Colors, states and dates came across unchanged." = "Colors, states and dates came across unchanged.";
@@ -103,6 +108,7 @@
 "Could not change this: %@" = "Could not change this: %@";
 "Could not keep access to that folder: %@" = "Could not keep access to that folder: %@";
 "Could not write %@: %@" = "Could not write %@: %@";
+"Create" = "Create";
 "Create \"#%@\"" = "Create \"#%@\"";
 "Created %@\nEdited %@" = "Created %@\nEdited %@";
 "Created %@ · Edited %@" = "Created %@ · Edited %@";
@@ -112,6 +118,7 @@
 "Daily Template" = "Daily Template";
 "Daily note" = "Daily note";
 "Daily notes" = "Daily notes";
+"Daily notes stay in Daily" = "Daily notes stay in Daily";
 "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes." = "Daily notes. Add the daily tag to any note, as many as you like per day. Notes from your two most recent days stay on the deck. Older ones are archived automatically and kept here. You can set a template for new daily notes.";
 "Deck" = "Deck";
 "Default" = "Default";
@@ -119,8 +126,10 @@
 "Delete" = "Delete";
 "Delete %d Notes" = "Delete %d Notes";
 "Delete (undoable)" = "Delete (undoable)";
+"Delete Group" = "Delete Group";
 "Delete Tag" = "Delete Tag";
 "Delete Tag…" = "Delete Tag…";
+"Delete the group “%@”?" = "Delete the group “%@”?";
 "Delete the tag “#%@”?" = "Delete the tag “#%@”?";
 "Divider" = "Divider";
 "Don’t bring" = "Don’t bring";
@@ -136,6 +145,7 @@
 "Empty task" = "Empty task";
 "End the list, or outdent when nested" = "End the list, or outdent when nested";
 "Escape" = "Escape";
+"Every note in the group stays in it." = "Every note in the group stays in it.";
 "Every note with this tag gets the new name." = "Every note with this tag gets the new name.";
 "Export %d Notes…" = "Export %d Notes…";
 "Export All Notes…" = "Export All Notes…";
@@ -165,6 +175,11 @@
 "Global" = "Global";
 "Got it" = "Got it";
 "Green" = "Green";
+"Group %@" = "Group %@";
+"Group %@ closed" = "Group %@ closed";
+"Group %@ opened, %@" = "Group %@ opened, %@";
+"Group deleted" = "Group deleted";
+"Group name" = "Group name";
 "Group: %@" = "Group: %@";
 "Heading" = "Heading";
 "Heading 1" = "Heading 1";
@@ -191,6 +206,8 @@
 "Inside a note: %@." = "Inside a note: %@.";
 "It is the tag daily notes are made with, so it keeps its name." = "It is the tag daily notes are made with, so it keeps its name.";
 "Italic" = "Italic";
+"Its %d notes stay, in no group. No note is deleted." = "Its %d notes stay, in no group. No note is deleted.";
+"Its 1 note stays, in no group. No note is deleted." = "Its 1 note stays, in no group. No note is deleted.";
 "Keep on Deck" = "Keep on Deck";
 "KeepNote Export" = "KeepNote Export";
 "KeepNote archive — colors, states and dates" = "KeepNote archive — colors, states and dates";
@@ -226,8 +243,12 @@
 "Move %d Notes to Deck" = "Move %d Notes to Deck";
 "Move back to the stack" = "Move back to the stack";
 "Move to Deck" = "Move to Deck";
+"Move to Group" = "Move to Group";
 "Move to Stack" = "Move to Stack";
+"Name the group." = "Name the group.";
 "Needs ⌘, ⌥ or ⌃" = "Needs ⌘, ⌥ or ⌃";
+"New Group" = "New Group";
+"New Group…" = "New Group…";
 "New Note" = "New Note";
 "New Note with Tag" = "New Note with Tag";
 "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes." = "New daily notes start from this text instead of a blank page. It is not a note: it stays out of the deck, the lists and search, and it syncs and exports with your notes.";
@@ -235,6 +256,7 @@
 "Next Color" = "Next Color";
 "Next color" = "Next color";
 "Next match" = "Next match";
+"No Group" = "No Group";
 "No additional text" = "No additional text";
 "No archived note matches that" = "No archived note matches that";
 "No daily notes yet" = "No daily notes yet";
@@ -246,6 +268,8 @@
 "Note back on the deck" = "Note back on the deck";
 "Note deleted" = "Note deleted";
 "Note floating" = "Note floating";
+"Note moved out of its group" = "Note moved out of its group";
+"Note moved to %@" = "Note moved to %@";
 "Notes" = "Notes";
 "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks," = "Notes are markdown: # titles, **bold**, - lists, - [ ] tasks,";
 "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date." = "Notes not opened for the time set under Deck (7, 14 or 30 days; 14 by default) are archived on their own, never deleted. Opening a note, docked or floating, starts its time again; a quick look from the deck does not. In the last two days a clock appears on the tab and the note says “Archives in 2 days” or “Archives tomorrow”. Daily notes follow their own rule. In the Archive such notes say “Archived automatically” and the date.";
@@ -255,6 +279,7 @@
 "On the Deck" = "On the Deck";
 "Only notes on the deck can be pinned" = "Only notes on the deck can be pinned";
 "Open" = "Open";
+"Open Group" = "Open Group";
 "Open Login Items…" = "Open Login Items…";
 "Open delay" = "Open delay";
 "Open source, MIT License" = "Open source, MIT License";
@@ -263,6 +288,7 @@
 "Opens KeepNote’s issues on GitHub in your browser" = "Opens KeepNote’s issues on GitHub in your browser";
 "Opens the KeepNote site in your browser" = "Opens the KeepNote site in your browser";
 "Opens the deck" = "Opens the deck";
+"Opens the group" = "Opens the group";
 "Opens the note. The actions menu has its other commands." = "Opens the note. The actions menu has its other commands.";
 "Opens today’s daily note, or makes one" = "Opens today’s daily note, or makes one";
 "Option" = "Option";
@@ -302,6 +328,7 @@
 "Rename" = "Rename";
 "Rename Tag…" = "Rename Tag…";
 "Rename “#%@”" = "Rename “#%@”";
+"Rename “%@”" = "Rename “%@”";
 "Reopen" = "Reopen";
 "Report a problem" = "Report a problem";
 "Restore Defaults" = "Restore Defaults";
@@ -354,8 +381,10 @@
 "That note was deleted." = "That note was deleted.";
 "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes." = "The calendar button beside + opens today’s daily. Give any note the daily tag to make it a daily: the last two days stay on the deck, older ones move to Daily in All Notes.";
 "The color a new note starts with. Automatic takes the color after the previous note’s. You can still change it inside the note." = "The color a new note starts with. Automatic takes the color after the previous note’s. You can still change it inside the note.";
+"The group is empty." = "The group is empty.";
 "The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac." = "The language of KeepNote’s menus, windows and notes it writes, such as dates and weekdays. System follows the language of this Mac.";
 "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit." = "The note icon at the right of the menu bar, with New Note, All Notes, Settings and Quit.";
+"The notes go into it." = "The notes go into it.";
 "The notes themselves are kept." = "The notes themselves are kept.";
 "The pause between one card sliding out and the next. Zero opens them all at once." = "The pause between one card sliding out and the next. Zero opens them all at once.";
 "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it." = "The side of the screen the deck lives on, on every display. Notes, peeks and the drag back into the deck follow it.";
@@ -412,13 +441,16 @@
 "archives tomorrow" = "archives tomorrow";
 "chosen" = "chosen";
 "click the daily chip in a note" = "click the daily chip in a note";
+"closed" = "closed";
 "daily" = "daily";
 "esc closes" = "esc closes";
 "esc · ⌘W" = "esc · ⌘W";
 "floating" = "floating";
+"group tab" = "group tab";
 "just now" = "just now";
 "kept on deck" = "kept on deck";
 "note tab" = "note tab";
+"open" = "open";
 "pinned to center" = "pinned to center";
 "the calendar button beside +" = "the calendar button beside +";
 "the pin in a note’s header · Tools · right-click a tab · All Notes" = "the pin in a note’s header · Tools · right-click a tab · All Notes";

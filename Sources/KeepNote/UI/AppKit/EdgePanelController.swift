@@ -4,10 +4,20 @@ import AppKit
 protocol EdgePanelControllerDelegate: AnyObject {
     func edgePanel(_ controller: EdgePanelController, didActivateNote id: UUID, from tabFrame: NSRect?)
     func edgePanel(_ controller: EdgePanelController, didRequest action: NoteCardView.ContextAction, on id: UUID)
+    /// Notes dragged onto a group's tab.
+    func edgePanel(_ controller: EdgePanelController, didDropNotes ids: [UUID], onGroup id: UUID)
+    /// A note is about to be made from this deck: the group it is born in,
+    /// the one that is open here.
+    func edgePanelOpenGroup(_ controller: EdgePanelController) -> UUID?
     func edgePanelDidRequestNewNote(_ controller: EdgePanelController)
     func edgePanelDidRequestTodaysDaily(_ controller: EdgePanelController)
     func edgePanelDidRequestAllNotes(_ controller: EdgePanelController)
     func edgePanelMenu(_ controller: EdgePanelController) -> NSMenu?
+}
+
+extension EdgePanelControllerDelegate {
+    func edgePanel(_ controller: EdgePanelController, didDropNotes ids: [UUID], onGroup id: UUID) {}
+    func edgePanelOpenGroup(_ controller: EdgePanelController) -> UUID? { nil }
 }
 
 /// Drives one screen's deck through its three states.
@@ -29,9 +39,16 @@ final class EdgePanelController: NSObject {
     var stackViewForTesting: EdgeStackView { stackView }
     var peekForTesting: (noteID: UUID?, frame: NSRect) { (preview.visibleNoteID, preview.frameForTesting) }
 
+    /// The notes on the deck, as the store has them, and what groups them.
     private var notes: [Note] = []
-    /// The pinned block the deck is laid out around, if any pinned notes.
-    private var pinnedBlock: DeckGeometry.PinnedBlock?
+    private var groups: [NoteGroup] = []
+    private var dailyColor = NoteColor.default
+    /// The group open in this deck, if one is: only one at a time, and none
+    /// once the deck has folded away.
+    private(set) var openGroup: DeckGroupRef?
+    /// What the deck shows now, and what its cards draw.
+    private var plan = DeckPlan.empty
+    private var content = DeckContent()
     private var collapseTask: Task<Void, Never>?
     /// The cursor on the resting stripe, and whether it means to open the deck.
     private var intent = DeckIntent(delay: DeckIntent.defaultDelay)
@@ -47,6 +64,12 @@ final class EdgePanelController: NSObject {
     private(set) var isFanned = false
 
     var noteCount: Int { notes.count }
+
+    /// The user's own group that is open here, which a note made now is born in.
+    var openUserGroupID: UUID? {
+        if case .user(let id) = openGroup { return id }
+        return nil
+    }
 
     // MARK: - Keyboard (Focus Deck)
 
@@ -106,6 +129,12 @@ final class EdgePanelController: NSObject {
 
     /// Return on a stop.
     func pressFromKeyboard(_ stop: NSView) {
+        // A group opens or closes with the keyboard still in the deck, which
+        // goes on into it; anything else ends the focus.
+        if let group = stop as? GroupCardView {
+            toggleGroup(group.ref)
+            return
+        }
         endKeyboardFocus(giveBack: false)
         _ = stop.accessibilityPerformPress()
     }
@@ -176,7 +205,20 @@ final class EdgePanelController: NSObject {
     private var laidOutEdge: ScreenEdge = AppSettings.shared.screenEdge
 
     private var pillHeight: CGFloat {
-        PillView.height(forNoteCount: max(1, notes.count))
+        PillView.height(forNoteCount: max(1, pillColors.count))
+    }
+
+    /// One dash per tab of the deck closed: a group's in its colour, a note's
+    /// in its own.
+    private var pillColors: [NSColor] {
+        let closed = DeckPlan.make(notes: notes, groups: groups, open: nil, usableHeight: usableHeight)
+        let made = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: closed)
+        return closed.entries.compactMap { entry -> NSColor? in
+            switch entry {
+            case .note(let id): return made.notes[id]?.color.spine
+            case .group(let ref), .header(let ref): return made.group(ref).look.fill
+            }
+        }
     }
 
     private func pillFrame() -> NSRect {
@@ -188,9 +230,8 @@ final class EdgePanelController: NSObject {
     private func deckFrame() -> NSRect {
         let lift = AppSettings.shared.hoverLift
         let width = EdgeMetrics.tabWidth + EdgeMetrics.gutter(forLift: lift)
-        let geometry = DeckGeometry.layout(
-            count: notes.count, usableHeight: usableHeight, columnWidth: width, pinned: pinnedBlock, edge: edge,
-            metrics: DeckGeometry.Metrics(hoverLift: lift))
+        let geometry = plan.geometry(usableHeight: usableHeight, columnWidth: width, edge: edge,
+                                     metrics: DeckGeometry.Metrics(hoverLift: lift))
         return DeckPlacement.deckFrame(deckHeight: geometry.deckHeight, in: anchor, edge: edge, lift: lift)
     }
 
@@ -205,29 +246,94 @@ final class EdgePanelController: NSObject {
         stackView.setFloating(ids)
     }
 
-    func update(notes incoming: [Note]) {
-        // The pinned notes leave the list and form a block in the middle; the
-        // rest keep their order around it. See `PinnedDeck`.
-        let arrangement = PinnedDeck.arrange(incoming)
-        let notes = arrangement.items
-        let signature = notes.map { "\($0.id)|\($0.color.rawValue)|\($0.spineLabel)|\($0.isDaily)|\($0.isPinned)|\(DeckStatus.isExpiring($0))" }
-            + ["above \(arrangement.above)", "pinned \(arrangement.pinned)"]
-        let unchanged = signature == deckSignature
-        self.notes = notes
-        pinnedBlock = arrangement.pinned > 0 ? .init(above: arrangement.above, count: arrangement.pinned) : nil
-        deckSignature = signature
-        stackView.updatePill(colors: notes.map(\.color), highlighted: isFanned)
-        if isFanned {
-            guard !unchanged else { return }
-            // Added, removed or changed notes: the tabs slide to the new step.
-            let snapshot = stackView.snapshot()
-            let frame = deckFrame()
-            panel.setFrame(frame, display: false, animate: false)
-            stackView.frame = NSRect(origin: .zero, size: frame.size)
-            stackView.update(notes: notes, usableHeight: usableHeight, pinned: pinnedBlock, from: snapshot)
-        } else {
+    /// The notes on the deck, the groups and the colour of Daily, as the store
+    /// has them now.
+    func update(notes incoming: [Note], groups: [NoteGroup] = [], dailyColor: NoteColor = .default) {
+        notes = incoming
+        self.groups = groups
+        self.dailyColor = dailyColor
+        guard isFanned else {
+            // Folded away: no group is open, and the stripe follows the notes.
+            openGroup = nil
+            plan = DeckPlan.make(notes: notes, groups: groups, open: nil, usableHeight: usableHeight)
+            content = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: plan)
+            deckSignature = signature()
+            stackView.updatePill(colors: pillColors, highlighted: false)
             layoutForResting(animated: true)
+            return
         }
+        remake(animated: true)
+    }
+
+    /// Works the plan out again from what the deck has and applies it: the
+    /// tabs slide to their new places. A group that has run out of notes, or
+    /// of room, is no longer open.
+    private func remake(animated: Bool) {
+        let made = DeckPlan.make(notes: notes, groups: groups, open: openGroup, usableHeight: usableHeight)
+        openGroup = made.open
+        let madeContent = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: made)
+        let before = deckSignature
+        plan = made
+        content = madeContent
+        deckSignature = signature()
+        stackView.updatePill(colors: pillColors, highlighted: isFanned)
+        guard isFanned, deckSignature != before else { return }
+        // Added, removed or changed notes, a group opened or closed: the tabs
+        // slide to the new step.
+        let snapshot = stackView.snapshot()
+        let frame = deckFrame()
+        panel.setFrame(frame, display: false, animate: false)
+        stackView.frame = NSRect(origin: .zero, size: frame.size)
+        stackView.update(plan: made, content: madeContent, usableHeight: usableHeight, from: snapshot)
+    }
+
+    /// Everything the tabs draw, so an autosave — which changes nothing the
+    /// tabs show — does not rebuild the deck.
+    private func signature() -> [String] {
+        var lines: [String] = []
+        for entry in plan.entries {
+            switch entry {
+            case .note(let id):
+                guard let note = content.notes[id] else { continue }
+                lines.append("\(note.id)|\(note.color.rawValue)|\(note.spineLabel)|\(note.isDaily)|\(note.isPinned)|\(DeckStatus.isExpiring(note))|\(note.groupID?.uuidString ?? "-")")
+            case .group(let ref):
+                lines.append("group \(ref)|\(content.group(ref).name)|\(content.group(ref).count)|\(content.group(ref).look)")
+            case .header(let ref):
+                lines.append("header \(ref)|\(content.group(ref).name)|\(content.group(ref).count)|\(content.group(ref).look)")
+            }
+        }
+        lines += ["pinned \(plan.pinned.map { "\($0.above)/\($0.count)" } ?? "-")", "sticky \(plan.stickyHeader)"]
+        lines += content.choices.map { "choice \($0.id)|\($0.name)|\($0.color.rawValue)" }
+        return lines
+    }
+
+    // MARK: - Groups
+
+    /// A group's tab was pressed: it opens in place, any other that was open
+    /// closing; or, if it is the open one, it closes.
+    func toggleGroup(_ ref: DeckGroupRef) {
+        let opening = openGroup != ref
+        openGroup = opening ? ref : nil
+        remake(animated: true)
+        announceGroup(ref, opened: opening && openGroup == ref)
+    }
+
+    /// Esc, or a click on the open group's header.
+    func closeGroup() {
+        guard let ref = openGroup else { return }
+        toggleGroup(ref)
+    }
+
+    private func announceGroup(_ ref: DeckGroupRef, opened: Bool) {
+        let info = content.groups[ref] ?? DeckContent().group(ref)
+        let name = info.name.isEmpty ? L("Daily") : info.name
+        Announcer.say(AccessibilityText.groupAnnouncement(name: name, count: plan.counts[ref] ?? info.count, isOpen: opened))
+    }
+
+    /// Notes dragged onto a group's tab.
+    func dropNotes(_ ids: [UUID], onGroup ref: DeckGroupRef) {
+        guard case .user(let id) = ref else { return }
+        delegate?.edgePanel(self, didDropNotes: ids, onGroup: id)
     }
 
     func applySettings() {
@@ -242,7 +348,8 @@ final class EdgePanelController: NSObject {
             if isFanned {
                 isFanned = false
                 stackView.clearDeck()
-                stackView.updatePill(colors: notes.map(\.color), highlighted: false)
+                openGroup = nil
+                stackView.updatePill(colors: pillColors, highlighted: false)
             }
             layoutForResting(animated: false)
             return
@@ -264,6 +371,19 @@ final class EdgePanelController: NSObject {
 
     /// A tab under the cursor peeks open after a beat. The delay is what keeps
     /// a sweep down the deck from flashing one card per tab.
+    func tabHoverChanged(_ entry: DeckEntry, entered: Bool) {
+        if let id = entry.noteID {
+            cardHoverChanged(noteID: id, entered: entered)
+        } else if entered {
+            // A group has no peek; the one on show goes.
+            previewHideTask?.cancel()
+            previewHideTask = nil
+            preview.hide()
+        } else {
+            schedulePreviewHide()
+        }
+    }
+
     func cardHoverChanged(noteID: UUID, entered: Bool) {
         // While the editor is open it already occupies that spot; a peek
         // underneath it would just be two cards in the same place.
@@ -407,6 +527,11 @@ final class EdgePanelController: NSObject {
 
     func expand() {
         guard !notes.isEmpty else { return }
+        // A deck opens with every group closed.
+        openGroup = nil
+        plan = DeckPlan.make(notes: notes, groups: groups, open: nil, usableHeight: usableHeight)
+        content = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: plan)
+        deckSignature = signature()
         isFanned = true
         // The window jumps to its full size in one step while the tabs animate
         // inside it. Animating the window frame itself would fight the card
@@ -416,11 +541,11 @@ final class EdgePanelController: NSObject {
         stackView.frame = NSRect(origin: .zero, size: frame.size)
         stackView.layoutPill(height: pillHeight)
         stackView.setPillVisible(false, animated: true)
-        stackView.updatePill(colors: notes.map(\.color), highlighted: true)
+        stackView.updatePill(colors: pillColors, highlighted: true)
         stackView.fanOut(
-            notes: notes,
+            plan: plan,
+            content: content,
             usableHeight: usableHeight,
-            pinned: pinnedBlock,
             stagger: AppSettings.shared.fanStagger,
             preserveScroll: false
         )
@@ -430,21 +555,26 @@ final class EdgePanelController: NSObject {
         guard isFanned else { return }
         isFanned = false
         preview.hide()
+        openGroup = nil
         stackView.fanIn { [weak self] in
             guard let self else { return }
-            self.stackView.updatePill(colors: self.notes.map(\.color), highlighted: false)
+            self.stackView.updatePill(colors: self.pillColors, highlighted: false)
             self.layoutForResting(animated: true)
         }
     }
 
     private func rebuildDeck(stagger: Double) {
+        plan = DeckPlan.make(notes: notes, groups: groups, open: openGroup, usableHeight: usableHeight)
+        openGroup = plan.open
+        content = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: plan)
+        deckSignature = signature()
         let frame = deckFrame()
         panel.setFrame(frame, display: true, animate: false)
         stackView.frame = NSRect(origin: .zero, size: frame.size)
         stackView.fanOut(
-            notes: notes,
+            plan: plan,
+            content: content,
             usableHeight: usableHeight,
-            pinned: pinnedBlock,
             stagger: stagger,
             preserveScroll: true
         )

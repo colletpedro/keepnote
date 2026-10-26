@@ -198,6 +198,7 @@ extension Note: DailyItem {}
 extension Note: PinItem {}
 extension Note: AutoArchiveItem {}
 extension Note: GroupedItem {}
+extension Note: DeckNote {}
 
 extension Note: TaggedItem {
     var isArchived: Bool { state == .archived }

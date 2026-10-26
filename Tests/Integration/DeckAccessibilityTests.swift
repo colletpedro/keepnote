@@ -19,14 +19,18 @@ func runDeckAccessibilityTests() {
     spin(0.3)
     let order = stack.accessibilityOrderForTesting
     let tabs = order.compactMap { $0 as? NoteCardView }
-    expect("deck: every tab", String(tabs.count), "5")
+    expect("deck: every tab, a daily in the Daily group", String(tabs.count), "4")
     let drawn = tabs.sorted { $0.convert($0.bounds, to: nil).maxY > $1.convert($1.bounds, to: nil).maxY }
     expect("deck: in the order they are drawn, top to bottom", tabs.map { $0.accessibilityLabel() ?? "" }.joined(separator: ","),
            drawn.map { $0.accessibilityLabel() ?? "" }.joined(separator: ","))
     expectTrue("deck: tabs are buttons", tabs.allSatisfy { $0.isAccessibilityElement() && $0.accessibilityRole() == .button })
-    expectTrue("deck: a daily says so", (tabs.first { $0.accessibilityLabel() == "Note 1" }?.accessibilityValue() as? String)?.contains("daily") == true)
     let rest = order.filter { !($0 is NoteCardView) }.map { $0.accessibilityLabel() ?? "" }
-    expect("deck: then the buttons", rest.joined(separator: ","), "New Note,Today\u{2019}s Daily")
+    expect("deck: the Daily group's tab, then the buttons", rest.joined(separator: ","), "Group Daily,New Note,Today\u{2019}s Daily")
+    // Open Daily: its note is a tab, and says it is a daily.
+    (order.compactMap { $0 as? GroupCardView }.first)?.onToggle?(.daily)
+    spin(0.3)
+    let opened = stack.accessibilityOrderForTesting.compactMap { $0 as? NoteCardView }
+    expectTrue("deck: a daily says so", (opened.first { $0.accessibilityLabel() == "Note 1" }?.accessibilityValue() as? String)?.contains("daily") == true)
     controller.collapse()
     controller.hidePanel()
 }

@@ -1,15 +1,68 @@
 import AppKit
 
-/// One note's tab in the fanned deck: the left edge of its card, flush against
-/// the screen edge, carrying the colour and the rotated label. On the left
-/// edge everything is drawn mirrored except the label and the markers' glyphs.
-final class NoteCardView: SpringView, KeyboardFocusable {
-    let noteID: UUID
+/// A tab in the fanned deck: a note's, or a group's. It springs between
+/// frames, shows as much of itself as the tab below leaves, grows when the
+/// cursor is on it and can wear the keyboard's ring.
+class DeckTabView: SpringView, KeyboardFocusable {
+    /// The side of the screen the deck is on.
+    let edge: ScreenEdge
+
     var showsKeyboardFocus = false {
         didSet { if showsKeyboardFocus != oldValue { needsDisplay = true } }
     }
-    /// The side of the screen the deck is on.
-    let edge: ScreenEdge
+
+    /// How much of the tab shows, from its top: the rest is under the tab
+    /// below. The label only draws when it fits in this whole.
+    var visibleSlice: CGFloat = EdgeMetrics.tabHeight {
+        didSet { if visibleSlice != oldValue { needsDisplay = true } }
+    }
+
+    /// Set by the deck. Once tabs overlap, a tab's own bounds are mostly under
+    /// its neighbours, so only the deck — which knows what is drawn where —
+    /// can say which tab the cursor is on.
+    var isHovered = false {
+        didSet {
+            guard isHovered != oldValue else { return }
+            needsDisplay = true
+            hoverDidChange()
+        }
+    }
+
+    init(frame: NSRect, edge: ScreenEdge) {
+        self.edge = edge
+        super.init(frame: frame)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    func hoverDidChange() {}
+
+    /// Moves the tab to `frame` — on a spring, which an aim taken mid-flight
+    /// bends rather than restarts, or at once.
+    func setTarget(
+        _ frame: NSRect,
+        alpha: CGFloat? = nil,
+        animated: Bool,
+        config: SpringConfig = .scroll,
+        delay: TimeInterval = 0
+    ) {
+        if animated {
+            move(to: frame, alpha: alpha, config: config, delay: delay)
+        } else {
+            place(frame: frame, alpha: alpha)
+        }
+    }
+
+    /// A rect laid out for the right edge, where it goes on this tab.
+    func mirrored(_ rect: NSRect) -> NSRect { edge.mirrored(rect, in: bounds.width) }
+}
+
+/// One note's tab in the fanned deck: the left edge of its card, flush against
+/// the screen edge, carrying the colour and the rotated label. On the left
+/// edge everything is drawn mirrored except the label and the markers' glyphs.
+final class NoteCardView: DeckTabView, NSDraggingSource {
+    let noteID: UUID
     private var label: String
     private var color: NoteColor
     private var isArchivedHint: Bool
@@ -35,11 +88,6 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         didSet { if isDaily != oldValue { needsDisplay = true } }
     }
     var onContextAction: ((UUID, ContextAction) -> Void)?
-    /// How much of the tab shows, from its top: the rest is under the tab
-    /// below. The label only draws when it fits in this whole.
-    var visibleSlice: CGFloat = EdgeMetrics.tabHeight {
-        didSet { if visibleSlice != oldValue { needsDisplay = true } }
-    }
 
     enum ContextAction {
         case open
@@ -48,23 +96,18 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         case togglePin
         case toggleKeep
         case delete
+        /// Move to Group ›: a group, or none.
+        case moveToGroup(UUID?)
+        /// Move to Group › New Group…
+        case newGroup
     }
 
-    /// Moves the tab to `frame` — on a spring, which an aim taken mid-flight
-    /// bends rather than restarts, or at once.
-    func setTarget(
-        _ frame: NSRect,
-        alpha: CGFloat? = nil,
-        animated: Bool,
-        config: SpringConfig = .scroll,
-        delay: TimeInterval = 0
-    ) {
-        if animated {
-            move(to: frame, alpha: alpha, config: config, delay: delay)
-        } else {
-            place(frame: frame, alpha: alpha)
-        }
-    }
+    /// The groups the context menu offers, and the one the note is in. Set by
+    /// the deck.
+    var groupChoices: [GroupMenu.Choice] = []
+    private(set) var currentGroup: UUID?
+    /// A daily belongs to Daily: it is not offered the groups.
+    private var canChangeGroup: Bool
 
     /// Lifted, the card casts a deeper shadow — that is most of what makes it
     /// read as having come forward out of the stack.
@@ -72,23 +115,15 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         NoteCardShape.applyShadow(to: self, strength: isHovered ? 1.7 : 1, edge: edge)
     }
 
-    /// Set by the deck. Once tabs overlap, a tab's own bounds are mostly under
-    /// its neighbours, so only the deck — which knows what is drawn where —
-    /// can say which tab the cursor is on.
-    var isHovered = false {
-        didSet {
-            guard isHovered != oldValue else { return }
-            needsDisplay = true
-            applyShadow()
-        }
-    }
+    override func hoverDidChange() { applyShadow() }
 
     /// Days before the time rule archives it, said by VoiceOver.
     private var daysLeft: Int?
 
     init(note: Note, height: CGFloat, edge: ScreenEdge = .right) {
         self.noteID = note.id
-        self.edge = edge
+        self.currentGroup = note.groupID
+        self.canChangeGroup = !note.isDaily
         self.daysLeft = AutoArchive.daysLeft(note, today: DailyDay(Date()), days: AppSettings.shared.archiveAfterDays)
         self.label = note.spineLabel
         self.color = note.color
@@ -97,7 +132,7 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         self.isPinned = note.isPinned
         self.isExpiring = DeckStatus.isExpiring(note)
         self.isDaily = note.isDaily
-        super.init(frame: NSRect(x: 0, y: 0, width: EdgeMetrics.tabWidth, height: height))
+        super.init(frame: NSRect(x: 0, y: 0, width: EdgeMetrics.tabWidth, height: height), edge: edge)
         place(frame: frame)
         NoteCardShape.applyShadow(to: self, edge: edge)
         setAccessibilityElement(true)
@@ -137,9 +172,6 @@ final class NoteCardView: SpringView, KeyboardFocusable {
     /// Everything VoiceOver reads for the tab, for the tests.
     var accessibilityTextForTesting: String { "\(label) \u{2014} \(accessibilityValue() as? String ?? "")" }
 
-    /// A rect laid out for the right edge, where it goes on this card.
-    fileprivate func mirrored(_ rect: NSRect) -> NSRect { edge.mirrored(rect, in: bounds.width) }
-
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
@@ -152,6 +184,8 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         color = note.color
         isArchivedHint = note.state == .archived
         isDaily = note.isDaily
+        currentGroup = note.groupID
+        canChangeGroup = !note.isDaily
         keepOnDeck = note.keepOnDeck
         isPinned = note.isPinned
         isExpiring = DeckStatus.isExpiring(note)
@@ -166,7 +200,60 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         NoteCardShape.updateShadowPath(on: self)
     }
 
-    override func mouseDown(with event: NSEvent) { onActivate?(noteID) }
+    // MARK: - Mouse
+
+    /// A press that has not yet become a click or a drag.
+    private var pressEvent: NSEvent?
+    private var isDragging = false
+
+    /// Called when the tab is dragged away from where it is pressed: the deck
+    /// puts the peek away.
+    var onDragBegan: (() -> Void)?
+
+    /// A click opens the note — on release, so that a drag can start from the
+    /// same press — and a drag takes it, to drop on a group's tab.
+    override func mouseDown(with event: NSEvent) {
+        pressEvent = event
+        isDragging = false
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard let press = pressEvent, !isDragging else { return }
+        let from = press.locationInWindow, to = event.locationInWindow
+        guard hypot(to.x - from.x, to.y - from.y) >= 4 else { return }
+        isDragging = true
+        onDragBegan?()
+        let item = NSPasteboardItem()
+        item.setString(NoteDragPayload.encode([noteID]), forType: .string)
+        let dragging = NSDraggingItem(pasteboardWriter: item)
+        dragging.setDraggingFrame(bounds, contents: dragImage())
+        beginDraggingSession(with: [dragging], event: press, source: self)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        defer { pressEvent = nil }
+        guard pressEvent != nil, !isDragging else { return }
+        onActivate?(noteID)
+    }
+
+    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        context == .withinApplication ? .move : []
+    }
+
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        isDragging = false
+        pressEvent = nil
+    }
+
+    /// The tab as it is, for the drag.
+    private func dragImage() -> NSImage {
+        let image = NSImage(size: bounds.size)
+        if let rep = bitmapImageRepForCachingDisplay(in: bounds) {
+            cacheDisplay(in: bounds, to: rep)
+            image.addRepresentation(rep)
+        }
+        return image
+    }
 
     override func rightMouseDown(with event: NSEvent) {
         let menu = NSMenu()
@@ -180,9 +267,13 @@ final class NoteCardView: SpringView, KeyboardFocusable {
         keep.target = self
         keep.state = keepOnDeck ? .on : .off
         menu.addItem(withTitle: L("Mark Complete"), action: #selector(menuComplete), keyEquivalent: "").target = self
+        let moveTarget = GroupMenu.Target(
+            choose: { [weak self] group in self.map { $0.onContextAction?($0.noteID, .moveToGroup(group)) } },
+            newGroup: { [weak self] in self.map { $0.onContextAction?($0.noteID, .newGroup) } })
+        menu.addItem(GroupMenu.makeItem(choices: groupChoices, current: currentGroup, enabled: canChangeGroup, target: moveTarget))
         menu.addItem(.separator())
         menu.addItem(withTitle: L("Delete"), action: #selector(menuDelete), keyEquivalent: "").target = self
-        NSMenu.popUpContextMenu(menu, with: event, for: self)
+        withExtendedLifetime(moveTarget) { NSMenu.popUpContextMenu(menu, with: event, for: self) }
     }
 
     @objc private func menuOpen() { onContextAction?(noteID, .open) }
