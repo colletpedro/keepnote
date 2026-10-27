@@ -110,6 +110,9 @@ func runGroupStoreTests() {
     expectTrue("archive: keeps the group", store.note(id: n2)?.groupID == work.id)
     try! store.unarchive(id: n2)
     expectTrue("archive: and it is still there when it comes back", store.note(id: n2)?.groupID == work.id)
+    let lastInStack = store.activeNotes.map(\.sortIndex).max()
+    expectTrue("archive: and it comes back at the end of the stack, so the end of its group",
+               store.note(id: n2)?.sortIndex == lastInStack && store.activeNotes.last?.id == n2)
 
     // A daily is in the Daily group of the deck, never in one of these.
     let daily = try! store.create(title: "Daily", tags: [DailyNotes.tag], group: work.id)
@@ -128,7 +131,7 @@ func runGroupStoreTests() {
     expect("lasts: the groups, in order", reopenedStore.groups.map(\.name).joined(separator: ","), "Home,Ideas,Office")
     expectTrue("lasts: the colours", reopenedStore.group(id: work.id)?.color == .pink && reopenedStore.group(id: home.id)?.color == .teal)
     expectTrue("lasts: a note's group", reopenedStore.note(id: n2)?.groupID == work.id)
-    expectTrue("lasts: and its order among the notes", reopenedStore.notes(inGroup: work.id).map(\.title).prefix(2).joined(separator: ",") == "two,born")
+    expectTrue("lasts: and its order among the notes", reopenedStore.notes(inGroup: work.id).map(\.title).prefix(2).joined(separator: ",") == "born,two")
 
     // MARK: Deleting a group never deletes a note
 

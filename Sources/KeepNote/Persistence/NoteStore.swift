@@ -495,13 +495,15 @@ final class NoteStore: ObservableObject {
     }
 
     func unarchive(id: UUID, origin: ChangeOrigin = .local) throws {
-        let topIndex = (notes.map(\.sortIndex).min() ?? 0) - 1
+        // Brought back, it goes where a new note goes: the end of the stack,
+        // which is the end of its group if it has one.
+        let lastIndex = endIndex
         // A daily the rule would archive again, brought back by hand, stays.
         let keeps = DailyNotes.restoreKeeps(id, in: notes)
         let today = today
         try update(id: id, origin: origin) {
             $0.state = .active
-            $0.sortIndex = topIndex
+            $0.sortIndex = lastIndex
             // Brought back: its time starts again.
             $0.lastOpenedDay = today
             $0.autoArchivedDay = nil
