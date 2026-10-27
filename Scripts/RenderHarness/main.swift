@@ -196,6 +196,9 @@ MainActor.assumeIsolated {
             renderWindow("allnotes-\(suffix)", size: CGSize(width: 1080, height: 640), appearance: appearance,
                          AllNotesView(store: listStore, actions: actions, initialSidebar: .default,
                                       initialSelection: firstID.map { [$0] } ?? []))
+            renderWindow("allnotes-fills-\(suffix)", size: CGSize(width: 1080, height: 640), appearance: appearance,
+                         AllNotesView(store: listStore, actions: actions, initialSidebar: .default,
+                                      initialSelection: firstID.map { [$0] } ?? [], fillsWindow: true))
             // The sidebar's vibrancy does not draw off screen inside the
             // window, so it is drawn on its own as well.
             var sidebarSelection = NoteSelection.tag("ideas")

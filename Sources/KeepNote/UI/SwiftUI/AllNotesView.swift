@@ -68,13 +68,14 @@ struct AllNotesView: View {
     @StateObject private var keyboard = AllNotesKeyboard()
 
     init(store: NoteStore, actions: NoteListActions, initialSidebar: NoteSelection? = nil,
-         initialSelection: Set<UUID> = [], focusTitleOf: UUID? = nil) {
+         initialSelection: Set<UUID> = [], focusTitleOf: UUID? = nil, fillsWindow: Bool = false) {
         self.store = store
         self.actions = actions
         let stored = AppSettings.shared.allNotesSelection.flatMap(NoteSelection.init(storageValue:))
         _sidebarSelection = State(initialValue: initialSidebar ?? stored ?? .default)
         _selection = State(initialValue: initialSelection)
         _titleFocus = State(initialValue: focusTitleOf)
+        _columns = State(initialValue: fillsWindow ? .detailOnly : .all)
     }
 
     private var index: TagLibrary.Index { TagLibrary.index(store.notes) }
@@ -121,27 +122,39 @@ struct AllNotesView: View {
         splitView.followsTextSize()
     }
 
-    private var splitView: some View {
-        NavigationSplitView(columnVisibility: $columns) {
-            AllNotesSidebar(
-                index: index,
-                groups: store.groups,
-                groupCounts: GroupLibrary.counts(store.notes.filter { !DailyNotes.hasTag($0.tags) }, groups: store.groups),
-                actions: actions,
-                selection: $sidebarSelection,
-                onRename: renameTag,
-                onDelete: actions.deleteTag,
-                onNewNote: actions.newNoteWithTag,
-                onDropNotes: actions.tagNotes,
-                onEditDailyTemplate: actions.editDailyTemplate
-            )
-                .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 280)
-        } content: {
-            noteList
-                .navigationSplitViewColumnWidth(min: 260, ideal: 330, max: 480)
-        } detail: {
+    /// The three columns — or, with the pane filling the window, the pane
+    /// alone: the split view does not hide its columns when told to (the
+    /// button changed its icon and nothing else), so it is not there at all.
+    @ViewBuilder
+    private var layout: some View {
+        if paneFillsWindow {
             detail
+        } else {
+            NavigationSplitView(columnVisibility: $columns) {
+                AllNotesSidebar(
+                    index: index,
+                    groups: store.groups,
+                    groupCounts: GroupLibrary.counts(store.notes.filter { !DailyNotes.hasTag($0.tags) }, groups: store.groups),
+                    actions: actions,
+                    selection: $sidebarSelection,
+                    onRename: renameTag,
+                    onDelete: actions.deleteTag,
+                    onNewNote: actions.newNoteWithTag,
+                    onDropNotes: actions.tagNotes,
+                    onEditDailyTemplate: actions.editDailyTemplate
+                )
+                    .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 280)
+            } content: {
+                noteList
+                    .navigationSplitViewColumnWidth(min: 260, ideal: 330, max: 480)
+            } detail: {
+                detail
+            }
         }
+    }
+
+    private var splitView: some View {
+        layout
         .searchable(text: $query, placement: .toolbar, prompt: L("Search %@", selectionTitle))
         .toolbar { toolbarContent }
         .frame(minWidth: 900, minHeight: 480)
