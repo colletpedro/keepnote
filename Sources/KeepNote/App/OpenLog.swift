@@ -81,10 +81,21 @@ extension OpenLog {
         switch event.type {
         case .leftMouseDown:
             pressAt = event.locationInWindow
-            let rows = table.map { "rows=\($0.selectedRowIndexes.map { String($0) }.joined(separator: ",")) clicked=\($0.row(at: $0.convert(event.locationInWindow, from: nil)))" } ?? "no-table"
+            let rows = table.map { table -> String in
+                let local = table.convert(event.locationInWindow, from: nil)
+                let row = table.row(at: local)
+                let frame = row >= 0 ? table.rect(ofRow: row) : .zero
+                let allowed = row >= 0 ? (table.delegate?.tableView?(table, shouldSelectRow: row)).map { String($0) } ?? "n/a" : "-"
+                return "rows=\(table.selectedRowIndexes.map { String($0) }.joined(separator: ",")) clicked=\(row) inRow=(\(Int(local.x - frame.minX)),\(Int(local.y - frame.minY))) rowSize=(\(Int(frame.width)),\(Int(frame.height))) shouldSelect=\(allowed) enabled=\(table.isEnabled) first=\(window.firstResponder.map { String(String(describing: type(of: $0)).prefix(28)) } ?? "-")"
+            } ?? "no-table"
             Self.event("mouse-down", nil, "clicks=\(event.clickCount) \(rows) \(where_)")
             if let table {
                 let before = table.selectedRowIndexes
+                for ms in [30, 80] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(ms)) {
+                        Self.event("mouse-down+\(ms)ms", nil, "rowsNow=\(table.selectedRowIndexes.map { String($0) }.joined(separator: ","))")
+                    }
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     Self.event("mouse-down+250ms", nil, "rowsBefore=\(before.map { String($0) }.joined(separator: ",")) rowsNow=\(table.selectedRowIndexes.map { String($0) }.joined(separator: ","))")
                 }
