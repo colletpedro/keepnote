@@ -30,10 +30,11 @@ import CoreGraphics
 /// leaves it, exactly as an unpinned deck would in a column that size; the
 /// side above ends at the block and the side below starts at it.
 ///
-/// With an open group (`DeckPlan`) the first tab of a side can be its header, which
-/// never scrolls away (`stickyFirst`): when the side's tabs do not fit, the
-/// header stays at the top of the column and the rest scrolls in the room under it,
-/// clipped there.
+/// With an open group (`DeckPlan`) its header is whole at every stage (`headers`):
+/// nothing covers it, the tab after it starts a full step down, and only the
+/// tabs that are not headers give way when the deck packs. When even then the
+/// side's tabs do not fit, the header (the first tab) stays at the top of the
+/// column (`stickyFirst`) and the rest scrolls in the room under it, clipped there.
 ///
 /// Coordinates are the column's: origin at its bottom left, y up, tab 0 at
 /// the top. Nothing here knows about views, so all of it is tested directly.
@@ -201,12 +202,14 @@ struct DeckGeometry: Equatable {
         pinned: PinnedBlock? = nil,
         hover: Hover? = nil,
         stickyFirst: Bool = false,
+        headers: Set<Int> = [],
         edge: ScreenEdge,
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         var geometry = layout(
             count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
-            lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst, metrics: metrics)
+            lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst,
+            headers: headers, metrics: metrics)
         geometry.frames = geometry.frames.map { edge.mirrored($0, in: columnWidth) }
         geometry.edge = edge
         return geometry
@@ -222,18 +225,19 @@ struct DeckGeometry: Equatable {
         pinned: PinnedBlock? = nil,
         hover: Hover? = nil,
         stickyFirst: Bool = false,
+        headers: Set<Int> = [],
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         if let pinned, pinned.count > 0, pinned.above + pinned.count <= count {
             return layoutAround(
                 pinned, count: count, usableHeight: usableHeight, columnWidth: columnWidth,
                 scrollOffset: scrollOffset, lowerScrollOffset: lowerScrollOffset, hover: hover,
-                stickyFirst: stickyFirst, metrics: metrics
+                stickyFirst: stickyFirst, headers: headers, metrics: metrics
             )
         }
         if stickyFirst, count > 1 {
             let plain = layout(count: count, usableHeight: usableHeight, columnWidth: columnWidth,
-                               scrollOffset: scrollOffset, hover: hover, metrics: metrics)
+                               scrollOffset: scrollOffset, hover: hover, headers: headers, metrics: metrics)
             if plain.mode == .scrolling {
                 return stickyLayout(count: count, usableHeight: usableHeight, columnWidth: columnWidth,
                                     scrollOffset: scrollOffset, hover: hover, metrics: metrics)
@@ -242,6 +246,9 @@ struct DeckGeometry: Equatable {
         }
         let height = metrics.tabHeight
         let spacedStep = height + metrics.spacing
+        // A header is never covered: the tab after it starts a whole step
+        // down, so only the other tabs give way when the deck packs.
+        let wholeSteps = headers.filter { $0 >= 0 && $0 < count - 1 }.count
         let packedColumn = max(height, usableHeight - metrics.plusZone)
 
         var mode = Mode.spaced
@@ -253,7 +260,9 @@ struct DeckGeometry: Equatable {
         if count <= 1 || spacedHeight <= packedColumn {
             column = count == 0 ? 0 : spacedHeight
         } else {
-            let fitting = (packedColumn - height) / CGFloat(count - 1)
+            let flexible = count - 1 - wholeSteps
+            let fitting = flexible > 0
+                ? (packedColumn - height - CGFloat(wholeSteps) * spacedStep) / CGFloat(flexible) : spacedStep
             if fitting >= metrics.minimumSlice {
                 mode = .packed
                 step = min(spacedStep, fitting)
@@ -266,12 +275,16 @@ struct DeckGeometry: Equatable {
             }
         }
 
-        let content = count == 0 ? 0 : CGFloat(count - 1) * step + height
+        // Each tab's top, measured down from the top of the content.
+        var tops: [CGFloat] = []
+        var running: CGFloat = 0
+        for index in 0..<count {
+            tops.append(running)
+            running += headers.contains(index) ? spacedStep : step
+        }
+        let content = count == 0 ? 0 : (tops.last ?? 0) + height
         let maxScroll = max(0, content - column)
         let offset = min(maxScroll, max(0, scrollOffset))
-
-        // Each tab's top, measured down from the top of the content.
-        let tops = (0..<count).map { CGFloat($0) * step }
         var hovered: Int?
         if let hover, count > 0 {
             let cursor = column - hover.cursorY + offset
@@ -324,6 +337,7 @@ struct DeckGeometry: Equatable {
         lowerScrollOffset: CGFloat,
         hover: Hover?,
         stickyFirst: Bool,
+        headers: Set<Int>,
         metrics: Metrics
     ) -> DeckGeometry {
         let height = metrics.tabHeight
@@ -353,11 +367,13 @@ struct DeckGeometry: Equatable {
             }
             return (upper - shift, lower + shift, shift)
         }
+        let upperHeaders = headers.filter { $0 < above }
+        let lowerHeaders = Set(headers.filter { $0 >= above + block.count }.map { $0 - above - block.count })
         func sides(_ room: (upper: CGFloat, lower: CGFloat, shift: CGFloat)) -> (DeckGeometry, DeckGeometry) {
             (layout(count: above, usableHeight: room.upper, columnWidth: columnWidth, scrollOffset: scrollOffset,
-                    stickyFirst: stickyFirst, metrics: side),
+                    stickyFirst: stickyFirst, headers: upperHeaders, metrics: side),
              layout(count: below, usableHeight: room.lower, columnWidth: columnWidth, scrollOffset: lowerScrollOffset,
-                    metrics: side))
+                    headers: lowerHeaders, metrics: side))
         }
 
         var chip = false

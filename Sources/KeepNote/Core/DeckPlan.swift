@@ -84,7 +84,13 @@ struct DeckPlan: Equatable {
         metrics: DeckGeometry.Metrics = .init()
     ) -> DeckGeometry {
         DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                            pinned: pinned, stickyFirst: stickyHeader, edge: edge, metrics: metrics)
+                            pinned: pinned, stickyFirst: stickyHeader, headers: headerIndices, edge: edge,
+                            metrics: metrics)
+    }
+
+    /// Where the open group's header is among the tabs: it is never covered.
+    var headerIndices: Set<Int> {
+        Set(entries.indices.filter { if case .header = entries[$0] { return true } else { return false } })
     }
 
     // MARK: - Making the plan
@@ -164,8 +170,9 @@ struct DeckPlan: Equatable {
         if let openSlot {
             while true {
                 let (entries, pinned) = assemble(kept)
+                let headers = Set(entries.indices.filter { if case .header = entries[$0] { return true } else { return false } })
                 let g = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                                            pinned: pinned, metrics: metrics)
+                                            pinned: pinned, headers: headers, metrics: metrics)
                 if g.mode != .scrolling { break }
                 // The group has priority: the tab farthest from it goes; of two
                 // as far, the one below, nearer the "+".

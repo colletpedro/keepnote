@@ -183,11 +183,12 @@ func runDeckPlanTests() {
                             for lowerOffset in [0, 99_999] as [CGFloat] {
                                 let g = DeckGeometry.layout(
                                     count: p.entries.count, usableHeight: height, columnWidth: 74, scrollOffset: offset,
-                                    lowerScrollOffset: lowerOffset, pinned: p.pinned, stickyFirst: p.stickyHeader, edge: edge)
+                                    lowerScrollOffset: lowerOffset, pinned: p.pinned, stickyFirst: p.stickyHeader,
+                                    headers: p.headerIndices, edge: edge)
                                 let frame = g.frames[headerAt]
-                                // Whole and in the column; in a packed deck, at least the slice every tab keeps.
+                                // Whole and in the column, at every stage: nothing covers it.
                                 if g.alphas[headerAt] < 0.999 || frame.minY < -0.01 || frame.maxY > g.columnHeight + 0.01
-                                    || g.slices[headerAt] < EdgeMetrics.minimumVisibleSlice - 0.01 { offscreen.append(label + " scroll \(offset)") }
+                                    || g.slices[headerAt] < EdgeMetrics.tabHeight - 0.01 { offscreen.append(label + " scroll \(offset)") }
                                 // And the notes scrolling under it never cover it: at the end of a
                                 // sticky deck, what shows of them is below it.
                                 if p.stickyHeader, !g.clip(of: headerAt + 1).isNull, g.clip(of: headerAt + 1).maxY > frame.minY + 0.01 {
@@ -205,6 +206,19 @@ func runDeckPlanTests() {
     expectTrue("header: the deck never runs past the screen, either edge \(fitsScreen.prefix(3))", fitsScreen.isEmpty)
     expectTrue("header: in the column, in view, however the deck is scrolled, either edge \(offscreen.prefix(3))", offscreen.isEmpty)
     expectTrue("header: the notes that scroll are clipped under it \(steady.prefix(3))", steady.isEmpty)
+
+    // A small screen and a big group, packed: the header is whole and only the notes under it give way.
+    let packedPlan = DeckPlan.make(notes: Array(big.prefix(8)), groups: [work], open: .user(work.id), usableHeight: 520)
+    for edge in [ScreenEdge.right, .left] {
+        let g = packedPlan.geometry(usableHeight: 520, columnWidth: 74, edge: edge)
+        let at = packedPlan.entries.firstIndex(of: .header(.user(work.id))) ?? 0
+        expectTrue("header: packed deck, either edge — it is a deck that packs", g.mode == .packed)
+        expect("header: packed deck, whole slice (\(edge))", f(g.slices[at]), f(EdgeMetrics.tabHeight))
+        expectTrue("header: packed deck, the first note starts below it (\(edge))",
+                   g.frames[at + 1].maxY <= g.frames[at].minY + 0.01)
+        expectTrue("header: packed deck, the notes under it are the ones that overlap (\(edge))",
+                   g.slices[at + 1] < EdgeMetrics.tabHeight)
+    }
 
     // A group too big for the screen: the others are gone, the header stays and the notes scroll.
     let huge = (0..<80).map { _ in N(groupID: work.id) } + (0..<6).map { _ in N() }
