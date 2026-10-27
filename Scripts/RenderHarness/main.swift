@@ -724,10 +724,58 @@ MainActor.assumeIsolated {
         pinnedGroups[1].pinnedAt = Date(timeIntervalSince1970: 1_790_000_000)
         pinnedGroups[9].pinnedAt = Date(timeIntervalSince1970: 1_790_000_001)
         renderGroups("groups-pinned-open", notes: pinnedGroups, open: .user(sampleGroups[0].id))
+        // What surrounds the groups: the sidebar of All Notes with its Groups
+        // section, the "Move to Group" menu (drawn from the menu's own items:
+        // a menu does not draw off screen) and the hover magnification slider.
+        @MainActor func renderGroupChrome(_ tag: String) {
+            var selection = NoteSelection.group(sampleGroups[2].id)
+            let counts = GroupLibrary.Counts(
+                byGroup: Dictionary(uniqueKeysWithValues: sampleGroups.enumerated().map { ($1.id, [4, 3, 26, 0, 112][$0]) }),
+                ungrouped: 3)
+            render("groups-sidebar\(tag)", size: CGSize(width: 220, height: 560),
+                   AllNotesSidebar(index: TagLibrary.index(few), groups: sampleGroups, groupCounts: counts,
+                                   selection: Binding(get: { selection }, set: { selection = $0 })))
+            let target = GroupMenu.Target(choose: { _ in }, newGroup: {})
+            let item = GroupMenu.makeItem(choices: GroupMenu.choices(sampleGroups), current: sampleGroups[2].id, target: target)
+            let menu = item.submenu!
+            let font = NSFont.menuFont(ofSize: 0)
+            renderView("groups-move-menu\(tag)", size: CGSize(width: max(menu.size.width, 200), height: menu.size.height)) {
+                let rows = menu.items.map { entry -> NSView in
+                    if entry.isSeparatorItem {
+                        let line = NSBox(); line.boxType = .separator
+                        line.heightAnchor.constraint(equalToConstant: 9).isActive = true
+                        return line
+                    }
+                    let tick = NSTextField(labelWithString: entry.state == .on ? "\u{2713}" : "")
+                    tick.font = font
+                    tick.widthAnchor.constraint(equalToConstant: 16).isActive = true
+                    let image = NSImageView(image: entry.image ?? NSImage(size: NSSize(width: 11, height: 11)))
+                    image.widthAnchor.constraint(equalToConstant: 14).isActive = true
+                    let title = NSTextField(labelWithString: entry.title)
+                    title.font = font
+                    title.lineBreakMode = .byTruncatingTail
+                    let row = NSStackView(views: [tick, image, title])
+                    row.spacing = 4
+                    return row
+                }
+                let column = NSStackView(views: rows)
+                column.orientation = .vertical
+                column.alignment = .leading
+                column.spacing = 4
+                column.edgeInsets = NSEdgeInsets(top: 6, left: 6, bottom: 6, right: 12)
+                column.frame = NSRect(x: 0, y: 0, width: max(menu.size.width, 200), height: menu.size.height)
+                return column
+            }
+            check("groups-move-menu\(tag): wide enough for its longest name", menu.size.width > 0)
+            render("groups-settings-deck\(tag)", size: CGSize(width: SettingsWindowController.paneWidth, height: SettingsTab.deck.paneHeight),
+                   DeckSettingsPane(settings: AppSettings.shared))
+        }
+        renderGroupChrome("")
         // With Increase contrast and Reduce transparency on.
         DisplayOptions.increaseContrastOverride = true
         renderGroups("groups-contrast-closed", notes: few, open: nil)
         renderGroups("groups-contrast-open", notes: few, open: .user(sampleGroups[2].id))
+        renderGroupChrome("-contrast")
         DisplayOptions.increaseContrastOverride = nil
         // With Increase contrast and Reduce transparency on.
         DisplayOptions.increaseContrastOverride = true

@@ -211,12 +211,14 @@ final class GroupCardView: DeckTabView {
         // the foot of a header. All of it in the ink of the colour.
         let textWidth = face.width - 12
         let countZone: CGFloat = 20
+        // An open header has its mark at the foot: the name stops above it.
+        let foot: CGFloat = isOpen ? 14 : 0
         if visibleSlice >= 20 {
             drawCount(in: NSRect(x: face.minX, y: bounds.maxY - 6 - 15, width: textWidth, height: 15))
         }
         NoteCardShape.drawTabLabel(
             name,
-            in: mirrored(NSRect(x: face.minX, y: 0, width: textWidth, height: bounds.height)),
+            in: mirrored(NSRect(x: face.minX, y: foot, width: textWidth, height: bounds.height - foot)),
             slice: visibleSlice,
             markerZone: countZone,
             color: look.ink,
