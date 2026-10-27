@@ -34,7 +34,8 @@ MainActor.assumeIsolated {
     // the buttons alone.
     if ProcessInfo.processInfo.environment["KEEPNOTE_TESTS"] == "buttons" {
         runButtonTextTests()
-        runAllNotesHeightTests()
+        runOpenRaceTests()
+    runAllNotesHeightTests()
         finish()
     }
     runLockedNoteTests()
@@ -120,6 +121,7 @@ MainActor.assumeIsolated {
     runAttachmentStorageTests()
     runMarkGeometryTests()
     runButtonTextTests()
+    runOpenRaceTests()
     runAllNotesHeightTests()
     runEllipsisTests()
     runRestingMarkupTests()
