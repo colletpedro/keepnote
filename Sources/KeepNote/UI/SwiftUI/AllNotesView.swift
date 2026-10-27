@@ -397,7 +397,7 @@ struct AllNotesView: View {
     /// menu and the multiple-selection pane.
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup {
+        ToolbarItem {
             Menu {
                 Picker(L("Sort By"), selection: $settings.allNotesSort) {
                     ForEach(NoteSort.allCases, id: \.self) { sort in
@@ -409,17 +409,20 @@ struct AllNotesView: View {
                 Label(L("Sort By"), systemImage: "arrow.up.arrow.down")
             }
             .help(L("Sort by %@", settings.allNotesSort.title))
-
+        }
+        ToolbarItem {
             Button(action: actions.newNote) {
                 Label(L("New Note"), systemImage: "square.and.pencil")
             }
             .help(L("New note"))
-
+        }
+        ToolbarItem {
             Button(action: actions.openSettings) {
                 Label(L("Settings"), systemImage: "gearshape")
             }
             .help(L("Settings"))
-
+        }
+        ToolbarItem {
             Button(action: toggleFullPane) {
                 Label(paneFillsWindow ? L("Show Sidebar and List") : L("Hide Sidebar and List"),
                       systemImage: paneFillsWindow ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
@@ -987,6 +990,7 @@ struct NoteReadingPane: View {
                 HStack(spacing: 8) { placeToggles }
                     .lineLimit(1)
                     .fixedSize()
+                groupPicker
             }
         }
         .controlSize(.small)
@@ -1007,6 +1011,7 @@ struct NoteReadingPane: View {
         HStack(spacing: 8) {
             Button(L("Open")) { actions.open(note.id) }
             placeToggles
+            groupPicker
             if note.state == .archived {
                 Button(L("Move to Deck")) { actions.unarchive([note.id]) }
             } else {
@@ -1036,6 +1041,36 @@ struct NoteReadingPane: View {
             .disabled(note.state == .archived)
         Toggle(L("Keep on Deck"), isOn: Binding(get: { note.keepOnDeck }, set: { actions.setKeepOnDeck([note.id], $0) }))
             .toggleStyle(.checkbox)
+    }
+
+    /// Which group the note is in, and the way to change it: a pop-up in the
+    /// pane itself, so putting a note in a group does not depend on knowing the
+    /// right click. A daily belongs to Daily.
+    private var groupPicker: some View {
+        let group = note.groupID.flatMap { store.group(id: $0) }
+        let id = note.id
+        return Menu {
+            Toggle(L("No Group"), isOn: Binding(get: { group == nil }, set: { _ in actions.moveToGroup([id], nil) }))
+            if !store.groups.isEmpty { Divider() }
+            ForEach(store.groups) { option in
+                Toggle(isOn: Binding(get: { group?.id == option.id }, set: { _ in actions.moveToGroup([id], option.id) })) {
+                    Label { Text(option.name) } icon: { Image(nsImage: GroupMenu.swatch(option.color)) }
+                }
+            }
+            Divider()
+            Button(L("New Group\u{2026}")) { actions.newGroupWithNotes([id]) }
+        } label: {
+            Label {
+                Text(note.isDaily ? L("Daily") : (group?.name ?? L("No Group"))).lineLimit(1).truncationMode(.tail)
+            } icon: {
+                Image(systemName: "folder")
+            }
+        }
+        .frame(maxWidth: 150)
+        .fixedSize()
+        .disabled(note.isDaily)
+        .help(L("Move to Group"))
+        .accessibilityLabel(L("Move to Group"))
     }
 
     private static let formatter: DateFormatter = {
