@@ -54,8 +54,9 @@ protocol DeckNote: PinItem {
 /// `DeckGeometry` then says where each tab goes.
 ///
 /// Top to bottom: the groups, in the order they stand; Daily; the notes in no
-/// group. A group that has nothing on the deck is not there, and a pinned note
-/// is not in its group: it is in the pinned block at the centre, as ever.
+/// group. A group the user made is always there, empty or not; a pinned note
+/// counts in its group but is not under its header: it is in the pinned block
+/// at the centre, as ever.
 ///
 /// An open group takes its tab's place: its header, then its notes. Its notes
 /// come first for room. The other tabs stay, packed as tight as the deck packs
@@ -71,7 +72,7 @@ struct DeckPlan: Equatable {
     var stickyHeader: Bool
     /// What each group with a tab holds on the deck.
     var counts: [DeckGroupRef: Int]
-    /// The group that is open, if the one asked for exists and has notes.
+    /// The group that is open, if the one asked for exists.
     var open: DeckGroupRef?
     /// Tabs that left because the open group needs the room.
     var dropped: Int
@@ -110,18 +111,24 @@ struct DeckPlan: Equatable {
         let inBlock = Set(ranked.map(\.id))
         let blockEntries = PinnedDeck.blockOrder(ranked).map { DeckEntry.note($0.id) }
 
-        // Who is where: a pinned note is in the block, a daily in Daily, a
-        // note in a group that exists in that group, any other loose.
+        // Who is where: a daily in Daily, a note in a group that exists in that
+        // group, any other loose. A pinned note is counted in its group but sits
+        // in the block, not under the group's header.
         let known = Set(groups.map(\.id))
         var byGroup: [UUID: [T]] = [:]
+        var held: [UUID: Int] = [:]
         var daily: [T] = []
+        var dailyHeld = 0
         var loose: [T] = []
-        for note in notes where !inBlock.contains(note.id) {
+        for note in notes {
+            let pinned = inBlock.contains(note.id)
             if note.isDaily {
-                daily.append(note)
+                dailyHeld += 1
+                if !pinned { daily.append(note) }
             } else if let id = note.groupID, known.contains(id) {
-                byGroup[id, default: []].append(note)
-            } else {
+                held[id, default: 0] += 1
+                if !pinned { byGroup[id, default: []].append(note) }
+            } else if !pinned {
                 loose.append(note)
             }
         }
@@ -129,9 +136,8 @@ struct DeckPlan: Equatable {
         var counts: [DeckGroupRef: Int] = [:]
         var slots: [Slot] = []
         var openSlot: Int?
-        func addGroup(_ ref: DeckGroupRef, _ members: [T]) {
-            guard !members.isEmpty else { return }
-            counts[ref] = members.count
+        func addGroup(_ ref: DeckGroupRef, _ members: [T], held: Int) {
+            counts[ref] = held
             if ref == open {
                 openSlot = slots.count
                 slots.append(Slot(entries: [.header(ref)] + members.map { .note($0.id) }, isOpenGroup: true))
@@ -139,8 +145,10 @@ struct DeckPlan: Equatable {
                 slots.append(Slot(entries: [.group(ref)]))
             }
         }
-        for group in NoteGroup.sorted(groups) { addGroup(.user(group.id), byGroup[group.id] ?? []) }
-        addGroup(.daily, daily)
+        // A group the user made stays on the deck, empty or not; Daily, which
+        // nobody makes, is there when it holds a note.
+        for group in NoteGroup.sorted(groups) { addGroup(.user(group.id), byGroup[group.id] ?? [], held: held[group.id] ?? 0) }
+        if dailyHeld > 0 { addGroup(.daily, daily, held: dailyHeld) }
         for note in loose { slots.append(Slot(entries: [.note(note.id)])) }
 
         /// The deck for the slots kept: the pinned block put in, not through

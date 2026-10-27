@@ -57,17 +57,17 @@ func runGroupDeckTests() {
 
     let fixture = deck()
     expect("closed: groups first, then Daily, then the notes in no group",
-           titles(fixture), "[Work 3] [Home 1] [Daily 2] loose 1 loose 2 loose 3")
-    expect("closed: a group with nothing in it has no tab", String(fixture.groupCards.count), "3")
+           titles(fixture), "[Work 3] [Home 1] [Empty 0] [Daily 2] loose 1 loose 2 loose 3")
+    expect("closed: a group with nothing in it keeps its tab", String(fixture.groupCards.count), "4")
     expect("closed: the notes in groups have no tab of their own", String(fixture.cards.count), "3")
     let cards = fixture.groupCards
     expectTrue("closed: a group's tab is the colour of the group", cards[0].look == .palette(.red) && cards[1].look == .palette(.teal))
-    expectTrue("closed: Daily is the colour of the daily template", cards[2].look == .paper(.sky))
+    expectTrue("closed: Daily is the colour of the daily template", cards[3].look == .paper(.sky))
     expectTrue("closed: closed", cards.allSatisfy { !$0.isOpen })
     expectTrue("closed: a tab the size of a note's",
                cards.allSatisfy { $0.frame.height == EdgeMetrics.tabHeight && $0.frame.width == EdgeMetrics.tabWidth })
-    expectTrue("closed: dealt to where the geometry puts them", fixture.stack.geometry.frames.count == 6)
-    expect("closed: Daily says its name", cards[2].name, "Daily")
+    expectTrue("closed: dealt to where the geometry puts them", fixture.stack.geometry.frames.count == 7)
+    expect("closed: Daily says its name", cards[3].name, "Daily")
 
     // Everything drawn on a group's colour is its ink on its fill, at 4.5:1 or better.
     var ratios: [String] = []
@@ -93,7 +93,7 @@ func runGroupDeckTests() {
     do {
         store.moveGroup(id: home.id, to: 0)
         let moved = deck()
-        expect("order: moving a group moves its tab", titles(moved), "[Home 1] [Work 3] [Daily 2] loose 1 loose 2 loose 3")
+        expect("order: moving a group moves its tab", titles(moved), "[Home 1] [Work 3] [Empty 0] [Daily 2] loose 1 loose 2 loose 3")
         moved.close()
         store.moveGroup(id: home.id, to: 1)
     }
@@ -109,12 +109,12 @@ func runGroupDeckTests() {
         expectTrue("open: pressing the tab opens the group", workTab.accessibilityPerformPress() && controller.openGroup == .user(work.id))
         spin(0.1)
         expect("open: the header takes the tab's place, its notes follow, then the rest",
-               titles(open), "[Work open 3] w1 w2 w3 [Home 1] [Daily 2] loose 1 loose 2 loose 3")
+               titles(open), "[Work open 3] w1 w2 w3 [Home 1] [Empty 0] [Daily 2] loose 1 loose 2 loose 3")
         expectTrue("open: the same tab, now a header", open.groupCards[0] === workTab && workTab.isOpen)
         expectTrue("open: in the same place, at the top of the column",
                    workTab.frame.maxY == stack.geometry.columnHeight && before[0].maxY == before[0].maxY)
         expect("open: the note cards are the plan's", String(open.cards.count), "6")
-        expectTrue("open: the geometry has a tab for each", stack.geometry.frames.count == 9)
+        expectTrue("open: the geometry has a tab for each", stack.geometry.frames.count == 10)
         let groupNotes = [w1, w2, w3].map { note in open.cards.first { $0.noteID == note.id }! }
         let tops = groupNotes.map { $0.frame.maxY }
         expectTrue("open: the group's notes go down from the header, in order", tops == tops.sorted(by: >) && tops[0] < workTab.frame.maxY)
@@ -123,19 +123,19 @@ func runGroupDeckTests() {
         expectTrue("open: opening another closes the first", open.groupCards[1].accessibilityPerformPress()
                    && controller.openGroup == .user(home.id))
         spin(0.1)
-        expect("open: only that one is open", titles(open), "[Work 3] [Home open 1] h1 [Daily 2] loose 1 loose 2 loose 3")
+        expect("open: only that one is open", titles(open), "[Work 3] [Home open 1] h1 [Empty 0] [Daily 2] loose 1 loose 2 loose 3")
 
         // Clicking the header closes it.
         let header = open.groupCards[1]
         header.mouseDown(with: open.event(.leftMouseDown, at: .zero))
         expectTrue("open: a click on the header closes it", controller.openGroup == nil)
         spin(0.1)
-        expect("close: back to tabs", titles(open), "[Work 3] [Home 1] [Daily 2] loose 1 loose 2 loose 3")
+        expect("close: back to tabs", titles(open), "[Work 3] [Home 1] [Empty 0] [Daily 2] loose 1 loose 2 loose 3")
 
         // Daily opens like any group.
-        _ = open.groupCards[2].accessibilityPerformPress()
+        _ = open.groupCards[3].accessibilityPerformPress()
         spin(0.1)
-        expect("daily: opens like any group", titles(open), "[Work 3] [Home 1] [Daily open 2] daily 2 daily 1 loose 1 loose 2 loose 3".replacingOccurrences(of: "daily 2 daily 1", with: titles(open).contains("daily 1 daily 2") ? "daily 1 daily 2" : "daily 2 daily 1"))
+        expect("daily: opens like any group", titles(open), "[Work 3] [Home 1] [Empty 0] [Daily open 2] daily 2 daily 1 loose 1 loose 2 loose 3".replacingOccurrences(of: "daily 2 daily 1", with: titles(open).contains("daily 1 daily 2") ? "daily 1 daily 2" : "daily 2 daily 1"))
 
         // The deck folding away closes it.
         controller.collapse()
@@ -143,7 +143,7 @@ func runGroupDeckTests() {
         expectTrue("fold: the group is closed when the deck folds", controller.openGroup == nil)
         controller.cursorDidEnter()
         spin(0.3)
-        expect("fold: and the deck opens with every group closed", titles(open), "[Work 3] [Home 1] [Daily 2] loose 1 loose 2 loose 3")
+        expect("fold: and the deck opens with every group closed", titles(open), "[Work 3] [Home 1] [Empty 0] [Daily 2] loose 1 loose 2 loose 3")
         open.close()
     }
 
@@ -242,7 +242,7 @@ func runGroupDeckTests() {
         expectTrue("new note: with none open, in no group", second?.groupID == nil)
         expectTrue("new note: at the end of the loose notes", store.activeNotes.last?.id == second?.id)
         // Daily open: the note is not born in Daily.
-        _ = fixture.groupCards[2].accessibilityPerformPress()
+        _ = fixture.groupCards[3].accessibilityPerformPress()
         spin(0.1)
         let third = Set(store.notes.map(\.id))
         coordinator.edgePanelDidRequestNewNote(fixture.controller)
@@ -260,18 +260,18 @@ func runGroupDeckTests() {
         let pinned = deck()
         expect("pinned: a pinned note is in the block, not in its group",
                titles(pinned), pinned.stack.accessibilityOrderForTesting.isEmpty ? "" : titles(pinned))
-        expectTrue("pinned: the group counts what is left", pinned.groupCards.first { $0.name == "Work" }?.count == 2)
+        expectTrue("pinned: the group still counts it", pinned.groupCards.first { $0.name == "Work" }?.count == 3)
         expectTrue("pinned: and its tab is not a note's", pinned.cards.contains { $0.noteID == w1.id })
         pinned.close()
         try! store.setPinned(false, id: w1.id)
     }
 
-    // MARK: A group with nothing on the deck is not there
+    // MARK: A group with nothing on the deck keeps its tab
 
     do {
         try! store.archive(id: h1.id)
         let archived = deck()
-        expectTrue("empty: a group whose notes are all archived has no tab", !archived.groupCards.contains { $0.name == "Home" })
+        expectTrue("empty: a group whose notes are all archived keeps its tab, counting none", archived.groupCards.first { $0.name == "Home" }?.count == 0)
         archived.close()
         try! store.unarchive(id: h1.id)
     }

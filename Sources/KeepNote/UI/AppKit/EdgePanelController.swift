@@ -526,7 +526,7 @@ final class EdgePanelController: NSObject {
     }
 
     func expand() {
-        guard !notes.isEmpty else { return }
+        guard !notes.isEmpty || !groups.isEmpty else { return }
         // A deck opens with every group closed.
         openGroup = nil
         plan = DeckPlan.make(notes: notes, groups: groups, open: nil, usableHeight: usableHeight)

@@ -55,10 +55,11 @@ func runDeckPlanTests() {
     let all = [work, home, empty]
     let closed = plan(notes, groups: all)
     expect("order: groups in the order they stand, Daily, then the loose notes",
-           names(closed, notes, groups: all), "[Work] [Home] [Daily] n0 n3 n7 n8 n9")
+           names(closed, notes, groups: all), "[Work] [Home] [Empty] [Daily] n0 n3 n7 n8 n9")
     expect("counts: what each group holds", [closed.counts[.user(work.id)], closed.counts[.user(home.id)], closed.counts[.daily]]
         .map { String($0 ?? -1) }.joined(separator: ","), "2,1,2")
-    expectTrue("counts: a group with nothing on the deck has no tab", closed.counts[.user(empty.id)] == nil)
+    expect("counts: a group with nothing in it keeps its tab, counting none", String(closed.counts[.user(empty.id)] ?? -1), "0")
+    expectTrue("order: and the tab is there", closed.entries.contains(.group(.user(empty.id))))
     let reordered = NoteGroup(id: home.id, name: "Home", order: -1, createdAt: t0)
     expectTrue("order: moving a group moves its tab",
                names(plan(notes, groups: [work, reordered]), notes, groups: [work, reordered]).hasPrefix("[Home] [Work] [Daily]"))
@@ -68,14 +69,22 @@ func runDeckPlanTests() {
     pinnedMember[2].pinnedAt = t0
     let pinnedPlan = plan(pinnedMember, groups: all)
     expectTrue("pinned: a pinned member is in the block", pinnedPlan.entries.contains(.note(pinnedMember[2].id)) && pinnedPlan.pinned?.count == 1)
-    expect("pinned: and the group counts what is left", String(pinnedPlan.counts[.user(work.id)] ?? -1), "1")
+    expect("pinned: and the group still counts it", String(pinnedPlan.counts[.user(work.id)] ?? -1), "2")
     var onlyPinned = notes
     onlyPinned[2].pinnedAt = t0
     onlyPinned[4].pinnedAt = t0.addingTimeInterval(1)
-    expectTrue("pinned: a group whose notes are all pinned has no tab", plan(onlyPinned, groups: all).counts[.user(work.id)] == nil)
+    let allPinned = plan(onlyPinned, groups: all)
+    expect("pinned: a group whose notes are all pinned keeps its tab, counting them", String(allPinned.counts[.user(work.id)] ?? -1), "2")
+    expectTrue("pinned: the tab is on the deck and the notes are in the block, once each",
+               allPinned.entries.contains(.group(.user(work.id)))
+               && allPinned.entries.filter { $0 == .note(onlyPinned[2].id) }.count == 1 && allPinned.pinned?.count == 2)
+    let allPinnedOpen = plan(onlyPinned, groups: all, open: .user(work.id))
+    expectTrue("pinned: opened, only the header is there, the notes stay in the block, once each",
+               allPinnedOpen.open == .user(work.id) && allPinnedOpen.entries.contains(.header(.user(work.id)))
+               && allPinnedOpen.entries.filter { $0 == .note(onlyPinned[2].id) }.count == 1)
     var pinnedDaily = notes
     pinnedDaily[5].pinnedAt = t0
-    expect("pinned: a pinned daily is in the block; Daily holds the other", String(plan(pinnedDaily, groups: all).counts[.daily] ?? -1), "1")
+    expect("pinned: a pinned daily is in the block; Daily still counts both", String(plan(pinnedDaily, groups: all).counts[.daily] ?? -1), "2")
     var noDailies = notes
     noDailies[5].isDaily = false
     noDailies[6].isDaily = false
@@ -86,13 +95,13 @@ func runDeckPlanTests() {
 
     let opened = plan(notes, groups: all, open: .user(work.id))
     expect("open: the header takes the tab's place and its notes follow",
-           names(opened, notes, groups: all), "<Work> n2 n4 [Home] [Daily] n0 n3 n7 n8 n9")
+           names(opened, notes, groups: all), "<Work> n2 n4 [Home] [Empty] [Daily] n0 n3 n7 n8 n9")
     expectTrue("open: the group is open", opened.open == .user(work.id))
     expectTrue("open: it all fits, so nothing left", opened.dropped == 0 && !opened.stickyHeader)
     let dailyOpen = plan(notes, groups: all, open: .daily)
     expectTrue("open: Daily opens like any group", dailyOpen.entries.contains(.header(.daily)) && dailyOpen.open == .daily
                && dailyOpen.entries.contains(.note(notes[5].id)) && dailyOpen.entries.contains(.note(notes[6].id)))
-    expectTrue("open: a group that has nothing is not open", plan(notes, groups: all, open: .user(empty.id)).open == nil)
+    expectTrue("open: a group that has nothing opens to its header alone", plan(notes, groups: all, open: .user(empty.id)).open == .user(empty.id))
     expectTrue("open: nor one that does not exist", plan(notes, groups: all, open: .user(UUID())).open == nil)
     expectTrue("open: the tab and the header are the same tab",
                DeckEntry.group(.user(work.id)).key == DeckEntry.header(.user(work.id)).key)
