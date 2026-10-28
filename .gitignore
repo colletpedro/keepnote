@@ -10,7 +10,3 @@ dist/
 # Xcode user state
 *.xcuserstate
 xcuserdata/
-
-# Local agent settings (paths and hooks of this machine)
-.claude/
-.codex/
