@@ -145,7 +145,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// are handled here, whatever the activation policy. A *local* monitor only ever sees events already delivered
     /// to this app — no permission involved.
     private func installAppShortcuts() {
-        OpenLog.installMouseMonitor()
         appKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, let coordinator = self.coordinator else { return event }
             // A shortcut being recorded in Settings gets every key, ⌘Q included.
