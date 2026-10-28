@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// A group's tab in the fanned deck: closed, one tab for all of its notes, in
 /// the group's colour with its name and how many notes it holds, and two
@@ -8,7 +9,7 @@ import AppKit
 /// Every piece of text on it is the group's `ink` on its `fill`, which is a
 /// pair that reads at 4.5:1 or better (`GroupPalette`). Daily is a group too,
 /// in the colour of the daily template; its paper and ink are a note's.
-final class GroupCardView: DeckTabView {
+final class GroupCardView: DeckTabView, NSPopoverDelegate {
     /// How a group is coloured: one of the twelve, or — for Daily — a paper.
     enum Look: Equatable {
         case palette(GroupColor)
@@ -66,6 +67,21 @@ final class GroupCardView: DeckTabView {
     /// group's state; set by the deck.
     var announce: ((String) -> Void)?
 
+    /// A colour was chosen in the header's button.
+    var onChooseColor: ((GroupColor) -> Void)?
+    /// The colour popover opened or closed: the deck stays open while it is up.
+    var onColorPopover: ((Bool) -> Void)?
+
+    /// The group's colour as a button on its open header. Daily has none: its
+    /// colour is the daily template's.
+    private(set) var colorButton: GroupColorButtonView?
+    private var colorPopover: NSPopover?
+
+    private var wantsColorButton: Bool {
+        guard isOpen, case .palette = look, case .user = ref else { return false }
+        return true
+    }
+
     init(ref: DeckGroupRef, name: String, count: Int, look: Look, isOpen: Bool, height: CGFloat, edge: ScreenEdge) {
         self.ref = ref
         self.name = name
@@ -79,6 +95,7 @@ final class GroupCardView: DeckTabView {
         setAccessibilityRole(.button)
         setAccessibilityRoleDescription(L("group tab"))
         registerForDraggedTypes([.string])
+        syncColorButton()
     }
 
     @available(*, unavailable)
@@ -93,7 +110,79 @@ final class GroupCardView: DeckTabView {
         self.look = look
         self.isOpen = isOpen
         if changed { needsDisplay = true }
+        syncColorButton()
     }
+
+    // MARK: - Colour button
+
+    private func syncColorButton() {
+        guard wantsColorButton, case .palette(let color) = look else {
+            closeColors()
+            colorButton?.removeFromSuperview()
+            colorButton = nil
+            return
+        }
+        if let colorButton {
+            colorButton.show(color: color)
+        } else {
+            let button = GroupColorButtonView(color: color)
+            button.onPress = { [weak self] button in self?.presentColors(from: button) }
+            addSubview(button)
+            colorButton = button
+            needsLayout = true
+        }
+    }
+
+    /// The button sits at the foot of the header, in the tab's own part of it
+    /// (a hovered header grows outwards from there, the button does not move).
+    private func layoutColorButton() {
+        guard let colorButton else { return }
+        let size = EdgeMetrics.groupColorButton
+        let right = NSRect(x: bounds.width - EdgeMetrics.tabWidth / 2 - size / 2, y: 4, width: size, height: size)
+        let placed = mirrored(right)
+        if colorButton.frame != placed { colorButton.frame = placed }
+    }
+
+    /// The twelve colours in a popover beside the button; a choice applies at
+    /// once and closes it.
+    func presentColors(from button: NSView) {
+        guard case .palette(let current) = look, colorPopover == nil else { return }
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.animates = !Motion.reduceMotion
+        popover.delegate = self
+        // Closed first, then applied: applying may rebuild the deck, and this card with it.
+        let choose = onChooseColor
+        let notify = onColorPopover
+        let grid = GroupColorGrid(current: current) { [weak self] color in
+            self?.closeColors()
+            notify?(false)
+            choose?(color)
+        }
+        popover.contentViewController = NSHostingController(rootView: grid)
+        colorPopover = popover
+        colorPopoverRequests += 1
+        onColorPopover?(true)
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: edge == .right ? .minX : .maxX)
+        // Not shown (no window to show it from): nothing is up, so nothing holds the deck.
+        if !popover.isShown { dismissedColors() }
+    }
+
+    func closeColors() {
+        guard let popover = colorPopover else { return }
+        if popover.isShown { popover.performClose(nil) } else { dismissedColors() }
+    }
+
+    private func dismissedColors() {
+        guard colorPopover != nil else { return }
+        colorPopover = nil
+        onColorPopover?(false)
+    }
+
+    var colorPopoverForTesting: NSPopover? { colorPopover }
+    private(set) var colorPopoverRequests = 0
+
+    func popoverDidClose(_ notification: Notification) { dismissedColors() }
 
     override func hoverDidChange() {
         NoteCardShape.applyShadow(to: self, strength: isHovered ? 1.7 : 1, edge: edge)
@@ -102,6 +191,7 @@ final class GroupCardView: DeckTabView {
     override func layout() {
         super.layout()
         NoteCardShape.updateShadowPath(on: self)
+        layoutColorButton()
     }
 
     // MARK: - VoiceOver
@@ -212,7 +302,7 @@ final class GroupCardView: DeckTabView {
         let textWidth = face.width - 12
         let countZone: CGFloat = 20
         // An open header has its mark at the foot: the name stops above it.
-        let foot: CGFloat = isOpen ? 14 : 0
+        let foot: CGFloat = colorButton != nil ? EdgeMetrics.groupColorButton + 8 : (isOpen ? 14 : 0)
         if visibleSlice >= 20 {
             drawCount(in: NSRect(x: face.minX, y: bounds.maxY - 6 - 15, width: textWidth, height: 15))
         }
@@ -224,7 +314,7 @@ final class GroupCardView: DeckTabView {
             color: look.ink,
             context: context
         )
-        if isOpen { drawOpenMark(in: face, width: textWidth) }
+        if isOpen, colorButton == nil { drawOpenMark(in: face, width: textWidth) }
 
         if isHovered {
             look.ink.withAlphaComponent(0.85).setStroke()
@@ -263,5 +353,78 @@ final class GroupCardView: DeckTabView {
         let size = glyph.size
         let placed = mirrored(NSRect(x: face.minX + (width - size.width) / 2, y: 7, width: size.width, height: size.height))
         glyph.draw(in: placed)
+    }
+}
+
+/// The group's colour as a button: a dot ringed in the header's ink, at least
+/// 24 pt to hit. A click, Space or Return (from the deck's keyboard focus) and
+/// VoiceOver's press all do the same.
+final class GroupColorButtonView: NSView, KeyboardFocusable {
+    private(set) var color: GroupColor
+    var onPress: ((GroupColorButtonView) -> Void)?
+
+    var showsKeyboardFocus = false {
+        didSet { if showsKeyboardFocus != oldValue { needsDisplay = true } }
+    }
+    private var isPressed = false {
+        didSet { if isPressed != oldValue { needsDisplay = true } }
+    }
+
+    init(color: GroupColor) {
+        self.color = color
+        let size = EdgeMetrics.groupColorButton
+        super.init(frame: NSRect(x: 0, y: 0, width: size, height: size))
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        toolTip = accessibilityLabel()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    func show(color: GroupColor) {
+        guard self.color != color else { return }
+        self.color = color
+        toolTip = accessibilityLabel()
+        needsDisplay = true
+    }
+
+    /// "Group color: Blue", then the system says it is a button.
+    override func accessibilityLabel() -> String? { L("Group color: %@", color.displayName) }
+    override func accessibilityPerformPress() -> Bool {
+        press()
+        return true
+    }
+
+    func press() { onPress?(self) }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) { isPressed = true }
+
+    override func mouseUp(with event: NSEvent) {
+        let inside = bounds.contains(convert(event.locationInWindow, from: nil))
+        isPressed = false
+        if inside { press() }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let dot = NSRect(x: bounds.midX - 8, y: bounds.midY - 8, width: 16, height: 16)
+        let ink = color.ink
+        // A ring in the ink with the colour inside it: it reads on the header
+        // (which is the colour) at any contrast setting.
+        ink.withAlphaComponent(isPressed ? 0.8 : 1).setFill()
+        NSBezierPath(ovalIn: dot).fill()
+        color.fill.setFill()
+        NSBezierPath(ovalIn: dot.insetBy(dx: 3, dy: 3)).fill()
+        if DisplayOptions.increaseContrast {
+            ink.setStroke()
+            let outer = NSBezierPath(ovalIn: dot.insetBy(dx: -2, dy: -2))
+            outer.lineWidth = 1
+            outer.stroke()
+        }
+        if showsKeyboardFocus {
+            KeyboardFocusRing.draw(in: bounds, path: NSBezierPath(ovalIn: bounds.insetBy(dx: 1.5, dy: 1.5)))
+        }
     }
 }

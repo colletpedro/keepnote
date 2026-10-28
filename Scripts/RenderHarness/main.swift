@@ -677,9 +677,10 @@ MainActor.assumeIsolated {
             return try! store.create(drafts)
         }
         @MainActor func renderGroups(_ name: String, notes: [Note], open: DeckGroupRef?, usable: CGFloat = 926, edge: ScreenEdge = .right,
-                                     dailyColor: NoteColor = .sky, hoverGroup: Bool = false) {
-            let plan = DeckPlan.make(notes: notes, groups: sampleGroups, open: open, usableHeight: usable)
-            let content = DeckContent.make(notes: notes, groups: sampleGroups, dailyColor: dailyColor, plan: plan)
+                                     dailyColor: NoteColor = .sky, hoverGroup: Bool = false, groups: [NoteGroup]? = nil) {
+            let groups = groups ?? sampleGroups
+            let plan = DeckPlan.make(notes: notes, groups: groups, open: open, usableHeight: usable)
+            let content = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: plan)
             let geometry = plan.geometry(usableHeight: usable, columnWidth: width, edge: edge)
             let size = CGSize(width: width + 40, height: usable)
             let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
@@ -720,6 +721,18 @@ MainActor.assumeIsolated {
             renderGroups("groups-open-daily\(tag)", notes: few, open: .daily, edge: edge)
             renderGroups("groups-open-expels\(tag)", notes: busy, open: .user(sampleGroups[0].id), edge: edge)
             renderGroups("groups-open-scrolls\(tag)", notes: huge, open: .user(sampleGroups[0].id), edge: edge)
+        }
+        // A full stack of 11 tabs with a group open: the header and 2 notes among 8 others,
+        // or the header and 8 notes among 2 others. The group at the full stage, the
+        // strip down its inner side, the colour button on the header.
+        for edge in ScreenEdge.allCases {
+            let tag = edge == .right ? "" : "-left"
+            let two = Array(sampleGroups.prefix(3))
+            let twoNotes = groupedNotes(inGroups: [2, 2, 2], loose: 6, dailies: 0)
+            renderGroups("groups-full-2\(tag)", notes: twoNotes, open: .user(two[0].id), edge: edge, groups: two)
+            let eight = Array(sampleGroups.prefix(2))
+            let eightNotes = groupedNotes(inGroups: [8, 2], loose: 1, dailies: 0)
+            renderGroups("groups-full-8\(tag)", notes: eightNotes, open: .user(eight[0].id), edge: edge, groups: eight)
         }
         renderGroups("groups-open-small-screen", notes: busy, open: .user(sampleGroups[1].id), usable: 480)
         renderGroups("groups-open-expels-small", notes: busy, open: .user(sampleGroups[0].id), usable: 480)
@@ -774,11 +787,20 @@ MainActor.assumeIsolated {
                    DeckSettingsPane(settings: AppSettings.shared))
         }
         renderGroupChrome("")
+        render("groups-color-popover", size: CGSize(width: 150, height: 110), GroupColorGrid(current: .blue) { _ in }.background(Color(nsColor: .windowBackgroundColor)))
         // With Increase contrast and Reduce transparency on.
         DisplayOptions.increaseContrastOverride = true
         renderGroups("groups-contrast-closed", notes: few, open: nil)
         renderGroups("groups-contrast-open", notes: few, open: .user(sampleGroups[2].id))
+        for edge in ScreenEdge.allCases {
+            let tag = edge == .right ? "" : "-left"
+            renderGroups("groups-contrast-full-2\(tag)", notes: groupedNotes(inGroups: [2, 2, 2], loose: 6, dailies: 0),
+                         open: .user(sampleGroups[0].id), edge: edge, groups: Array(sampleGroups.prefix(3)))
+            renderGroups("groups-contrast-full-8\(tag)", notes: groupedNotes(inGroups: [8, 2], loose: 1, dailies: 0),
+                         open: .user(sampleGroups[0].id), edge: edge, groups: Array(sampleGroups.prefix(2)))
+        }
         renderGroupChrome("-contrast")
+        render("groups-color-popover-contrast", size: CGSize(width: 150, height: 110), GroupColorGrid(current: .blue) { _ in }.background(Color(nsColor: .windowBackgroundColor)))
         DisplayOptions.increaseContrastOverride = nil
         // With Increase contrast and Reduce transparency on.
         DisplayOptions.increaseContrastOverride = true

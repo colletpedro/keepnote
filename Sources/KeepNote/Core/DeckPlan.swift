@@ -88,7 +88,8 @@ struct DeckPlan: Equatable {
         metrics: DeckGeometry.Metrics = .init()
     ) -> DeckGeometry {
         DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                            pinned: pinned, stickyFirst: stickyHeader, whole: wholeIndices, edge: edge,
+                            pinned: pinned, stickyFirst: stickyHeader, whole: wholeIndices, raised: memberIndices,
+                            edge: edge,
                             metrics: metrics)
     }
 
@@ -96,6 +97,11 @@ struct DeckPlan: Equatable {
     /// whole, at the full stage, and nothing covers them.
     var wholeIndices: Set<Int> {
         Self.wholeIndices(of: entries, members: members)
+    }
+
+    /// The open group's notes, under its header: they stand further out.
+    var memberIndices: Set<Int> {
+        wholeIndices.filter { if case .note = entries[$0] { return true } else { return false } }
     }
 
     static func wholeIndices(of entries: [DeckEntry], members: Int) -> Set<Int> {

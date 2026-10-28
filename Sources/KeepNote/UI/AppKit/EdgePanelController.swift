@@ -6,6 +6,8 @@ protocol EdgePanelControllerDelegate: AnyObject {
     func edgePanel(_ controller: EdgePanelController, didRequest action: NoteCardView.ContextAction, on id: UUID)
     /// Notes dragged onto a group's tab.
     func edgePanel(_ controller: EdgePanelController, didDropNotes ids: [UUID], onGroup id: UUID)
+    /// A colour chosen in the open group's header.
+    func edgePanel(_ controller: EdgePanelController, didChoose color: GroupColor, forGroup id: UUID)
     /// A note is about to be made from this deck: the group it is born in,
     /// the one that is open here.
     func edgePanelOpenGroup(_ controller: EdgePanelController) -> UUID?
@@ -17,6 +19,7 @@ protocol EdgePanelControllerDelegate: AnyObject {
 
 extension EdgePanelControllerDelegate {
     func edgePanel(_ controller: EdgePanelController, didDropNotes ids: [UUID], onGroup id: UUID) {}
+    func edgePanel(_ controller: EdgePanelController, didChoose color: GroupColor, forGroup id: UUID) {}
     func edgePanelOpenGroup(_ controller: EdgePanelController) -> UUID? { nil }
 }
 
@@ -133,6 +136,11 @@ final class EdgePanelController: NSObject {
         // goes on into it; anything else ends the focus.
         if let group = stop as? GroupCardView {
             toggleGroup(group.ref)
+            return
+        }
+        // The colour button opens its popover with the keyboard still in the deck.
+        if let button = stop as? GroupColorButtonView {
+            button.press()
             return
         }
         endKeyboardFocus(giveBack: false)
@@ -330,6 +338,26 @@ final class EdgePanelController: NSObject {
         Announcer.say(AccessibilityText.groupAnnouncement(name: name, count: plan.counts[ref] ?? info.count, isOpen: opened))
     }
 
+    /// A colour chosen in the header of the open group.
+    func setColor(_ color: GroupColor, ofGroup ref: DeckGroupRef) {
+        guard case .user(let id) = ref else { return }
+        delegate?.edgePanel(self, didChoose: color, forGroup: id)
+    }
+
+    /// While the colour popover is up the deck stays open, whatever the cursor does.
+    private var colorPopoverOpen = false
+    var colorPopoverOpenForTesting: Bool { colorPopoverOpen }
+
+    func colorPopoverChanged(open: Bool) {
+        colorPopoverOpen = open
+        if open {
+            collapseTask?.cancel()
+            collapseTask = nil
+        } else if isFanned, openNoteCount == 0, !isKeyboardFocused {
+            scheduleCollapse()
+        }
+    }
+
     /// Notes dragged onto a group's tab.
     func dropNotes(_ ids: [UUID], onGroup ref: DeckGroupRef) {
         guard case .user(let id) = ref else { return }
@@ -490,7 +518,7 @@ final class EdgePanelController: NSObject {
         intentTask?.cancel()
         intentTask = nil
         intent.exit()
-        guard isFanned, openNoteCount == 0, !isKeyboardFocused else { return }
+        guard isFanned, openNoteCount == 0, !isKeyboardFocused, !colorPopoverOpen else { return }
         // Moving from a tab onto its own peek leaves the deck's tracking area,
         // but is not leaving the deck. `scheduleCollapse` re-checks that when
         // it fires, by which time the preview's own enter event has arrived.
@@ -505,7 +533,7 @@ final class EdgePanelController: NSObject {
             let grace = UInt64(EdgeMetrics.collapseGrace * 1_000_000_000)
             try? await Task.sleep(nanoseconds: grace)
             guard !Task.isCancelled, let self else { return }
-            guard !self.preview.isHovered else { return }
+            guard !self.preview.isHovered, !self.colorPopoverOpen else { return }
             self.collapse()
         }
     }
@@ -556,6 +584,7 @@ final class EdgePanelController: NSObject {
     func collapse() {
         guard isFanned else { return }
         isFanned = false
+        colorPopoverOpen = false
         preview.hide()
         openGroup = nil
         stackView.fanIn { [weak self] in

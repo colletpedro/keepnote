@@ -28,7 +28,7 @@ enum EdgeMetrics {
     /// clipped, and so its shadow has somewhere to fall. It has to cover the
     /// lift plus the shadow's reach, or the highlight ends in a hard vertical
     /// cut — which is exactly what it is there to avoid.
-    static let hoverGutter: CGFloat = 26
+    static let hoverGutter: CGFloat = 33
     /// How much further a hovered tab reaches out of the deck, at the setting
     /// the deck is made with (Settings > Deck > Hover magnification). It grows
     /// leftward with its right edge pinned: sliding it would peel it off the
@@ -47,10 +47,18 @@ enum EdgeMetrics {
         CGFloat(min(max(level, 0), hoverMagnificationLevels)) * hoverMagnificationStep
     }
 
-    /// The room beside the tabs for a lift of `lift` and its shadow. At the
-    /// deck's own 12 pt it is `hoverGutter`.
+    /// How much further out of the edge the notes of an open group stand than
+    /// the loose ones, so they stand out.
+    static let groupOutset: CGFloat = 7
+    /// The strip in the group's colour down the inner side of its notes.
+    static let groupRailWidth: CGFloat = 5
+    /// The group's colour button on its header, and its smallest target.
+    static let groupColorButton: CGFloat = 24
+
+    /// The room beside the tabs for a lift of `lift`, the outset of a group's
+    /// notes and the shadow. At the deck's own 12 pt it is `hoverGutter`.
     static func gutter(forLift lift: CGFloat) -> CGFloat {
-        lift + hoverShadowReach
+        lift + hoverShadowReach + groupOutset
     }
     /// Every tab is this tall, however many there are: a deck that does not
     /// fit stacks its tabs more tightly, it never shrinks them.

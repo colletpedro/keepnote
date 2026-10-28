@@ -181,6 +181,7 @@
 "Group %@" = "Grupo %@";
 "Group %@ closed" = "Grupo %@ fechado";
 "Group %@ opened, %@" = "Grupo %@ aberto, %@";
+"Group color: %@" = "Cor do grupo: %@";
 "Group deleted" = "Grupo apagado";
 "Group name" = "Nome do grupo";
 "Group: %@" = "Grupo: %@";

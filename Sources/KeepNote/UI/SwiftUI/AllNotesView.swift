@@ -495,7 +495,7 @@ struct AllNotesSidebar: View {
                 }
                 ForEach(groups) { group in
                     SidebarRow(count: groupCounts.count(of: group.id)) {
-                        Label { Text(group.name) } icon: { Image(nsImage: GroupMenu.swatch(group.color, size: 12)) }
+                        Label { Text(group.name) } icon: { GroupColorDotButton(color: group.color) { actions.setGroupColor(group.id, $0) } }
                     }
                     .tag(NoteSelection.group(group.id))
                     .listRowBackground(

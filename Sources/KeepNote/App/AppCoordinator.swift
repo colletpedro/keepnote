@@ -1371,6 +1371,10 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         moveToGroup(ids, group: id)
     }
 
+    func edgePanel(_ controller: EdgePanelController, didChoose color: GroupColor, forGroup id: UUID) {
+        store.setGroupColor(color, id: id)
+    }
+
     func edgePanelDidRequestTodaysDaily(_ controller: EdgePanelController) {
         openTodaysDaily()
     }

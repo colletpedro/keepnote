@@ -77,6 +77,8 @@ struct DeckGeometry: Equatable {
     /// flush with: the cursor is over a tab from the lift's width away too.
     var lift: CGFloat = EdgeMetrics.hoverLift
     var edge: ScreenEdge = .right
+    /// How far the raised tabs were taken out of the edge, if any were.
+    var outset: CGFloat = 0
 
     /// The pinned block this was laid out around, if there was one.
     var pinned: PinnedBlock?
@@ -184,6 +186,8 @@ struct DeckGeometry: Equatable {
         /// How far a hovered tab reaches out of the edge: Settings > Deck >
         /// Hover magnification. Nothing, with it off.
         var hoverLift = EdgeMetrics.hoverLift
+        /// How much further out of the edge the `raised` tabs stand.
+        var outset = EdgeMetrics.groupOutset
     }
 
     /// How many tabs `usableHeight` holds before the deck has to scroll.
@@ -203,19 +207,21 @@ struct DeckGeometry: Equatable {
         hover: Hover? = nil,
         stickyFirst: Bool = false,
         whole: Set<Int> = [],
+        raised: Set<Int> = [],
         edge: ScreenEdge,
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         var geometry = layout(
             count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
             lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst,
-            whole: whole, metrics: metrics)
+            whole: whole, raised: raised, metrics: metrics)
         geometry.frames = geometry.frames.map { edge.mirrored($0, in: columnWidth) }
         geometry.edge = edge
         return geometry
     }
 
-    /// The layout for the right edge.
+    /// The layout for the right edge. The `raised` tabs (an open group's notes)
+    /// stand `metrics.outset` further out of the edge than the others.
     static func layout(
         count: Int,
         usableHeight: CGFloat,
@@ -226,7 +232,32 @@ struct DeckGeometry: Equatable {
         hover: Hover? = nil,
         stickyFirst: Bool = false,
         whole: Set<Int> = [],
+        raised: Set<Int> = [],
         metrics: Metrics = Metrics()
+    ) -> DeckGeometry {
+        var geometry = flatLayout(
+            count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
+            lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst,
+            whole: whole, metrics: metrics)
+        for index in raised where geometry.frames.indices.contains(index) {
+            geometry.frames[index].origin.x -= metrics.outset
+            geometry.frames[index].size.width += metrics.outset
+        }
+        geometry.outset = raised.isEmpty ? 0 : metrics.outset
+        return geometry
+    }
+
+    private static func flatLayout(
+        count: Int,
+        usableHeight: CGFloat,
+        columnWidth: CGFloat,
+        scrollOffset: CGFloat,
+        lowerScrollOffset: CGFloat,
+        pinned: PinnedBlock?,
+        hover: Hover?,
+        stickyFirst: Bool,
+        whole: Set<Int>,
+        metrics: Metrics
     ) -> DeckGeometry {
         if let pinned, pinned.count > 0, pinned.above + pinned.count <= count {
             return layoutAround(

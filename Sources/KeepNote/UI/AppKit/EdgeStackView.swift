@@ -38,6 +38,9 @@ final class EdgeStackView: NSView {
     /// What the cards draw: the notes and groups the plan names.
     private var content = DeckContent()
     private var overflowCard: OverflowCardView?
+    /// The strip tying an open group's notes to its header.
+    private var rail: GroupRailView?
+    var railForTesting: GroupRailView? { rail }
     private var plusButton: PlusButtonView?
     /// Today's Daily, the round calendar button beside the "+".
     private var dailyButton: PlusButtonView?
@@ -94,9 +97,10 @@ final class EdgeStackView: NSView {
 
     override func accessibilityChildren() -> [Any]? {
         guard state == .fanned else { return [] }
+        // An open group's colour button is a stop of its own, right after its header.
         var children: [Any] = cards.enumerated()
             .filter { geometry.alphas.indices.contains($0.offset) && geometry.alphas[$0.offset] > 0.01 }
-            .map(\.element)
+            .flatMap { pair -> [NSView] in [pair.element] + ((pair.element as? GroupCardView)?.colorButton.map { [$0] } ?? []) }
         if let overflowCard, !overflowCard.isHidden { children.append(overflowCard) }
         children += [plusButton as Any?, dailyButton as Any?].compactMap { $0 }
         return children
@@ -158,7 +162,7 @@ final class EdgeStackView: NSView {
     /// hovering opens it and scrolled into view, and VoiceOver told.
     private func showKeyboardFocus() {
         let stop = keyboardStop
-        for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }].joined() {
+        for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }, colorButtons as [NSView]].joined() {
             (view as? KeyboardFocusable)?.showsKeyboardFocus = view === stop
         }
         if let card = stop as? DeckTabView, let index = cards.firstIndex(of: card) {
@@ -173,7 +177,7 @@ final class EdgeStackView: NSView {
     /// The ring on the focused stop only, with nothing else moved.
     private func refreshKeyboardRing() {
         let stop = keyboardStop
-        for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }].joined() {
+        for view in [cards as [NSView], [overflowCard, plusButton, dailyButton].compactMap { $0 }, colorButtons as [NSView]].joined() {
             (view as? KeyboardFocusable)?.showsKeyboardFocus = view === stop
         }
     }
@@ -193,6 +197,8 @@ final class EdgeStackView: NSView {
             setScrollOffset(scrollOffset + delta, animated: true)
         }
     }
+
+    private var colorButtons: [GroupColorButtonView] { cards.compactMap { ($0 as? GroupCardView)?.colorButton } }
 
     /// The tabs in the order VoiceOver reads them, for the tests.
     var accessibilityOrderForTesting: [NSView] { (accessibilityChildren() ?? []).compactMap { $0 as? NSView } }
@@ -335,6 +341,7 @@ final class EdgeStackView: NSView {
             hover: hover,
             stickyFirst: plan.stickyHeader,
             whole: plan.wholeIndices,
+            raised: plan.memberIndices,
             edge: edge,
             metrics: metrics
         )
@@ -375,7 +382,13 @@ final class EdgeStackView: NSView {
             // The hovered tab goes over the rest of its part of the column.
             if let raised, let at = mine.firstIndex(of: raised) { mine.append(mine.remove(at: at)) }
             let going = leaving.filter { $0.superview === side }
-            side.subviews = going + mine
+            var ordered: [NSView] = going + mine
+            // The strip is over the group's notes, under the one the cursor is on.
+            if let rail, let railIndex = railSideIndex, side === self.side(forIndex: railIndex) {
+                let at = raised.flatMap { ordered.firstIndex(of: $0) } ?? ordered.count
+                ordered.insert(rail, at: at)
+            }
+            side.subviews = ordered
         }
     }
 
@@ -395,7 +408,62 @@ final class EdgeStackView: NSView {
             card.isHovered = index == geometry.hovered
             card.setTarget(geometry.frames[index], alpha: geometry.alphas[index], animated: animated, config: config)
         }
+        layoutRail(animated: animated, config: config)
         updateOverflowCount()
+    }
+
+    /// The first of the open group's notes: the side the strip is drawn in.
+    private var railSideIndex: Int? {
+        guard let header = entries.firstIndex(where: { if case .header = $0 { return true } else { return false } }),
+              plan.members > 0 else { return nil }
+        return header + 1
+    }
+
+    /// Where the strip goes, for the right edge, mirrored for this one.
+    private var railFrame: NSRect? {
+        guard let first = railSideIndex, plan.members > 0, geometry.frames.indices.contains(first + plan.members - 1) else { return nil }
+        let top = geometry.frames[first].maxY + EdgeMetrics.tabSpacing
+        let bottom = geometry.frames[first + plan.members - 1].minY
+        let width = clip.bounds.width
+        // The geometry's frames are already mirrored; the strip is laid out for
+        // the right edge and mirrored with them.
+        let right = GroupRailView.frame(top: top, bottom: bottom, columnWidth: width, outset: geometry.outset)
+        return edge.mirrored(right, in: width)
+    }
+
+    /// The strip comes with the group: it fades in once the notes have unfolded,
+    /// follows them when they scroll, and goes with them when it closes. With
+    /// Reduce Motion it only fades, like the tabs.
+    private func layoutRail(animated: Bool, config: SpringConfig) {
+        guard let target = railFrame, let ref = plan.open else {
+            removeRail()
+            return
+        }
+        let look = content.group(ref).look
+        if let rail {
+            rail.show(look: look)
+            if animated { rail.move(to: target, alpha: 1, config: config) } else { rail.place(frame: target, alpha: 1) }
+            return
+        }
+        let made = GroupRailView(look: look, edge: edge)
+        rail = made
+        made.place(frame: target, alpha: 0)
+        arrangeSides()
+        if animated {
+            made.move(to: target, alpha: 1, config: .deck, delay: Motion.reduceMotion ? 0 : 0.14)
+        } else {
+            made.place(frame: target, alpha: 1)
+        }
+    }
+
+    private func removeRail() {
+        guard let gone = rail else { return }
+        rail = nil
+        gone.move(to: gone.targetFrame, alpha: 0, config: .deck)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (Motion.reduceMotion ? 0.25 : 0.4)) {
+            gone.stopMotion()
+            gone.removeFromSuperview()
+        }
     }
 
     /// The chip counts what is out of sight, so it doubles as a scroll
@@ -473,7 +541,7 @@ final class EdgeStackView: NSView {
         let tabHeight = EdgeMetrics.tabHeight
         geometry = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: bounds.width,
                                        pinned: plan.pinned, stickyFirst: plan.stickyHeader,
-                                       whole: plan.wholeIndices, edge: edge, metrics: metrics)
+                                       whole: plan.wholeIndices, raised: plan.memberIndices, edge: edge, metrics: metrics)
 
         layoutChrome(showsOverflow: geometry.showsOverflow)
 
@@ -496,6 +564,7 @@ final class EdgeStackView: NSView {
             }
         }
         arrangeSides()
+        layoutRail(animated: false, config: .deck)
 
         if previousOffset != 0 || previousLowerOffset != 0 {
             relayout(scrollOffset: previousOffset, lowerScrollOffset: previousLowerOffset)
@@ -536,6 +605,8 @@ final class EdgeStackView: NSView {
                                      isOpen: entry == .header(ref), height: EdgeMetrics.tabHeight, edge: edge)
             card.onToggle = { [weak self] ref in self?.controller?.toggleGroup(ref) }
             card.onDropNotes = { [weak self] ids in self?.controller?.dropNotes(ids, onGroup: ref) }
+            card.onChooseColor = { [weak self] color in self?.controller?.setColor(color, ofGroup: ref) }
+            card.onColorPopover = { [weak self] open in self?.controller?.colorPopoverChanged(open: open) }
             return card
         }
     }
@@ -876,6 +947,9 @@ final class EdgeStackView: NSView {
         overflowCard?.stopMotion()
         overflowCard?.removeFromSuperview()
         overflowCard = nil
+        rail?.stopMotion()
+        rail?.removeFromSuperview()
+        rail = nil
         hoverLabel.hide()
         for button in roundButtons {
             button.stopMotion()

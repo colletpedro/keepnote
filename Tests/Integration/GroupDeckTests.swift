@@ -185,12 +185,15 @@ func runGroupDeckTests() {
         spin(0.2)
         expect("keyboard: still on its tab, now its header", focused(), "Group Work, 3 notes, open")
         press(125)
-        expect("keyboard: the next stop is inside the group", focused(), "w1")
+        expect("keyboard: the next stop is the header's colour button", focused(), "Group color: Red")
+        press(125)
+        expect("keyboard: then inside the group", focused(), "w1")
         press(125)
         press(125)
         expect("keyboard: through all of it", focused(), "w3")
         press(125)
         expect("keyboard: and out the other end, on the next group's tab", focused(), "Group Home, 1 note, closed")
+        press(126)
         press(126)
         press(126)
         press(126)
@@ -338,4 +341,86 @@ func runGroupAccessibilityTests() {
     fixture.close()
     other.close()
     crowded.close()
+}
+
+// MARK: - The open group's strip, the notes standing out, the colour button
+
+@MainActor
+func runGroupColorTests() {
+    let key = SymmetricKey(size: .bits256)
+    let store = reopened(scratchDirectory().appendingPathComponent("group-color.sqlite"), key: key)
+    let work = store.createGroup(name: "Work", color: .red)!
+    store.setDailyTemplate(nil, color: .sky)
+    for title in ["w1", "w2", "w3"] { _ = try! store.create(title: title, tags: [], group: work.id) }
+    for title in ["d1", "d2"] { _ = try! store.create(title: title, tags: [DailyNotes.tag], group: nil) }
+    for title in ["loose 1", "loose 2"] { _ = try! store.create(title: title, tags: [], group: nil) }
+    func deck() -> DeckFixture {
+        DeckFixture(notes: store.activeNotes, groups: store.groups, dailyColor: store.dailyTemplate.color)
+    }
+
+    final class Recorder: EdgePanelControllerDelegate {
+        var chosen: [(GroupColor, UUID)] = []
+        func edgePanel(_ controller: EdgePanelController, didActivateNote id: UUID, from tabFrame: NSRect?) {}
+        func edgePanel(_ controller: EdgePanelController, didRequest action: NoteCardView.ContextAction, on id: UUID) {}
+        func edgePanel(_ controller: EdgePanelController, didChoose color: GroupColor, forGroup id: UUID) { chosen.append((color, id)) }
+        func edgePanelDidRequestNewNote(_ controller: EdgePanelController) {}
+        func edgePanelDidRequestTodaysDaily(_ controller: EdgePanelController) {}
+        func edgePanelDidRequestAllNotes(_ controller: EdgePanelController) {}
+        func edgePanelMenu(_ controller: EdgePanelController) -> NSMenu? { nil }
+    }
+    let recorder = Recorder()
+    let opened = deck()
+    opened.controller.delegate = recorder
+    expectTrue("strip: nothing open, no strip", opened.stack.railForTesting == nil && opened.groupCards.allSatisfy { $0.colorButton == nil })
+    _ = opened.groupCards.first { $0.name == "Work" }?.accessibilityPerformPress()
+    spin(0.6)
+    let header = opened.groupCards.first { $0.name == "Work" }!
+    expectTrue("strip: open, there is one, in the colour of the group", opened.stack.railForTesting?.look == .palette(.red))
+    let railFrame = opened.stack.railForTesting!.targetFrame
+    let memberFrames = ["w1", "w2", "w3"].compactMap { name in opened.cards.first { $0.accessibilityLabel() == name }?.frame }
+    expectTrue("strip: it runs from the header's foot to the foot of the last note",
+               railFrame.maxY >= header.frame.minY - 0.5 && abs(railFrame.minY - (memberFrames.map { $0.minY }.min() ?? 0)) < 0.5)
+    expectTrue("strip: and ends on the notes' inner side", abs(railFrame.minX - (memberFrames.map { $0.minX }.min() ?? -99)) < 0.5)
+    expectTrue("strip: it never takes a click", opened.stack.railForTesting?.hitTest(NSPoint(x: 1, y: 1)) == nil)
+    let loose = opened.cards.first { $0.accessibilityLabel() == "loose 1" }!
+    let outsetBy = EdgeMetrics.groupOutset
+    let standOut = memberFrames.allSatisfy { (frame: NSRect) -> Bool in
+        abs(frame.width - loose.frame.width - outsetBy) < 0.01 && frame.maxX == loose.frame.maxX
+    }
+    expectTrue("strip: the group's notes stand out of the edge more than the loose ones", standOut)
+    expectTrue("strip: by 6 to 8 pt", (6...8).contains(EdgeMetrics.groupOutset))
+
+    expectTrue("color: the open header has the button", header.colorButton != nil)
+    let button = header.colorButton!
+    expectTrue("color: at least 24 pt to hit", button.frame.width >= 24 && button.frame.height >= 24)
+    expect("color: VoiceOver says its colour", button.accessibilityLabel(), "Group color: Red")
+    expect("color: and that it is a button", button.accessibilityRole()?.rawValue, NSAccessibility.Role.button.rawValue)
+    let order = opened.stack.accessibilityOrderForTesting
+    expectTrue("color: the keyboard reaches it right after the header",
+               order.firstIndex(of: header).map { order.indices.contains($0 + 1) && order[$0 + 1] === button } == true)
+    button.press()
+    spin(0.3)
+    expect("color: a press asks for the popover", String(header.colorPopoverRequests), "1")
+    header.onChooseColor?(GroupColor.pink)
+    expectTrue("color: a choice reaches the group", recorder.chosen.last?.0 == GroupColor.pink && recorder.chosen.last?.1 == work.id)
+    header.closeColors()
+    opened.controller.cursorDidEnter()   // the cursor is on the deck, as it is when a colour is chosen
+    spin(0.3)
+    expectTrue("color: and closes it", header.colorPopoverForTesting == nil && !opened.controller.colorPopoverOpenForTesting)
+    store.setGroupColor(.pink, id: work.id)
+    opened.controller.update(notes: store.activeNotes, groups: store.groups, dailyColor: store.dailyTemplate.color)
+    spin(0.6)
+    expectTrue("color: the header and the strip take the new colour",
+               opened.groupCards.first { $0.name == "Work" }?.look == .palette(.pink) && opened.stack.railForTesting?.look == .palette(.pink)
+               && opened.groupCards.first { $0.name == "Work" }?.colorButton?.color == .pink)
+    // Closing takes the strip and the button away.
+    _ = opened.groupCards.first { $0.name == "Work" }?.accessibilityPerformPress()
+    spin(0.8)
+    expectTrue("strip: closed, the strip and the button go", opened.stack.railForTesting == nil && opened.groupCards.allSatisfy { $0.colorButton == nil })
+    // Daily has no colour button.
+    _ = opened.groupCards.first { $0.name == "Daily" }?.accessibilityPerformPress()
+    spin(0.6)
+    expectTrue("color: Daily has none", opened.groupCards.first { $0.name == "Daily" }?.colorButton == nil
+               && opened.stack.railForTesting != nil)
+    opened.close()
 }
