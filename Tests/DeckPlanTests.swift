@@ -122,19 +122,19 @@ func runDeckPlanTests() {
     }
     let (many, extraGroups) = crowded(group: 6, others: 80, groupOf: work.id, extraGroups: 2)
     let groupsMany = [work] + extraGroups
-    let tight = plan(many, groups: groupsMany, open: .user(work.id), height: 700)
+    let tight = plan(many, groups: groupsMany, open: .user(work.id), height: 1000)
     expectTrue("crowded: the header is there", tight.entries.contains(.header(.user(work.id))))
     expectTrue("crowded: every note of the group is there",
                many.filter { $0.groupID == work.id }.allSatisfy { tight.entries.contains(.note($0.id)) })
     expectTrue("crowded: others left, so the deck does not scroll",
-               tight.dropped > 0 && tight.geometry(usableHeight: 700, columnWidth: 74).mode != .scrolling)
+               tight.dropped > 0 && tight.geometry(usableHeight: 1000, columnWidth: 74).mode != .scrolling)
     expect("crowded: the entries are what is left", String(tight.entries.count), String(1 + 6 + 2 + 80 - tight.dropped))
     // They are kept packed as tight as the deck packs them.
-    let g = tight.geometry(usableHeight: 700, columnWidth: 74)
+    let g = tight.geometry(usableHeight: 1000, columnWidth: 74)
     expectTrue("crowded: down to the minimum slice, no further", g.step >= EdgeMetrics.minimumVisibleSlice - 0.001)
     expectTrue("crowded: and as many as that holds", {
-        let one = DeckPlan(entries: tight.entries + [.note(UUID())], pinned: nil, stickyHeader: false, counts: [:], open: nil, dropped: 0)
-        return one.geometry(usableHeight: 700, columnWidth: 74).mode == .scrolling
+        let one = DeckPlan(entries: tight.entries + [.note(UUID())], pinned: nil, stickyHeader: false, counts: [:], open: nil, dropped: 0, members: tight.members)
+        return one.geometry(usableHeight: 1000, columnWidth: 74).mode == .scrolling
     }())
     // The ones that stay are the nearest to the group.
     let keptNotes = many.indices.filter { tight.entries.contains(.note(many[$0].id)) }
@@ -193,7 +193,7 @@ func runDeckPlanTests() {
                                 let g = DeckGeometry.layout(
                                     count: p.entries.count, usableHeight: height, columnWidth: 74, scrollOffset: offset,
                                     lowerScrollOffset: lowerOffset, pinned: p.pinned, stickyFirst: p.stickyHeader,
-                                    headers: p.headerIndices, edge: edge)
+                                    whole: p.wholeIndices, edge: edge)
                                 let frame = g.frames[headerAt]
                                 // Whole and in the column, at every stage: nothing covers it.
                                 if g.alphas[headerAt] < 0.999 || frame.minY < -0.01 || frame.maxY > g.columnHeight + 0.01
@@ -216,17 +216,21 @@ func runDeckPlanTests() {
     expectTrue("header: in the column, in view, however the deck is scrolled, either edge \(offscreen.prefix(3))", offscreen.isEmpty)
     expectTrue("header: the notes that scroll are clipped under it \(steady.prefix(3))", steady.isEmpty)
 
-    // A small screen and a big group, packed: the header is whole and only the notes under it give way.
-    let packedPlan = DeckPlan.make(notes: Array(big.prefix(8)), groups: [work], open: .user(work.id), usableHeight: 520)
+    // A small screen, a group and tabs that pack: the group stays at the full stage and only the others give way.
+    let packedNotes = (0..<3).map { _ in N(groupID: work.id) } + (0..<5).map { _ in N() }
+    let packedPlan = DeckPlan.make(notes: packedNotes, groups: [work], open: .user(work.id), usableHeight: 700)
     for edge in [ScreenEdge.right, .left] {
-        let g = packedPlan.geometry(usableHeight: 520, columnWidth: 74, edge: edge)
+        let g = packedPlan.geometry(usableHeight: 700, columnWidth: 74, edge: edge)
         let at = packedPlan.entries.firstIndex(of: .header(.user(work.id))) ?? 0
-        expectTrue("header: packed deck, either edge — it is a deck that packs", g.mode == .packed)
-        expect("header: packed deck, whole slice (\(edge))", f(g.slices[at]), f(EdgeMetrics.tabHeight))
+        expectTrue("header: packed deck, either edge — it is a deck that packs (\(edge))", g.mode == .packed && packedPlan.dropped == 0)
+        for offset in 0...3 {
+            expect("header: packed deck, the header and its notes show whole (\(edge), \(offset))",
+                   f(g.slices[at + offset]), f(EdgeMetrics.tabHeight))
+        }
         expectTrue("header: packed deck, the first note starts below it (\(edge))",
                    g.frames[at + 1].maxY <= g.frames[at].minY + 0.01)
-        expectTrue("header: packed deck, the notes under it are the ones that overlap (\(edge))",
-                   g.slices[at + 1] < EdgeMetrics.tabHeight)
+        expectTrue("header: packed deck, the tabs after the group are the ones that overlap (\(edge))",
+                   g.slices[at + 4] < EdgeMetrics.tabHeight)
     }
 
     // A group too big for the screen: the others are gone, the header stays and the notes scroll.
@@ -253,6 +257,62 @@ func runDeckPlanTests() {
     // A group that fits is no different from any other tab.
     let fits = DeckGeometry.layout(count: 6, usableHeight: 926, columnWidth: 74, stickyFirst: true)
     expectTrue("sticky: asked for but not needed, the deck is as it is", fits == DeckGeometry.layout(count: 6, usableHeight: 926, columnWidth: 74))
+
+    // MARK: The open group's notes are always at the full stage
+
+    for size in [2, 5, 15] {
+        for height in [560, 926, 1300] as [CGFloat] {
+            for edge in [ScreenEdge.right, .left] {
+                let list = (0..<size).map { _ in N(groupID: work.id) } + (0..<12).map { _ in N() }
+                let p = DeckPlan.make(notes: list, groups: [work, home], open: .user(work.id), usableHeight: height)
+                let label = "\(size) notes, \(Int(height)) pt, \(edge)"
+                let g = p.geometry(usableHeight: height, columnWidth: 74, edge: edge)
+                let at = p.entries.firstIndex(of: .header(.user(work.id)))!
+                let wholeTabs = (at...(at + size)).allSatisfy { index in
+                    g.frames[index].height == EdgeMetrics.tabHeight && g.slices[index] == EdgeMetrics.tabHeight
+                }
+                expectTrue("group full: the header and every note at 104 pt, none overlapped (\(label))", wholeTabs)
+                let apart = ((at + 1)...(at + size)).allSatisfy { index in
+                    g.frames[index].maxY <= g.frames[index - 1].minY + 0.01 && g.frames[index].maxY >= g.frames[index - 1].minY - 6.01 - 0.01
+                }
+                expectTrue("group full: and spaced as a spaced deck is (\(label))", apart)
+                expectTrue("group full: all of them are still on the deck (\(label))",
+                           list.prefix(size).allSatisfy { p.entries.contains(.note($0.id)) })
+                // Room first from the other tabs: they pack, then leave; the group scrolls only when
+                // it alone does not fit.
+                let alone = CGFloat(size + 1) * (EdgeMetrics.tabHeight + EdgeMetrics.tabSpacing) - EdgeMetrics.tabSpacing
+                let room = height - EdgeMetrics.plusTopMargin - EdgeMetrics.plusDiameter
+                if alone <= room {
+                    expectTrue("group full: it fits, so it does not scroll or stick (\(label))", !p.stickyHeader)
+                    expectTrue("group full: it fits, so what is not the group is what gave way (\(label))",
+                               g.mode != .scrolling)
+                } else {
+                    expectTrue("group full: it does not fit, so the others are all gone and it scrolls under the header (\(label))",
+                               p.stickyHeader && p.entries.count == size + 1 && g.mode == .scrolling && g.maxScrollOffset > 0)
+                }
+                for offset in [0, 70, 99_999] as [CGFloat] where p.stickyHeader {
+                    let scrolled = DeckGeometry.layout(count: p.entries.count, usableHeight: height, columnWidth: 74,
+                                                       scrollOffset: offset, stickyFirst: true, whole: p.wholeIndices, edge: edge)
+                    expectTrue("group full: scrolled by \(Int(offset)), still full size (\(label))",
+                               scrolled.frames.allSatisfy { $0.height == EdgeMetrics.tabHeight }
+                               && scrolled.slices.allSatisfy { $0 == EdgeMetrics.tabHeight })
+                }
+            }
+        }
+    }
+    // The others give way before the group does: packed first, then gone, the farthest first.
+    do {
+        let list = (0..<5).map { _ in N(groupID: work.id) } + (0..<30).map { _ in N() }
+        var kept: [Int] = []
+        for height in stride(from: 700, through: 1300, by: 100) {
+            let p = DeckPlan.make(notes: list, groups: [work], open: .user(work.id), usableHeight: CGFloat(height))
+            kept.append(p.entries.count)
+            expectTrue("group full: the notes kept are the first ones after the group (\(height))",
+                       list.dropFirst(5).enumerated().allSatisfy { index, note in
+                           p.entries.contains(.note(note.id)) == (index < p.entries.count - 6) })
+        }
+        expectTrue("group full: more room, more of the others stay \(kept)", kept == kept.sorted())
+    }
 
     // MARK: The block and an open group
 

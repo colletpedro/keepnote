@@ -61,8 +61,9 @@ protocol DeckNote: PinItem {
 /// An open group takes its tab's place: its header, then its notes. Its notes
 /// come first for room. The other tabs stay, packed as tight as the deck packs
 /// them, for as long as they fit; those that do not leave, the farthest from
-/// the group first. The header never leaves: if even the group alone does not
-/// fit, its notes scroll under it.
+/// the group first. The group itself is never packed: its header and notes stay
+/// at the full stage. The header never leaves: if even the group alone does not
+/// fit, its notes scroll under it, at full size.
 struct DeckPlan: Equatable {
     /// Every tab, top to bottom, the pinned block in its place among them.
     var entries: [DeckEntry]
@@ -76,6 +77,8 @@ struct DeckPlan: Equatable {
     var open: DeckGroupRef?
     /// Tabs that left because the open group needs the room.
     var dropped: Int
+    /// How many of the open group's notes follow its header.
+    var members: Int = 0
 
     static let empty = DeckPlan(entries: [], pinned: nil, stickyHeader: false, counts: [:], open: nil, dropped: 0)
 
@@ -85,13 +88,20 @@ struct DeckPlan: Equatable {
         metrics: DeckGeometry.Metrics = .init()
     ) -> DeckGeometry {
         DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                            pinned: pinned, stickyFirst: stickyHeader, headers: headerIndices, edge: edge,
+                            pinned: pinned, stickyFirst: stickyHeader, whole: wholeIndices, edge: edge,
                             metrics: metrics)
     }
 
-    /// Where the open group's header is among the tabs: it is never covered.
-    var headerIndices: Set<Int> {
-        Set(entries.indices.filter { if case .header = entries[$0] { return true } else { return false } })
+    /// The open group's header and its notes among the tabs: they always show
+    /// whole, at the full stage, and nothing covers them.
+    var wholeIndices: Set<Int> {
+        Self.wholeIndices(of: entries, members: members)
+    }
+
+    static func wholeIndices(of entries: [DeckEntry], members: Int) -> Set<Int> {
+        guard let header = entries.firstIndex(where: { if case .header = $0 { return true } else { return false } })
+        else { return [] }
+        return Set(header...min(entries.count - 1, header + members))
     }
 
     // MARK: - Making the plan
@@ -178,9 +188,9 @@ struct DeckPlan: Equatable {
         if let openSlot {
             while true {
                 let (entries, pinned) = assemble(kept)
-                let headers = Set(entries.indices.filter { if case .header = entries[$0] { return true } else { return false } })
+                let whole = wholeIndices(of: entries, members: slots[openSlot].entries.count - 1)
                 let g = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                                            pinned: pinned, headers: headers, metrics: metrics)
+                                            pinned: pinned, whole: whole, metrics: metrics)
                 if g.mode != .scrolling { break }
                 // The group has priority: the tab farthest from it goes; of two
                 // as far, the one below, nearer the "+".
@@ -198,6 +208,7 @@ struct DeckPlan: Equatable {
         }
         let (entries, pinned) = assemble(kept, allAbove: sticky)
         return DeckPlan(entries: entries, pinned: pinned, stickyHeader: sticky, counts: counts,
-                        open: openSlot == nil ? nil : open, dropped: droppedEntries)
+                        open: openSlot == nil ? nil : open, dropped: droppedEntries,
+                        members: openSlot.map { slots[$0].entries.count - 1 } ?? 0)
     }
 }

@@ -331,7 +331,9 @@ func runGroupAccessibilityTests() {
     expectTrue("ax: and every note of the open group is",
                (0..<6).allSatisfy { index in drawn.contains { $0.accessibilityLabel() == "w\(index)" } })
     let treeNames = Set(drawn.compactMap { $0.accessibilityLabel() })
-    expect("ax: the tree is exactly the notes the deck draws", String(treeNames.count), String(crowded.cards.count))
+    // A group's notes are never packed: the ones that do not fit scroll out of sight, and out of the tree.
+    expect("ax: the tree is exactly the notes the deck draws", String(treeNames.count),
+           String(crowded.cards.filter { $0.alphaValue > 0.01 }.count))
     expectTrue("ax: the header is first", (tree.first as? GroupCardView)?.name == "Work" || tree.contains { ($0 as? GroupCardView)?.isOpen == true })
     fixture.close()
     other.close()

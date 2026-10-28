@@ -334,7 +334,7 @@ final class EdgeStackView: NSView {
             pinned: plan.pinned,
             hover: hover,
             stickyFirst: plan.stickyHeader,
-            headers: plan.headerIndices,
+            whole: plan.wholeIndices,
             edge: edge,
             metrics: metrics
         )
@@ -473,7 +473,7 @@ final class EdgeStackView: NSView {
         let tabHeight = EdgeMetrics.tabHeight
         geometry = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: bounds.width,
                                        pinned: plan.pinned, stickyFirst: plan.stickyHeader,
-                                       headers: plan.headerIndices, edge: edge, metrics: metrics)
+                                       whole: plan.wholeIndices, edge: edge, metrics: metrics)
 
         layoutChrome(showsOverflow: geometry.showsOverflow)
 
