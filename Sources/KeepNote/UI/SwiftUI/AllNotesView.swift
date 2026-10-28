@@ -249,11 +249,10 @@ struct AllNotesView: View {
         .listStyle(.inset)
         // Right-clicking inside the selection acts on all of it; on a row
         // outside it, on that row alone. Double-click opens.
-        .contextMenu(forSelectionType: UUID.self) { ids in
-            contextMenu(for: ids)
-        } primaryAction: { ids in
-            ids.subtracting([DailyTemplatePane.rowID]).forEach(actions.open)
-        }
+        .modifier(ListMenu(
+            rowMenu: ExperimentFlags.rowMenu,
+            menu: { contextMenu(for: $0) },
+            open: { $0.subtracting([DailyTemplatePane.rowID]).forEach(actions.open) }))
         .onDeleteCommand {
             let notes = selection.subtracting([DailyTemplatePane.rowID])
             guard !notes.isEmpty else { return }
@@ -270,13 +269,16 @@ struct AllNotesView: View {
     private func noteRow(_ note: Note) -> some View {
         NoteRow(note: note, onTag: showTag)
             .tag(note.id)
-            .onDrag {
+            .modifier(RowDrag(enabled: ExperimentFlags.rowDrag) {
                 // Dragging a selected row takes the whole selection.
                 let ids = selection.contains(note.id)
                     ? results.map(\.id).filter(selection.contains)
                     : [note.id]
                 return NSItemProvider(object: NoteDragPayload.encode(ids) as NSString)
-            }
+            })
+            .modifier(RowMenu(enabled: !ExperimentFlags.rowMenu) {
+                contextMenu(for: selection.contains(note.id) ? selection : [note.id])
+            })
     }
 
     /// The selection's name and how many notes it shows.
@@ -1152,5 +1154,40 @@ private struct ContentUnavailablePlaceholder: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Launch-argument switches (`-KNRowDrag NO`, `-KNRowMenu NO`) for the
+/// notes-that-do-not-open experiment. Absent means the normal behaviour.
+enum ExperimentFlags {
+    static var rowDrag: Bool { UserDefaults.standard.object(forKey: "KNRowDrag") == nil || UserDefaults.standard.bool(forKey: "KNRowDrag") }
+    static var rowMenu: Bool { UserDefaults.standard.object(forKey: "KNRowMenu") == nil || UserDefaults.standard.bool(forKey: "KNRowMenu") }
+}
+
+private struct RowDrag: ViewModifier {
+    let enabled: Bool
+    let provider: () -> NSItemProvider
+    @ViewBuilder func body(content: Content) -> some View {
+        if enabled { content.onDrag(provider) } else { content }
+    }
+}
+
+/// The plain per-row menu that replaces the list-wide one when -KNRowMenu NO.
+private struct RowMenu<Menu: View>: ViewModifier {
+    let enabled: Bool
+    @ViewBuilder let menu: () -> Menu
+    @ViewBuilder func body(content: Content) -> some View {
+        if enabled { content.contextMenu { menu() } } else { content }
+    }
+}
+
+private struct ListMenu<Menu: View>: ViewModifier {
+    let rowMenu: Bool
+    @ViewBuilder let menu: (Set<UUID>) -> Menu
+    let open: (Set<UUID>) -> Void
+    @ViewBuilder func body(content: Content) -> some View {
+        if rowMenu {
+            content.contextMenu(forSelectionType: UUID.self, menu: menu, primaryAction: open)
+        } else { content }
     }
 }
