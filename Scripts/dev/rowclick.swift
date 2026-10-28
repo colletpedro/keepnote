@@ -97,6 +97,103 @@ if a[1] == "drag" {
     exit(0)
 }
 
+if a[1] == "windows" {
+    for w in (attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? [] {
+        let f = frame(w).map { "\(Int($0.minX)),\(Int($0.minY)) \(Int($0.width))x\(Int($0.height))" } ?? ""
+        print("\(role(w)) title=\"\((attr(w, kAXTitleAttribute) as? String) ?? "")\" \(f) children=\(children(w).count)")
+        for c in children(w).prefix(14) { print("   \(role(c)) \"\(text(c))\" desc=\"\((attr(c, kAXDescriptionAttribute) as? String) ?? "")\"") }
+    }
+    exit(0)
+}
+if a[1] == "tab" {
+    // tab <pid> <desc>: real click on the deck tab with that description
+    for w in (attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? [] {
+        for b in children(w) where role(b) == "AXButton" && (attr(b, kAXDescriptionAttribute) as? String) == a[3] {
+            if let f = frame(b) { click(CGPoint(x: f.midX, y: f.midY)); exit(0) }
+        }
+    }
+    print("tab not found"); exit(5)
+}
+/// Deck checks: `deck <pid> <n> <right|left> [group name]`. Hover the edge, click a note tab with real mouse
+/// events, and see that a window holding that note's title is on screen within 1 s; then close it.
+func has(_ e: AXUIElement, _ s: String, _ d: Int = 0) -> Bool {
+    for k in [kAXTitleAttribute, kAXValueAttribute, kAXDescriptionAttribute] { if (attr(e, k) as? String) == s { return true } }
+    return d < 8 && children(e).contains { has($0, s, d + 1) }
+}
+func press(_ e: AXUIElement, titled t: String, _ d: Int = 0) -> Bool {
+    if role(e) == "AXButton", (attr(e, kAXTitleAttribute) as? String) == t || (attr(e, kAXDescriptionAttribute) as? String) == t { return AXUIElementPerformAction(e, kAXPressAction as CFString) == .success }
+    return d < 8 && children(e).contains { press($0, titled: t, d + 1) }
+}
+func tabs(_ app: AXUIElement) -> (AXUIElement, [AXUIElement])? {
+    for w in (attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? [] {
+        let b = children(w).filter { role($0) == "AXButton" && !((attr($0, kAXDescriptionAttribute) as? String) ?? "").isEmpty }
+        if b.count >= 3 { return (w, b) }
+    }
+    return nil
+}
+if a[1] == "deck" {
+    let n = Int(a[3])!, right = a[4] == "right"
+    let scr = NSScreen.screens[0].frame
+    let hover = CGPoint(x: right ? scr.maxX - 6 : scr.minX + 6, y: scr.height / 2)
+    func move(_ p: CGPoint) { CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: p, mouseButton: .left)?.post(tap: .cghidEventTap) }
+    func closeNotes() { for w in (attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? [] where tabs(app)?.0 != nil && !CFEqual(tabs(app)!.0, w) && (attr(w, kAXTitleAttribute) as? String) != "All Notes" { _ = press(w, titled: "Close") } }
+    func expand() -> (AXUIElement, [AXUIElement])? {
+        for _ in 0..<8 { move(CGPoint(x: hover.x, y: hover.y + 3)); usleep(80_000); move(hover); usleep(350_000); if let t = tabs(app) { return t } }
+        return nil
+    }
+    if a.count > 5, let (_, bs) = expand(), let g = bs.first(where: { (attr($0, kAXDescriptionAttribute) as? String) == "Group \(a[5])" }), let f = frame(g) {
+        click(CGPoint(x: f.midX, y: f.midY)); sleep(1)
+    }
+    var fails = 0, done = 0
+    for i in 0..<n {
+        closeNotes(); usleep(300_000)
+        guard let (_, bs) = expand() else { print(String(format: "%02d FAIL deck never expanded", i + 1)); fails += 1; done += 1; continue }
+        let notes = bs.filter { let d = (attr($0, kAXDescriptionAttribute) as? String) ?? ""; return !d.hasPrefix("Group ") && d != "New Note" && !d.hasPrefix("Today") }
+        guard let b = notes.randomElement(), var f = frame(b), let name = attr(b, kAXDescriptionAttribute) as? String else { print("no note tabs"); exit(4) }
+        // The deck slides out of the edge: wait until the tab has stopped moving and is on the screen.
+        for _ in 0..<30 {
+            usleep(100_000)
+            guard let g = frame(b) else { break }
+            let settled = g == f
+            f = g
+            if settled && scr.contains(CGPoint(x: g.midX, y: g.midY)) { break }
+        }
+        let p = CGPoint(x: f.midX, y: f.midY)
+        move(p); usleep(250_000)
+        var under = "?"
+        var el: AXUIElement?
+        let snap = "p=\(Int(p.x)),\(Int(p.y)) tab=\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height)) windows=" + ((attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? []).map { w in let g = frame(w); return "[\(Int(g?.minX ?? 0)),\(Int(g?.minY ?? 0)) \(Int(g?.width ?? 0))x\(Int(g?.height ?? 0))]" }.joined()
+        if AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(p.x), Float(p.y), &el) == .success, let e = el {
+            var top = e
+            while let par = attr(top, kAXParentAttribute), role(par as! AXUIElement) != "AXApplication" { top = par as! AXUIElement }
+            let tf = frame(top)
+            under = "\(role(e)) \"\((attr(e, kAXDescriptionAttribute) as? String) ?? "")\" in window \(Int(tf?.width ?? 0))x\(Int(tf?.height ?? 0))"
+        }
+        let t0 = Date()
+        click(p)
+        var ok = false
+        while Date().timeIntervalSince(t0) < 1.0 {
+            for w in (attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? [] where children(w).contains(where: { has($0, "Close") }) && has(w, name) { ok = true }
+            if ok { break }; usleep(10_000)
+        }
+        done += 1; if !ok { fails += 1 }
+        var extra = ""
+        if !ok {
+            // Late, or never; and what is on screen instead.
+            let t1 = Date()
+            while Date().timeIntervalSince(t1) < 2 && extra.isEmpty {
+                for w in (attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? [] where has(w, "Close") && has(w, name) { extra = " LATE \(Int(Date().timeIntervalSince(t0) * 1000)) ms" }
+                usleep(50_000)
+            }
+            if extra.isEmpty { extra = " NEVER; under pointer: \(under); before the click: \(snap); after: " + ((attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? []).map { w in let f = frame(w); return "\(Int(f?.width ?? 0))x\(Int(f?.height ?? 0))\(has(w, name) ? "*" : "")" }.joined(separator: " ") }
+        }
+        if ok { extra = " \(Int(Date().timeIntervalSince(t0) * 1000)) ms" }
+        print(String(format: "%02d %@ \"%@\"%@", i + 1, ok ? "ok  " : "FAIL", String(name.prefix(30)), extra))
+        usleep(700_000)
+    }
+    print("FAILS \(fails)/\(done)")
+    exit(0)
+}
 if a[1] == "menu" {
     // menu <pid> <item>: open the reading pane's menu button (the one that is not Sort) and press the item.
     func all(_ e: AXUIElement, _ out: inout [AXUIElement]) { if role(e) == "AXMenuButton", (attr(e, kAXTitleAttribute) as? String) != "Sort" { out.append(e) }; children(e).forEach { all($0, &out) } }
@@ -157,7 +254,7 @@ if a[1] == "drop" {
 }
 
 let n = a.count > 3 ? Int(a[3])! : 30
-let interval = a.count > 4 ? Double(a[4])! : 1.0
+let interval = a.count > 4 ? Double(a[4]) ?? 1.0 : 1.0
 var rng = SystemRandomNumberGenerator()
 var fails = 0, total = 0
 var lastIdx = -1
