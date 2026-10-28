@@ -45,6 +45,7 @@ enum OpenLog {
 // MARK: - The mouse, as the app receives it
 
 import AppKit
+import ObjectiveC
 
 extension OpenLog {
     private static var pressAt: NSPoint?
@@ -73,7 +74,11 @@ extension OpenLog {
         var table: NSTableView?
         var view = hit
         while let current = view {
-            if chain.count < 4 { chain.append(String(String(describing: type(of: current)).prefix(36))) }
+            if chain.count < 5 {
+                let own = class_getMethodImplementation(type(of: current), #selector(NSResponder.mouseDown(with:)))
+                let base = class_getMethodImplementation(NSResponder.self, #selector(NSResponder.mouseDown(with:)))
+                chain.append(String(String(describing: type(of: current)).prefix(30)) + (own != base ? "*" : ""))
+            }
             if table == nil, let found = current as? NSTableView { table = found }
             view = current.superview
         }
@@ -89,6 +94,7 @@ extension OpenLog {
                 return "rows=\(table.selectedRowIndexes.map { String($0) }.joined(separator: ",")) clicked=\(row) inRow=(\(Int(local.x - frame.minX)),\(Int(local.y - frame.minY))) rowSize=(\(Int(frame.width)),\(Int(frame.height))) shouldSelect=\(allowed) enabled=\(table.isEnabled) first=\(window.firstResponder.map { String(String(describing: type(of: $0)).prefix(28)) } ?? "-")"
             } ?? "no-table"
             Self.event("mouse-down", nil, "clicks=\(event.clickCount) \(rows) \(where_)")
+            if let table { swizzleMouseDown(of: type(of: table)) }
             if let table {
                 let before = table.selectedRowIndexes
                 for ms in [30, 80] {
@@ -110,5 +116,31 @@ extension OpenLog {
                 pressAt = nil
             }
         }
+    }
+}
+
+// MARK: - Whether the table itself is given the press
+
+private var swizzled: Set<ObjectIdentifier> = []
+
+extension OpenLog {
+    /// Wraps `mouseDown(with:)` of the list's table class, for that class only:
+    /// a press that reaches it says so, with the selection before and after it
+    /// returns. A press taken by a view above the table never says anything.
+    @MainActor
+    fileprivate static func swizzleMouseDown(of cls: NSTableView.Type) {
+        guard swizzled.insert(ObjectIdentifier(cls)).inserted,
+              let method = class_getInstanceMethod(cls, #selector(NSResponder.mouseDown(with:))) else { return }
+        typealias Original = @convention(c) (AnyObject, Selector, NSEvent) -> Void
+        let original = unsafeBitCast(method_getImplementation(method), to: Original.self)
+        let selector = #selector(NSResponder.mouseDown(with:))
+        let wrapper: @convention(block) (NSTableView, NSEvent) -> Void = { table, event in
+            let row = table.row(at: table.convert(event.locationInWindow, from: nil))
+            let before = table.selectedRowIndexes.map { String($0) }.joined(separator: ",")
+            OpenLog.event("table-mouseDown", nil, "row=\(row) before=\(before)")
+            original(table, selector, event)
+            OpenLog.event("table-mouseDown-returned", nil, "row=\(row) after=\(table.selectedRowIndexes.map { String($0) }.joined(separator: ","))")
+        }
+        class_replaceMethod(cls, selector, imp_implementationWithBlock(wrapper), method_getTypeEncoding(method))
     }
 }
