@@ -133,12 +133,12 @@ final class GroupCardView: DeckTabView, NSPopoverDelegate {
         }
     }
 
-    /// The button sits at the foot of the header, in the tab's own part of it
+    /// The button sits at the top of the header, above the count, in the tab's own part of it
     /// (a hovered header grows outwards from there, the button does not move).
     private func layoutColorButton() {
         guard let colorButton else { return }
         let size = EdgeMetrics.groupColorButton
-        let right = NSRect(x: bounds.width - EdgeMetrics.tabWidth / 2 - size / 2, y: 4, width: size, height: size)
+        let right = NSRect(x: bounds.width - EdgeMetrics.tabWidth / 2 - size / 2, y: bounds.height - 2 - size, width: size, height: size)
         let placed = mirrored(right)
         if colorButton.frame != placed { colorButton.frame = placed }
     }
@@ -302,19 +302,21 @@ final class GroupCardView: DeckTabView, NSPopoverDelegate {
         let textWidth = face.width - 12
         let countZone: CGFloat = 20
         // An open header has its mark at the foot: the name stops above it.
-        let foot: CGFloat = colorButton != nil ? EdgeMetrics.groupColorButton + 8 : (isOpen ? 14 : 0)
+        let foot: CGFloat = isOpen ? (colorButton != nil ? 12 : 14) : 0
+        // The colour button sits above the count, which moves down by its height.
+        let buttonZone: CGFloat = colorButton != nil ? EdgeMetrics.groupColorButton + 2 : 0
         if visibleSlice >= 20 {
-            drawCount(in: NSRect(x: face.minX, y: bounds.maxY - 6 - 15, width: textWidth, height: 15))
+            drawCount(in: NSRect(x: face.minX, y: bounds.maxY - buttonZone - (buttonZone > 0 ? 3 : 6) - 15, width: textWidth, height: 15))
         }
         NoteCardShape.drawTabLabel(
             name,
             in: mirrored(NSRect(x: face.minX, y: foot, width: textWidth, height: bounds.height - foot)),
             slice: visibleSlice,
-            markerZone: countZone,
+            markerZone: buttonZone > 0 ? 17 + buttonZone : countZone,
             color: look.ink,
             context: context
         )
-        if isOpen, colorButton == nil { drawOpenMark(in: face, width: textWidth) }
+        if isOpen { drawOpenMark(in: face, width: textWidth) }
 
         if isHovered {
             look.ink.withAlphaComponent(0.85).setStroke()
