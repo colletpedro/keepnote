@@ -279,10 +279,8 @@ enum ExportService {
             let replacement: String
             if markdown, let link = links[reference.id] {
                 replacement = "\(reference.isImage ? "!" : "")[\(reference.label)](\(encode(link)))"
-            } else if reference.isImage {
-                replacement = "[" + (reference.label.isEmpty ? L("Image") : L("Image: %@", reference.label)) + "]"
             } else {
-                replacement = "[" + L("File: %@", reference.label.isEmpty ? L("Attachment") : reference.label) + "]"
+                replacement = AttachmentText.words(for: reference)
             }
             text.replaceCharacters(in: reference.range, with: replacement)
         }

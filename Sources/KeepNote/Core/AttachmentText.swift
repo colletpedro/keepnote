@@ -121,6 +121,16 @@ enum AttachmentText {
         return ns.replacingCharacters(in: reference.range, with: replaced)
     }
 
+    /// What stands in for an attachment that is not drawn or written out, in
+    /// words: "[Image: a red barn]", "[File: Invoice.pdf]". `name` is the
+    /// file's own name, said for a file whose line has no label.
+    static func words(for reference: Reference, name: String? = nil) -> String {
+        if reference.isImage {
+            return "[" + (reference.label.isEmpty ? L("Image") : L("Image: %@", reference.label)) + "]"
+        }
+        return "[" + L("File: %@", reference.label.isEmpty ? (name ?? L("Attachment")) : reference.label) + "]"
+    }
+
     /// The 25 MB a single attachment may weigh.
     static let maximumSize = 25 * 1024 * 1024
 }

@@ -112,19 +112,10 @@ enum NoteClipboard {
     }
 
     private static func htmlForAttachment(_ reference: AttachmentText.Reference, _ found: Found?) -> String {
-        guard let found else { return "<p>\(MarkdownHTML.escape(words(for: reference)))</p>" }
-        guard found.info.isImage else { return "<p>\(MarkdownHTML.escape(words(for: reference, name: found.info.name)))</p>" }
+        guard let found else { return "<p>\(MarkdownHTML.escape(AttachmentText.words(for: reference)))</p>" }
+        guard found.info.isImage else { return "<p>\(MarkdownHTML.escape(AttachmentText.words(for: reference, name: found.info.name)))</p>" }
         let alt = reference.label.isEmpty ? found.name : reference.label
         return "<p><img src=\"data:\(found.sent.mime);base64,\(found.sent.data.base64EncodedString())\" alt=\"\(MarkdownHTML.escape(alt))\"></p>"
-    }
-
-    /// What stands in for an attachment that is not drawn: "[Image: a barn]".
-    private static func words(for reference: AttachmentText.Reference, name: String? = nil) -> String {
-        if reference.isImage {
-            return "[" + (reference.label.isEmpty ? L("Image") : L("Image: %@", reference.label)) + "]"
-        }
-        let label = reference.label.isEmpty ? (name ?? L("Attachment")) : reference.label
-        return "[" + L("File: %@", label) + "]"
     }
 
     /// The Markdown with each attachment line made a link to a file of its
@@ -138,7 +129,7 @@ enum NoteClipboard {
                 let stem = (item.name as NSString).deletingPathExtension
                 replacement = "![\(stem)](\(ExportNames.linkTarget(item.name)))"
             } else {
-                replacement = words(for: reference, name: found[reference.id]?.info.name)
+                replacement = AttachmentText.words(for: reference, name: found[reference.id]?.info.name)
             }
             text.replaceCharacters(in: reference.range, with: replacement)
         }
@@ -308,10 +299,7 @@ private struct AttributedBuilder {
 
     private func appendAttachment(_ reference: AttachmentText.Reference, to text: NSMutableAttributedString, style: Style, indent: CGFloat) {
         guard let item = found[reference.id], item.info.isImage else {
-            let words = reference.isImage
-                ? "[" + (reference.label.isEmpty ? L("Image") : L("Image: %@", reference.label)) + "]"
-                : "[" + L("File: %@", reference.label.isEmpty ? (found[reference.id]?.info.name ?? L("Attachment")) : reference.label) + "]"
-            line(text, words + "\n", style, indent: indent)
+            line(text, AttachmentText.words(for: reference, name: found[reference.id]?.info.name) + "\n", style, indent: indent)
             return
         }
         let wrapper = FileWrapper(regularFileWithContents: item.data)

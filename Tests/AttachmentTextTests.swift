@@ -46,6 +46,15 @@ func runAttachmentTextTests() {
     expect("describe: the line takes the new description", AttachmentText.references(in: relabeled).first?.label, "A barn at dusk")
     expect("describe: nothing else changes", AttachmentText.removingReferences(from: relabeled), "Intro\nmiddle\nend")
 
+    // What stands in for an attachment with no file.
+    expect("words: an image with a description", AttachmentText.words(for: refs[0]), "[" + L("Image: %@", "A red barn") + "]")
+    let bare = AttachmentText.references(in: AttachmentText.token(id: id, isImage: true, label: ""))[0]
+    expect("words: an image without one", AttachmentText.words(for: bare), "[" + L("Image") + "]")
+    expect("words: a file by its label", AttachmentText.words(for: refs[1], name: "other.pdf"), "[" + L("File: %@", "Invoice (final).pdf") + "]")
+    let bareFile = AttachmentText.references(in: AttachmentText.token(id: other, isImage: false, label: ""))[0]
+    expect("words: a file with no label, by its name", AttachmentText.words(for: bareFile, name: "x.pdf"), "[" + L("File: %@", "x.pdf") + "]")
+    expect("words: and with no name either", AttachmentText.words(for: bareFile), "[" + L("File: %@", L("Attachment")) + "]")
+
     expect("attach: 25 MB at most", String(AttachmentText.maximumSize), String(25 * 1024 * 1024))
     expect("a11y: an image with a description", AccessibilityText.attachment(isImage: true, label: "A barn", name: nil, size: nil), "Image, A barn")
     expect("a11y: an image without one", AccessibilityText.attachment(isImage: true, label: " ", name: "x.png", size: nil), "Image, no description")
