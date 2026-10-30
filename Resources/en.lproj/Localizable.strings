@@ -154,7 +154,7 @@
 "Export All…" = "Export All…";
 "Export Here" = "Export Here";
 "Export Notes" = "Export Notes";
-"Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub.";
+"Export writes plain text, a single document or an archive KeepNote can read back; Export as Markdown… writes a folder for each note, ready for Obsidian. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Export writes plain text, a single document or an archive KeepNote can read back; Export as Markdown… writes a folder for each note, ready for Obsidian. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub.";
 "Export…" = "Export…";
 "Extra Large" = "Extra Large";
 "File" = "File";
@@ -240,7 +240,6 @@
 "Makes a new note" = "Makes a new note";
 "Mark Complete" = "Mark Complete";
 "Mark complete" = "Mark complete";
-"Markdown — one file per note" = "Markdown — one file per note";
 "Merge" = "Merge";
 "Merge “#%@” into “#%@”?" = "Merge “#%@” into “#%@”?";
 "Minimize" = "Minimize";

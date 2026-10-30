@@ -358,10 +358,10 @@ func runGroupArchiveTests() {
     expectTrue("text: says the group", ExportService.plainText(for: inWork, group: "Work").contains("Group: Work"))
     expectTrue("text: no group, no line", !ExportService.plainText(for: loose).contains("Group:"))
     let target = scratchDirectory()
-    try! ExportService.writePerNote(notes: [inWork, loose], format: .markdownPerNote, into: target, groups: [work])
-    let written = try! String(contentsOf: target.appendingPathComponent("in work.md"), encoding: .utf8)
+    try! ExportService.writePerNote(notes: [inWork, loose], into: target, groups: [work])
+    let written = try! String(contentsOf: target.appendingPathComponent("in work.txt"), encoding: .utf8)
     expectTrue("export: a file per note names the group", written.contains("Group: Work"))
-    let looseText = try! String(contentsOf: target.appendingPathComponent("loose.md"), encoding: .utf8)
+    let looseText = try! String(contentsOf: target.appendingPathComponent("loose.txt"), encoding: .utf8)
     expectTrue("export: and a loose note's does not", !looseText.contains("Group:"))
 }
 

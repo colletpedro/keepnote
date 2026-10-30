@@ -162,26 +162,33 @@ func runAttachmentStorageTests() {
         FileManager.default.fileExists(atPath: flat.path, isDirectory: &isDirectory)
         expectTrue("archive: no attachments, one file", !isDirectory.boolValue)
 
-        // Markdown export: the files beside the notes, linked.
+        // Markdown export: a folder per note, the files in it, linked.
         let exportFolder = scratchDirectory()
-        try! ExportService.writePerNote(notes: [store.note(id: note.id)!], format: .markdownPerNote, into: exportFolder, attachments: source)
-        let markdown = try! String(contentsOf: exportFolder.appendingPathComponent("Quarter.md"), encoding: .utf8)
+        let exported = try! ExportService.writeMarkdownFolders(notes: [store.note(id: note.id)!], into: exportFolder, attachments: source)
+        let noteFolder = exported[0]
+        let markdown = try! String(contentsOf: noteFolder.appendingPathComponent("Quarter.md"), encoding: .utf8)
         expectTrue("export: the image is linked from the text", markdown.contains("![Sales](attachments/Chart.png)"))
         expectTrue("export: the file too", markdown.contains("[Report.pdf](attachments/Report.pdf)"))
-        expectTrue("export: the image is written there", (try? Data(contentsOf: exportFolder.appendingPathComponent("attachments/Chart.png"))) == png)
-        expectTrue("export: and the file", (try? Data(contentsOf: exportFolder.appendingPathComponent("attachments/Report.pdf"))) == pdf)
+        expectTrue("export: the image is written there", (try? Data(contentsOf: noteFolder.appendingPathComponent("attachments/Chart.png"))) == png)
+        expectTrue("export: and the file", (try? Data(contentsOf: noteFolder.appendingPathComponent("attachments/Report.pdf"))) == pdf)
         expectTrue("export: no attachment ids left in the text", !markdown.contains("attachment:"))
-        // No name starts with a dot, in files or in attachments.
+        // No name starts with a dot, in folders, files or attachments.
         let hidden = try! store.addAttachment(samplePNG(width: 9, height: 9, color: .systemPurple), name: ".secret.png")
         let dotted = try! store.create(title: "..", body: "x\n" + AttachmentText.token(id: hidden.id, isImage: true, label: "s"))
         let dotFolder = scratchDirectory()
-        try! ExportService.writePerNote(notes: [store.note(id: dotted.id)!, store.note(id: plain.id)!, store.note(id: plain.id)!],
-                                        format: .markdownPerNote, into: dotFolder, attachments: source)
+        let dotted2 = try! ExportService.writeMarkdownFolders(
+            notes: [store.note(id: dotted.id)!, store.note(id: plain.id)!, store.note(id: plain.id)!], into: dotFolder, attachments: source)
         let dotNames = (try? FileManager.default.contentsOfDirectory(atPath: dotFolder.path)) ?? []
-        expectTrue("export: no file name starts with a dot", !dotNames.isEmpty && dotNames.allSatisfy { !$0.hasPrefix(".") })
-        expectTrue("export: a repeated title is numbered", dotNames.contains("Plain.md") && dotNames.contains("Plain 2.md"))
+        expectTrue("export: no folder name starts with a dot", !dotNames.isEmpty && dotNames.allSatisfy { !$0.hasPrefix(".") })
+        expectTrue("export: a repeated title is numbered", dotNames.contains("Plain") && dotNames.contains("Plain 2"))
         expectTrue("export: an attachment named with a dot is written without it",
-                   (try? Data(contentsOf: dotFolder.appendingPathComponent("attachments/secret.png"))) != nil)
+                   (try? Data(contentsOf: dotted2[0].appendingPathComponent("attachments/secret.png"))) != nil)
+        // Per-note plain text: the same naming.
+        let textFolder = scratchDirectory()
+        try! ExportService.writePerNote(notes: [store.note(id: dotted.id)!, store.note(id: plain.id)!, store.note(id: plain.id)!], into: textFolder)
+        let textNames = (try? FileManager.default.contentsOfDirectory(atPath: textFolder.path)) ?? []
+        expectTrue("export: no text file starts with a dot", !textNames.isEmpty && textNames.allSatisfy { !$0.hasPrefix(".") })
+        expectTrue("export: and a repeated title is numbered", textNames.contains("Plain.txt") && textNames.contains("Plain 2.txt"))
         // Plain text says what was there.
         let text = ExportService.plainText(for: store.note(id: note.id)!)
         expectTrue("export: plain text names the image", text.contains("[" + L("Image: %@", "Sales") + "]"))

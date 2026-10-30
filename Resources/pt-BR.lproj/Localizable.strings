@@ -154,7 +154,7 @@
 "Export All…" = "Exportar todas…";
 "Export Here" = "Exportar aqui";
 "Export Notes" = "Exportar notas";
-"Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Exportar grava Markdown, texto simples ou um arquivo que o KeepNote consegue ler de volta. Mostrar boas-vindas reabre a janela da primeira abertura. O KeepNote nunca busca atualizações sozinho; Buscar atualizações abre o site dele no navegador, e Relatar um problema abre as issues no GitHub.";
+"Export writes plain text, a single document or an archive KeepNote can read back; Export as Markdown… writes a folder for each note, ready for Obsidian. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Exportar grava texto simples, um documento único ou um arquivo que o KeepNote consegue ler de volta; Exportar como Markdown… grava uma pasta por nota, pronta para o Obsidian. Mostrar boas-vindas reabre a janela da primeira abertura. O KeepNote nunca busca atualizações sozinho; Buscar atualizações abre o site dele no navegador, e Relatar um problema abre as issues no GitHub.";
 "Export…" = "Exportar…";
 "Extra Large" = "Extragrande";
 "File" = "Arquivo";
@@ -240,7 +240,6 @@
 "Makes a new note" = "Cria uma nota nova";
 "Mark Complete" = "Marcar como concluída";
 "Mark complete" = "Concluir";
-"Markdown — one file per note" = "Markdown — um arquivo por nota";
 "Merge" = "Mesclar";
 "Merge “#%@” into “#%@”?" = "Mesclar “#%@” em “#%@”?";
 "Minimize" = "Minimizar";

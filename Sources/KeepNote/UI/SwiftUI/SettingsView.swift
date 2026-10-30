@@ -635,7 +635,7 @@ struct AboutSettingsPane: View {
                 Button(L("Export All Notes\u{2026}"), action: actions.exportAll)
                 Button(L("Show Welcome\u{2026}"), action: actions.showWelcome)
             }
-            HelpNote(text: L("Export writes Markdown, plain text or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub."))
+            HelpNote(text: L("Export writes plain text, a single document or an archive KeepNote can read back; Export as Markdown\u{2026} writes a folder for each note, ready for Obsidian. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub."))
                 .multilineTextAlignment(.center)
                 .padding(.top, 6)
         }

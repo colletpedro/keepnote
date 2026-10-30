@@ -5,8 +5,6 @@ import UniformTypeIdentifiers
 typealias AttachmentSource = (String) -> (AttachmentInfo, Data)?
 
 enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
-    /// One `.md` per note.
-    case markdownPerNote
     /// One `.txt` per note.
     case plainTextPerNote
     /// Every selected note in one document.
@@ -18,7 +16,6 @@ enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .markdownPerNote: return L("Markdown \u{2014} one file per note")
         case .plainTextPerNote: return L("Plain text \u{2014} one file per note")
         case .singleDocument: return L("Single document \u{2014} all selected notes")
         case .archivePackage: return L("KeepNote archive \u{2014} colors, states and dates")
@@ -28,7 +25,7 @@ enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
     /// Per-note formats write into a folder; the other two write one file.
     var writesToDirectory: Bool {
         switch self {
-        case .markdownPerNote, .plainTextPerNote: return true
+        case .plainTextPerNote: return true
         case .singleDocument, .archivePackage: return false
         }
     }
@@ -54,7 +51,7 @@ enum ExportService {
         guard !notes.isEmpty else { return skipped }
         if format.writesToDirectory {
             guard let directory = promptForDirectory() else { return nil }
-            try writePerNote(notes: notes, format: format, into: directory, groups: groups, attachments: attachments)
+            try writePerNote(notes: notes, into: directory, groups: groups)
         } else {
             guard let url = promptForFile(format: format, suggestedName: suggestedName) else { return nil }
             try writeSingleFile(notes: notes, format: format, to: url, dailyTemplate: dailyTemplate, groups: groups,
@@ -92,46 +89,20 @@ enum ExportService {
 
     // MARK: - Writers
 
-    /// Markdown, one file per note: the notes' attachments go into an
-    /// `Attachments` folder beside them, under their own names, and the text
-    /// links to them there. Plain text says what was attached.
-    static func writePerNote(notes: [Note], format: ExportFormat, into directory: URL,
-                             groups: [NoteGroup] = [], attachments: AttachmentSource? = nil) throws {
-        let isMarkdown = format == .markdownPerNote
+    /// Plain text, one file per note; an attachment is said in words. (The
+    /// Markdown export, with its pictures, is `writeMarkdownFolders`.)
+    static func writePerNote(notes: [Note], into directory: URL, groups: [NoteGroup] = []) throws {
         let names = groupNames(groups)
         var usedNames = Set<String>()
-        var links: [String: String] = [:]
-        if isMarkdown, let attachments {
-            links = try writeAttachments(of: notes, from: attachments, into: directory.appendingPathComponent(attachmentsFolder, isDirectory: true))
-        }
         for note in notes {
             let base = ExportNames.unique(ExportNames.component(note.displayTitle, fallback: L("Untitled")), taken: &usedNames)
-            let url = directory.appendingPathComponent("\(base).\(isMarkdown ? "md" : "txt")")
-            let group = note.groupID.flatMap { names[$0] }
-            let contents = isMarkdown ? markdown(for: note, links: links, group: group) : plainText(for: note, group: group)
-            try contents.write(to: url, atomically: true, encoding: .utf8)
+            let url = directory.appendingPathComponent("\(base).txt")
+            try plainText(for: note, group: note.groupID.flatMap { names[$0] }).write(to: url, atomically: true, encoding: .utf8)
         }
     }
 
-    /// The folder a Markdown export writes attachments into, beside the notes.
+    /// The folder a Markdown export writes attachments into, beside each note.
     nonisolated static let attachmentsFolder = "attachments"
-
-    /// Writes each attachment the notes refer to, once, under its own name
-    /// (numbered when two share one). Returns id → relative path.
-    private static func writeAttachments(of notes: [Note], from source: AttachmentSource, into folder: URL) throws -> [String: String] {
-        var links: [String: String] = [:]
-        var taken = Set<String>()
-        for note in notes {
-            for reference in AttachmentText.references(in: note.body) where links[reference.id] == nil {
-                guard let (info, data) = source(reference.id) else { continue }
-                if links.isEmpty { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) }
-                let name = ExportNames.unique(ExportNames.fileName(info.fileName, fallback: L("Attachment")), taken: &taken)
-                try data.write(to: folder.appendingPathComponent(name), options: .atomic)
-                links[reference.id] = attachmentsFolder + "/" + name
-            }
-        }
-        return links
-    }
 
     /// Group names by id, for the exports that say a note's group in words.
     private static func groupNames(_ groups: [NoteGroup]) -> [UUID: String] {
@@ -150,7 +121,7 @@ enum ExportService {
                 .map { markdown(for: $0, group: $0.groupID.flatMap { names[$0] }) }
                 .joined(separator: "\n\n---\n\n")
             try document.write(to: url, atomically: true, encoding: .utf8)
-        case .markdownPerNote, .plainTextPerNote:
+        case .plainTextPerNote:
             // Handled by `writePerNote`.
             return
         }
@@ -233,9 +204,9 @@ enum ExportService {
 
     // MARK: - Renderers
 
-    /// `links` maps attachments to the files written beside the note; one
-    /// that has none is said in words.
-    static func markdown(for note: Note, links: [String: String] = [:], group: String? = nil) -> String {
+    /// A note as Markdown for the single-document export; an attachment is
+    /// said in words.
+    static func markdown(for note: Note, group: String? = nil) -> String {
         var lines = ["# \(note.displayTitle)", ""]
         if let group {
             lines.append(L("Group: %@", group))
@@ -245,7 +216,7 @@ enum ExportService {
             lines.append(note.tags.map { "#\($0)" }.joined(separator: " "))
             lines.append("")
         }
-        lines.append(exportedBody(note.body, links: links, markdown: true))
+        lines.append(exportedBody(note.body, links: [:], markdown: true))
         lines.append("")
         lines.append("---")
         lines.append("")
