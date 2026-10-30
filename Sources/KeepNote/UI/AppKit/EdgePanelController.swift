@@ -273,11 +273,25 @@ final class EdgePanelController: NSObject {
         remake(animated: true)
     }
 
+    /// The header of the open group is as tall as its name needs.
+    private func openHeaderHeight(_ ref: DeckGroupRef?) -> CGFloat {
+        switch ref {
+        case .user(let id)?:
+            guard let group = groups.first(where: { $0.id == id }) else { return EdgeMetrics.tabHeight }
+            return GroupCardView.openHeight(name: group.name, hasColorButton: true)
+        case .daily?:
+            return GroupCardView.openHeight(name: L("Daily"), hasColorButton: false)
+        case nil:
+            return EdgeMetrics.tabHeight
+        }
+    }
+
     /// Works the plan out again from what the deck has and applies it: the
     /// tabs slide to their new places. A group that has run out of notes, or
     /// of room, is no longer open.
     private func remake(animated: Bool) {
-        let made = DeckPlan.make(notes: notes, groups: groups, open: openGroup, usableHeight: usableHeight)
+        let made = DeckPlan.make(notes: notes, groups: groups, open: openGroup, usableHeight: usableHeight,
+                                 headerHeight: openHeaderHeight(openGroup))
         openGroup = made.open
         let madeContent = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: made)
         let before = deckSignature
@@ -595,7 +609,8 @@ final class EdgePanelController: NSObject {
     }
 
     private func rebuildDeck(stagger: Double) {
-        plan = DeckPlan.make(notes: notes, groups: groups, open: openGroup, usableHeight: usableHeight)
+        plan = DeckPlan.make(notes: notes, groups: groups, open: openGroup, usableHeight: usableHeight,
+                             headerHeight: openHeaderHeight(openGroup))
         openGroup = plan.open
         content = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: plan)
         deckSignature = signature()

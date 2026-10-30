@@ -208,13 +208,14 @@ struct DeckGeometry: Equatable {
         stickyFirst: Bool = false,
         whole: Set<Int> = [],
         raised: Set<Int> = [],
+        heights: [Int: CGFloat] = [:],
         edge: ScreenEdge,
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         var geometry = layout(
             count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
             lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst,
-            whole: whole, raised: raised, metrics: metrics)
+            whole: whole, raised: raised, heights: heights, metrics: metrics)
         geometry.frames = geometry.frames.map { edge.mirrored($0, in: columnWidth) }
         geometry.edge = edge
         return geometry
@@ -233,12 +234,13 @@ struct DeckGeometry: Equatable {
         stickyFirst: Bool = false,
         whole: Set<Int> = [],
         raised: Set<Int> = [],
+        heights: [Int: CGFloat] = [:],
         metrics: Metrics = Metrics()
     ) -> DeckGeometry {
         var geometry = flatLayout(
             count: count, usableHeight: usableHeight, columnWidth: columnWidth, scrollOffset: scrollOffset,
             lowerScrollOffset: lowerScrollOffset, pinned: pinned, hover: hover, stickyFirst: stickyFirst,
-            whole: whole, metrics: metrics)
+            whole: whole, heights: heights, metrics: metrics)
         for index in raised where geometry.frames.indices.contains(index) {
             geometry.frames[index].origin.x -= metrics.outset
             geometry.frames[index].size.width += metrics.outset
@@ -257,29 +259,34 @@ struct DeckGeometry: Equatable {
         hover: Hover?,
         stickyFirst: Bool,
         whole: Set<Int>,
+        heights: [Int: CGFloat],
         metrics: Metrics
     ) -> DeckGeometry {
         if let pinned, pinned.count > 0, pinned.above + pinned.count <= count {
             return layoutAround(
                 pinned, count: count, usableHeight: usableHeight, columnWidth: columnWidth,
                 scrollOffset: scrollOffset, lowerScrollOffset: lowerScrollOffset, hover: hover,
-                stickyFirst: stickyFirst, whole: whole, metrics: metrics
+                stickyFirst: stickyFirst, whole: whole, heights: heights, metrics: metrics
             )
         }
         if stickyFirst, count > 1 {
             let plain = layout(count: count, usableHeight: usableHeight, columnWidth: columnWidth,
-                               scrollOffset: scrollOffset, hover: hover, whole: whole, metrics: metrics)
+                               scrollOffset: scrollOffset, hover: hover, whole: whole, heights: heights, metrics: metrics)
             if plain.mode == .scrolling {
                 return stickyLayout(count: count, usableHeight: usableHeight, columnWidth: columnWidth,
-                                    scrollOffset: scrollOffset, hover: hover, whole: whole, metrics: metrics)
+                                    scrollOffset: scrollOffset, hover: hover, whole: whole, heights: heights, metrics: metrics)
             }
             return plain
         }
         let height = metrics.tabHeight
         let spacedStep = height + metrics.spacing
+        func tabHeight(_ index: Int) -> CGFloat { max(height, heights[index] ?? height) }
         // A whole tab is never covered: the tab after it starts a whole step
         // down, so only the other tabs give way when the deck packs.
-        let wholeSteps = whole.filter { $0 >= 0 && $0 < count - 1 }.count
+        let wholeIndices = whole.filter { $0 >= 0 && $0 < count - 1 }
+        let wholeSteps = wholeIndices.count
+        let wholeExtent = wholeIndices.reduce(CGFloat(0)) { $0 + tabHeight($1) + metrics.spacing }
+        let lastHeight = count > 0 ? tabHeight(count - 1) : height
         let packedColumn = max(height, usableHeight - metrics.plusZone)
 
         var mode = Mode.spaced
@@ -287,14 +294,14 @@ struct DeckGeometry: Equatable {
         var column: CGFloat
         var bottom = metrics.plusZone
 
-        let spacedHeight = CGFloat(count) * height + CGFloat(max(0, count - 1)) * metrics.spacing
+        let spacedHeight = (0..<count).reduce(CGFloat(0)) { $0 + tabHeight($1) } + CGFloat(max(0, count - 1)) * metrics.spacing
         if count <= 1 || spacedHeight <= packedColumn {
             column = count == 0 ? 0 : spacedHeight
         } else {
             let flexible = count - 1 - wholeSteps
             // With nothing flexible there is nothing to give: it scrolls.
             let fitting = flexible > 0
-                ? (packedColumn - height - CGFloat(wholeSteps) * spacedStep) / CGFloat(flexible) : 0
+                ? (packedColumn - lastHeight - wholeExtent) / CGFloat(flexible) : 0
             if fitting >= metrics.minimumSlice {
                 mode = .packed
                 step = min(spacedStep, fitting)
@@ -312,15 +319,15 @@ struct DeckGeometry: Equatable {
         var running: CGFloat = 0
         for index in 0..<count {
             tops.append(running)
-            running += whole.contains(index) ? spacedStep : step
+            running += whole.contains(index) ? tabHeight(index) + metrics.spacing : step
         }
-        let content = count == 0 ? 0 : (tops.last ?? 0) + height
+        let content = count == 0 ? 0 : (tops.last ?? 0) + lastHeight
         let maxScroll = max(0, content - column)
         let offset = min(maxScroll, max(0, scrollOffset))
         var hovered: Int?
         if let hover, count > 0 {
             let cursor = column - hover.cursorY + offset
-            let resting = (0..<count).last { tops[$0] <= cursor && cursor <= tops[$0] + height }
+            let resting = (0..<count).last { tops[$0] <= cursor && cursor <= tops[$0] + tabHeight($0) }
             if let index = hover.index ?? resting, index < count { hovered = index }
         }
 
@@ -330,6 +337,7 @@ struct DeckGeometry: Equatable {
         var hidden = 0
         for index in 0..<count {
             let top = tops[index]
+            let height = tabHeight(index)
             let slice = index == count - 1 ? height : min(height, tops[index + 1] - top)
             let y = column - top - height + offset
             let lift = index == hovered ? metrics.hoverLift : 0
@@ -370,6 +378,7 @@ struct DeckGeometry: Equatable {
         hover: Hover?,
         stickyFirst: Bool,
         whole: Set<Int>,
+        heights: [Int: CGFloat],
         metrics: Metrics
     ) -> DeckGeometry {
         let height = metrics.tabHeight
@@ -401,11 +410,14 @@ struct DeckGeometry: Equatable {
         }
         let upperWhole = whole.filter { $0 < above }
         let lowerWhole = Set(whole.filter { $0 >= above + block.count }.map { $0 - above - block.count })
+        let upperHeights = heights.filter { $0.key < above }
+        let lowerHeights = Dictionary(uniqueKeysWithValues: heights.filter { $0.key >= above + block.count }
+            .map { ($0.key - above - block.count, $0.value) })
         func sides(_ room: (upper: CGFloat, lower: CGFloat, shift: CGFloat)) -> (DeckGeometry, DeckGeometry) {
             (layout(count: above, usableHeight: room.upper, columnWidth: columnWidth, scrollOffset: scrollOffset,
-                    stickyFirst: stickyFirst, whole: upperWhole, metrics: side),
+                    stickyFirst: stickyFirst, whole: upperWhole, heights: upperHeights, metrics: side),
              layout(count: below, usableHeight: room.lower, columnWidth: columnWidth, scrollOffset: lowerScrollOffset,
-                    whole: lowerWhole, metrics: side))
+                    whole: lowerWhole, heights: lowerHeights, metrics: side))
         }
 
         var chip = false
@@ -489,18 +501,21 @@ struct DeckGeometry: Equatable {
     /// the room that is left.
     private static func stickyLayout(
         count: Int, usableHeight: CGFloat, columnWidth: CGFloat, scrollOffset: CGFloat, hover: Hover?,
-        whole: Set<Int>, metrics: Metrics
+        whole: Set<Int>, heights: [Int: CGFloat], metrics: Metrics
     ) -> DeckGeometry {
-        let room = metrics.tabHeight + metrics.spacing
+        let headerHeight = max(metrics.tabHeight, heights[0] ?? metrics.tabHeight)
+        let room = headerHeight + metrics.spacing
         let rest = layout(count: count - 1, usableHeight: usableHeight - room, columnWidth: columnWidth,
-                          scrollOffset: scrollOffset, whole: Set(whole.filter { $0 > 0 }.map { $0 - 1 }), metrics: metrics)
+                          scrollOffset: scrollOffset, whole: Set(whole.filter { $0 > 0 }.map { $0 - 1 }),
+                          heights: Dictionary(uniqueKeysWithValues: heights.filter { $0.key > 0 }.map { ($0.key - 1, $0.value) }),
+                          metrics: metrics)
         let header = CGRect(x: columnWidth - metrics.tabWidth, y: rest.columnHeight + metrics.spacing,
-                            width: metrics.tabWidth, height: metrics.tabHeight)
+                            width: metrics.tabWidth, height: headerHeight)
         var geometry = DeckGeometry(
             mode: rest.mode == .scrolling ? .scrolling : .packed,
             step: rest.step,
             frames: [header] + rest.frames,
-            slices: [metrics.tabHeight] + rest.slices,
+            slices: [headerHeight] + rest.slices,
             alphas: [1] + rest.alphas,
             columnHeight: rest.columnHeight + room,
             columnBottom: rest.columnBottom,

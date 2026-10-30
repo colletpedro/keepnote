@@ -679,7 +679,14 @@ MainActor.assumeIsolated {
         @MainActor func renderGroups(_ name: String, notes: [Note], open: DeckGroupRef?, usable: CGFloat = 926, edge: ScreenEdge = .right,
                                      dailyColor: NoteColor = .sky, hoverGroup: Bool = false, groups: [NoteGroup]? = nil) {
             let groups = groups ?? sampleGroups
-            let plan = DeckPlan.make(notes: notes, groups: groups, open: open, usableHeight: usable)
+            var headerHeight = EdgeMetrics.tabHeight
+            switch open {
+            case .user(let id)?:
+                if let group = groups.first(where: { $0.id == id }) { headerHeight = GroupCardView.openHeight(name: group.name, hasColorButton: true) }
+            case .daily?: headerHeight = GroupCardView.openHeight(name: L("Daily"), hasColorButton: false)
+            case nil: break
+            }
+            let plan = DeckPlan.make(notes: notes, groups: groups, open: open, usableHeight: usable, headerHeight: headerHeight)
             let content = DeckContent.make(notes: notes, groups: groups, dailyColor: dailyColor, plan: plan)
             let geometry = plan.geometry(usableHeight: usable, columnWidth: width, edge: edge)
             let size = CGSize(width: width + 40, height: usable)
@@ -733,6 +740,22 @@ MainActor.assumeIsolated {
             let eight = Array(sampleGroups.prefix(2))
             let eightNotes = groupedNotes(inGroups: [8, 2], loose: 1, dailies: 0)
             renderGroups("groups-full-8\(tag)", notes: eightNotes, open: .user(eight[0].id), edge: edge, groups: eight)
+        }
+        // The header as tall as its name: 3, 10 and 25 characters, both edges, and a long one past the limit.
+        for (label, name) in [("3", "Abc"), ("10", "Ten chars!"), ("25", "Twenty-five characters ok"),
+                              ("60", String(repeating: "Wide name ", count: 6))] {
+            for edge in ScreenEdge.allCases {
+                let tag = edge == .right ? "" : "-left"
+                let named = [NoteGroup(name: name, color: .blue, order: 0), NoteGroup(name: "Home", color: .teal, order: 1)]
+                var drafts: [NoteDraft] = (1...3).map { NoteDraft(title: "Note \($0)", groupID: named[0].id) }
+                drafts += [NoteDraft(title: "Home 1", groupID: named[1].id)] + (0..<4).map { NoteDraft(title: titles[$0 % titles.count]) }
+                let store = try! NoteStore(
+                    databaseURL: FileManager.default.temporaryDirectory.appendingPathComponent("keepnote-name-\(UUID().uuidString).sqlite"),
+                    cipher: BodyCipher(key: SymmetricKey(size: .bits256)))
+                for group in named { store.applyIncomingGroup(group, origin: .importer) }
+                let made = try! store.create(drafts)
+                renderGroups("groups-name-\(label)\(tag)", notes: made, open: .user(named[0].id), edge: edge, groups: named)
+            }
         }
         renderGroups("groups-open-small-screen", notes: busy, open: .user(sampleGroups[1].id), usable: 480)
         renderGroups("groups-open-expels-small", notes: busy, open: .user(sampleGroups[0].id), usable: 480)

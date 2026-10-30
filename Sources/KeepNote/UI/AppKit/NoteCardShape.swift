@@ -33,6 +33,13 @@ enum NoteCardShape {
     /// The note's label, rotated to run up the tab: 10.5 pt semibold in the
     /// note's own case, no tracking. `slice` is how much of the tab shows,
     /// from its top; `TabLabel` decides whether the label fits there.
+    static let labelFont = NSFont.systemFont(ofSize: 10.5, weight: .semibold)
+
+    /// How long `text` is on a tab, set on its side.
+    static func labelLength(_ text: String) -> CGFloat {
+        ceil(NSAttributedString(string: text, attributes: [.font: labelFont]).size().width)
+    }
+
     static func drawTabLabel(
         _ text: String,
         in tabRect: NSRect,
@@ -45,7 +52,7 @@ enum NoteCardShape {
         let style = NSMutableParagraphStyle()
         style.lineBreakMode = .byTruncatingTail
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 10.5, weight: .semibold),
+            .font: labelFont,
             .foregroundColor: color,
             .paragraphStyle: style,
         ]

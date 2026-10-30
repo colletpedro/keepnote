@@ -94,6 +94,7 @@ final class GroupCardView: DeckTabView, NSPopoverDelegate {
         setAccessibilityElement(true)
         setAccessibilityRole(.button)
         setAccessibilityRoleDescription(L("group tab"))
+        toolTip = name
         registerForDraggedTypes([.string])
         syncColorButton()
     }
@@ -109,8 +110,27 @@ final class GroupCardView: DeckTabView, NSPopoverDelegate {
         self.count = count
         self.look = look
         self.isOpen = isOpen
+        toolTip = name
         if changed { needsDisplay = true }
         syncColorButton()
+    }
+
+    // MARK: - Height
+
+    /// The zones of an open header the name does not use: the open mark at the
+    /// foot, and above the name the count (and the colour button, for a group
+    /// the user made), each with the label's clear space at both ends.
+    private static func fixedHeight(hasColorButton: Bool) -> CGFloat {
+        let foot: CGFloat = hasColorButton ? 12 : 14
+        let markerZone: CGFloat = hasColorButton ? 17 + EdgeMetrics.groupColorButton + 2 : 20
+        return foot + markerZone + 2 * TabLabel.padding
+    }
+
+    /// How tall the header of an open group is: tall enough for its whole
+    /// name, a note's height at least and `openHeaderMaxHeight` at most.
+    static func openHeight(name: String, hasColorButton: Bool) -> CGFloat {
+        let wanted = ceil(NoteCardShape.labelLength(name)) + 1 + fixedHeight(hasColorButton: hasColorButton)
+        return min(EdgeMetrics.openHeaderMaxHeight, max(EdgeMetrics.tabHeight, wanted))
     }
 
     // MARK: - Colour button

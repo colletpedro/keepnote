@@ -424,3 +424,39 @@ func runGroupColorTests() {
                && opened.stack.railForTesting != nil)
     opened.close()
 }
+
+// MARK: - The open header grows to show the name
+
+@MainActor
+func runGroupHeaderNameTests() {
+    let key = SymmetricKey(size: .bits256)
+    let store = reopened(scratchDirectory().appendingPathComponent("group-name.sqlite"), key: key)
+    let names = ["Abc", "Ten chars!", "Twenty-five characters ok"]
+    precondition(names.map(\.count) == [3, 10, 25])
+    for name in names { _ = store.createGroup(name: name, color: .blue) }
+    for group in store.groups { _ = try! store.create(title: "n of \(group.name)", tags: [], group: group.id) }
+    var heights: [CGFloat] = []
+    for name in names {
+        let fixture = DeckFixture(notes: store.activeNotes, groups: store.groups, dailyColor: store.dailyTemplate.color)
+        _ = fixture.groupCards.first { $0.name == name }?.accessibilityPerformPress()
+        spin(0.6)
+        let header = fixture.groupCards.first { $0.name == name }!
+        heights.append(header.frame.height)
+        let expected = GroupCardView.openHeight(name: name, hasColorButton: true)
+        expectTrue("name \(name.count): the open header is as tall as the name needs", abs(header.frame.height - expected) < 0.5)
+        expectTrue("name \(name.count): and the deck's geometry says the same",
+                   abs(fixture.stack.geometry.frames[fixture.stack.accessibilityOrderForTesting.firstIndex { $0 === header } ?? 0].height - expected) < 0.5)
+        expect("name \(name.count): the full name is the hover tip", header.toolTip ?? "", name)
+        expectTrue("name \(name.count): and is read by VoiceOver", header.accessibilityTextForTesting.contains(name))
+        expectTrue("name \(name.count): the colour button keeps its 24 pt at the top",
+                   (header.colorButton?.frame.width ?? 0) >= 24 && abs((header.colorButton?.frame.maxY ?? 0) - (header.bounds.height - 2)) < 0.5)
+        let rest = fixture.cards.filter { $0.accessibilityLabel() != nil }
+        expectTrue("name \(name.count): notes stay a note's height", rest.allSatisfy { $0.frame.height == EdgeMetrics.tabHeight })
+        fixture.close()
+    }
+    expectTrue("name: 3 characters is a note's height", heights[0] == EdgeMetrics.tabHeight)
+    expectTrue("name: longer names, taller headers, none past 180 pt",
+               heights[0] <= heights[1] && heights[1] < heights[2] && heights.allSatisfy { $0 <= EdgeMetrics.openHeaderMaxHeight })
+    expectTrue("name: past the limit the height stops at it",
+               GroupCardView.openHeight(name: String(repeating: "W", count: 60), hasColorButton: true) == EdgeMetrics.openHeaderMaxHeight)
+}

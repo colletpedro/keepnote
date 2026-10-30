@@ -314,6 +314,45 @@ func runDeckPlanTests() {
         expectTrue("group full: more room, more of the others stay \(kept)", kept == kept.sorted())
     }
 
+    // MARK: A header as tall as its name
+
+    for headerHeight in [EdgeMetrics.tabHeight, 131, 180] as [CGFloat] {
+        for height in [560, 926, 1300] as [CGFloat] {
+            for edge in [ScreenEdge.right, .left] {
+                let list = (0..<4).map { _ in N(groupID: work.id) } + (0..<12).map { _ in N() }
+                let p = DeckPlan.make(notes: list, groups: [work, home], open: .user(work.id), usableHeight: height,
+                                      headerHeight: headerHeight)
+                let label = "header \(Int(headerHeight)), \(Int(height)) pt, \(edge)"
+                let g = p.geometry(usableHeight: height, columnWidth: 74, edge: edge)
+                let at = p.entries.firstIndex(of: .header(.user(work.id)))!
+                expectTrue("tall header: the header is its real height, whole (\(label))",
+                           g.frames[at].height == headerHeight && g.slices[at] == headerHeight)
+                expectTrue("tall header: the notes after it stay a note's height, a gap under it (\(label))",
+                           ((at + 1)...(at + 4)).allSatisfy { g.frames[$0].height == EdgeMetrics.tabHeight && g.slices[$0] == EdgeMetrics.tabHeight }
+                           && abs(g.frames[at].minY - g.frames[at + 1].maxY - EdgeMetrics.tabSpacing) < 0.01)
+                expectTrue("tall header: nothing overlaps it (\(label))",
+                           (0..<(p.entries.count - 1)).filter { $0 >= at && $0 <= at + 4 }.allSatisfy {
+                               g.frames[$0 + 1].maxY <= g.frames[$0].minY + 0.01 })
+                let room = height - EdgeMetrics.plusTopMargin - EdgeMetrics.plusDiameter
+                let alone = headerHeight + 4 * (EdgeMetrics.tabHeight + EdgeMetrics.tabSpacing)
+                if alone > room {
+                    expectTrue("tall header: too much for the screen, it sticks and the notes scroll (\(label))", p.stickyHeader)
+                } else {
+                    expectTrue("tall header: it all fits, so it does not stick (\(label))", !p.stickyHeader)
+                }
+                let scrolled = DeckGeometry.layout(count: p.entries.count, usableHeight: height, columnWidth: 74,
+                                                   scrollOffset: 99_999, stickyFirst: p.stickyHeader, whole: p.wholeIndices,
+                                                   heights: p.heights, edge: edge)
+                if p.stickyHeader {
+                    expectTrue("tall header: stuck, it keeps its height scrolled (\(label))",
+                               scrolled.frames[0].height == headerHeight && scrolled.slices[0] == headerHeight)
+                }
+            }
+        }
+    }
+    expectTrue("tall header: a note's height is no change at all",
+               DeckPlan.make(notes: [N(groupID: work.id)], groups: [work], open: .user(work.id), usableHeight: 926).heights.isEmpty)
+
     // MARK: The block and an open group
 
     var around = (0..<12).map { _ in N() }

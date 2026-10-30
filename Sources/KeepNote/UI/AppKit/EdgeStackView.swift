@@ -341,7 +341,7 @@ final class EdgeStackView: NSView {
             hover: hover,
             stickyFirst: plan.stickyHeader,
             whole: plan.wholeIndices,
-            raised: plan.memberIndices,
+            raised: plan.memberIndices, heights: plan.heights,
             edge: edge,
             metrics: metrics
         )
@@ -404,7 +404,7 @@ final class EdgeStackView: NSView {
     private func layoutCards(animated: Bool, config: SpringConfig = .scroll) {
         for (index, card) in cards.enumerated() {
             // A hovered tab is over its neighbours: it shows whole.
-            card.visibleSlice = index == geometry.hovered ? EdgeMetrics.tabHeight : geometry.slices[index]
+            card.visibleSlice = index == geometry.hovered ? geometry.frames[index].height : geometry.slices[index]
             card.isHovered = index == geometry.hovered
             card.setTarget(geometry.frames[index], alpha: geometry.alphas[index], animated: animated, config: config)
         }
@@ -538,10 +538,10 @@ final class EdgeStackView: NSView {
         self.usableHeight = usableHeight
         self.plan = plan
         self.content = content
-        let tabHeight = EdgeMetrics.tabHeight
         geometry = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: bounds.width,
                                        pinned: plan.pinned, stickyFirst: plan.stickyHeader,
-                                       whole: plan.wholeIndices, raised: plan.memberIndices, edge: edge, metrics: metrics)
+                                       whole: plan.wholeIndices, raised: plan.memberIndices, heights: plan.heights,
+                                       edge: edge, metrics: metrics)
 
         layoutChrome(showsOverflow: geometry.showsOverflow)
 
@@ -554,7 +554,7 @@ final class EdgeStackView: NSView {
             let target = origin(forIndex: index)
             card.visibleSlice = geometry.slices[index]
             card.setTarget(geometry.frames[index], alpha: geometry.alphas[index], animated: false)
-            let isOnScreen = target.y + tabHeight > 0 && target.y < clip.bounds.height
+            let isOnScreen = target.y + geometry.frames[index].height > 0 && target.y < clip.bounds.height
 
             // Preserving the scroll means the deck is already on screen and
             // only its contents changed. Re-dealing it would be a flicker.
@@ -602,7 +602,8 @@ final class EdgeStackView: NSView {
         case .group(let ref), .header(let ref):
             let info = content.group(ref)
             let card = GroupCardView(ref: ref, name: info.name, count: info.count, look: info.look,
-                                     isOpen: entry == .header(ref), height: EdgeMetrics.tabHeight, edge: edge)
+                                     isOpen: entry == .header(ref),
+                                     height: entry == .header(ref) ? max(EdgeMetrics.tabHeight, plan.headerHeight) : EdgeMetrics.tabHeight, edge: edge)
             card.onToggle = { [weak self] ref in self?.controller?.toggleGroup(ref) }
             card.onDropNotes = { [weak self] ids in self?.controller?.dropNotes(ids, onGroup: ref) }
             card.onChooseColor = { [weak self] color in self?.controller?.setColor(color, ofGroup: ref) }

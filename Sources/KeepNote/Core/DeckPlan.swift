@@ -79,6 +79,9 @@ struct DeckPlan: Equatable {
     var dropped: Int
     /// How many of the open group's notes follow its header.
     var members: Int = 0
+    /// How tall the open group's header is: its name shown whole, where the
+    /// name needs more than a note's height.
+    var headerHeight: CGFloat = EdgeMetrics.tabHeight
 
     static let empty = DeckPlan(entries: [], pinned: nil, stickyHeader: false, counts: [:], open: nil, dropped: 0)
 
@@ -88,9 +91,21 @@ struct DeckPlan: Equatable {
         metrics: DeckGeometry.Metrics = .init()
     ) -> DeckGeometry {
         DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                            pinned: pinned, stickyFirst: stickyHeader, whole: wholeIndices, raised: memberIndices,
+                            pinned: pinned, stickyFirst: stickyHeader, whole: wholeIndices, raised: memberIndices, heights: heights,
                             edge: edge,
                             metrics: metrics)
+    }
+
+    /// Tabs taller than a note: the open group's header, when its name needs it.
+    var heights: [Int: CGFloat] {
+        Self.heights(of: entries, headerHeight: headerHeight)
+    }
+
+    static func heights(of entries: [DeckEntry], headerHeight: CGFloat) -> [Int: CGFloat] {
+        guard headerHeight > EdgeMetrics.tabHeight,
+              let header = entries.firstIndex(where: { if case .header = $0 { return true } else { return false } })
+        else { return [:] }
+        return [header: headerHeight]
     }
 
     /// The open group's header and its notes among the tabs: they always show
@@ -121,7 +136,8 @@ struct DeckPlan: Equatable {
 
     static func make<T: DeckNote>(
         notes: [T], groups: [NoteGroup], open: DeckGroupRef?,
-        usableHeight: CGFloat, columnWidth: CGFloat = 74, metrics: DeckGeometry.Metrics = .init()
+        usableHeight: CGFloat, columnWidth: CGFloat = 74, headerHeight: CGFloat = EdgeMetrics.tabHeight,
+        metrics: DeckGeometry.Metrics = .init()
     ) -> DeckPlan {
         let ranked = PinnedDeck.ranked(notes)
         let inBlock = Set(ranked.map(\.id))
@@ -196,7 +212,8 @@ struct DeckPlan: Equatable {
                 let (entries, pinned) = assemble(kept)
                 let whole = wholeIndices(of: entries, members: slots[openSlot].entries.count - 1)
                 let g = DeckGeometry.layout(count: entries.count, usableHeight: usableHeight, columnWidth: columnWidth,
-                                            pinned: pinned, whole: whole, metrics: metrics)
+                                            pinned: pinned, whole: whole,
+                                            heights: heights(of: entries, headerHeight: headerHeight), metrics: metrics)
                 if g.mode != .scrolling { break }
                 // The group has priority: the tab farthest from it goes; of two
                 // as far, the one below, nearer the "+".
@@ -215,6 +232,7 @@ struct DeckPlan: Equatable {
         let (entries, pinned) = assemble(kept, allAbove: sticky)
         return DeckPlan(entries: entries, pinned: pinned, stickyHeader: sticky, counts: counts,
                         open: openSlot == nil ? nil : open, dropped: droppedEntries,
-                        members: openSlot.map { slots[$0].entries.count - 1 } ?? 0)
+                        members: openSlot.map { slots[$0].entries.count - 1 } ?? 0,
+                        headerHeight: openSlot == nil ? EdgeMetrics.tabHeight : headerHeight)
     }
 }

@@ -63,6 +63,8 @@ enum EdgeMetrics {
     /// Every tab is this tall, however many there are: a deck that does not
     /// fit stacks its tabs more tightly, it never shrinks them.
     static let tabHeight: CGFloat = 104
+    /// The most an open group's header grows to show its name whole; a longer name ends in an ellipsis.
+    static let openHeaderMaxHeight: CGFloat = 180
     static let tabSpacing: CGFloat = 6
     /// When the tabs do not fit, each one covers the one above it, leaving
     /// at least this much of it showing. Past that the deck scrolls.
