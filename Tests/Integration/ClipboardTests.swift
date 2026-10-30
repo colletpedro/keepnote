@@ -127,6 +127,44 @@ func runClipboardTests() {
     expectTrue("clip: markup in a note is escaped", !hostileHTML.contains("<script>") && hostileHTML.contains("&lt;script&gt;"))
     expectTrue("clip: a script link is not a link", !hostileHTML.contains("javascript:"))
 
+    // MARK: Large pictures are reduced on the clipboard only
+
+    let huge = samplePNG(width: 5120, height: 2560, color: .systemOrange)          // opaque
+    let hugeInfo = try! store.addAttachment(huge, name: "Huge.png")
+    let tall = alphaPNG(width: 1000, height: 3000)                                  // transparent
+    let tallInfo = try! store.addAttachment(tall, name: "Tall.png")
+    let hugeLines = [hugeInfo, tallInfo, barnInfo].map { AttachmentText.token(id: $0.id, isImage: true, label: "") }.joined(separator: "\n")
+    let bigBoard = privateBoard()
+    NoteClipboard.copy(markdown: hugeLines, attachments: source, to: bigBoard)
+    let big = Pasted(bigBoard)
+    func size(_ data: Data) -> (Int, Int, String?) {
+        let info = AttachmentInfo.measure(data, name: "x", type: nil, now: Date())
+        return (info.pixelWidth, info.pixelHeight, info.type)
+    }
+    expect("big: three pictures in HTML and in RTFD", "\(big.htmlPictures.count) \(big.pictures.count)", "3 3")
+    expectTrue("big: HTML and RTFD carry the same bytes", big.htmlPictures == big.pictures)
+    let reducedWide = size(big.pictures[0])
+    expectTrue("big: a wide opaque picture is 2560 on its long side, proportions kept",
+               reducedWide.0 == 2560 && reducedWide.1 == 1280)
+    expect("big: and recompressed as JPEG", reducedWide.2, "public.jpeg")
+    expectTrue("big: smaller than the original", big.pictures[0].count < huge.count)
+    let reducedTall = size(big.pictures[1])
+    expectTrue("big: a tall one is reduced by its height", reducedTall.0 == 853 && reducedTall.1 == 2560)
+    expect("big: transparency stays PNG", reducedTall.2, "public.png")
+    expectTrue("big: and still has its alpha", {
+        guard let rep = NSBitmapImageRep(data: big.pictures[1]) else { return false }
+        return rep.hasAlpha
+    }())
+    expectTrue("big: a small picture is not touched", big.pictures[2] == barn && big.htmlPictures[2] == barn)
+    expectTrue("big: HTML names the new type", big.html.contains("data:image/jpeg;base64,") && big.html.contains("data:image/png;base64,"))
+    expectTrue("big: the attachment itself is as it was",
+               store.attachmentData(hugeInfo.id) == huge && store.attachmentData(tallInfo.id) == tall)
+    expectTrue("big: plain text still names the original file", big.plain.contains("Huge.png"))
+    let edge = NoteClipboard.forClipboard(
+        AttachmentInfo.measure(samplePNG(width: 2560, height: 100), name: "Edge.png", type: nil, now: Date()),
+        samplePNG(width: 2560, height: 100), name: "Edge.png")
+    expectTrue("big: exactly 2560 is left alone", edge.mime == "image/png" && edge.name == "Edge.png")
+
     // MARK: Copying a piece of the text
 
     let note = try! store.create(title: "Pieces", body: "Intro text\n\(barnLine)\nmiddle\n\(skyLine)\nend")
@@ -292,4 +330,19 @@ private func restore(_ saved: [[NSPasteboard.PasteboardType: Data]], to board: N
         for (type, data) in entry { item.setData(data, forType: type) }
         board.writeObjects([item])
     }
+}
+
+/// A PNG with a transparent corner.
+private func alphaPNG(width: Int, height: Int) -> Data {
+    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8,
+                               samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                               bytesPerRow: 0, bitsPerPixel: 0)!
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+    NSColor.clear.setFill()
+    NSRect(x: 0, y: 0, width: width, height: height).fill(using: .copy)
+    NSColor.systemGreen.setFill()
+    NSRect(x: 0, y: 0, width: width / 2, height: height).fill()
+    NSGraphicsContext.restoreGraphicsState()
+    return rep.representation(using: .png, properties: [:])!
 }

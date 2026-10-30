@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import UniformTypeIdentifiers
 
 /// A note, or a piece of one, on the clipboard in three forms at once, so
@@ -24,6 +25,64 @@ enum NoteClipboard {
         var data: Data
         /// The name it travels under: its own, numbered when two share one.
         var name: String
+        /// What HTML and RTFD carry: the picture itself, or a smaller copy of
+        /// a very large one, under the name and type that copy has.
+        var sent: (data: Data, mime: String, name: String)
+    }
+
+    /// The longest side, in pixels, a picture goes out at on the clipboard.
+    static let maximumSide = 2560
+    static let jpegQuality = 0.85
+
+    /// Whether any pixel of `image` is not fully opaque. A channel that is
+    /// all 255 — a screenshot saved as RGBA — does not count.
+    private static func isTransparent(_ image: CGImage) -> Bool {
+        switch image.alphaInfo {
+        case .none, .noneSkipFirst, .noneSkipLast: return false
+        default: break
+        }
+        let width = image.width
+        let height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(
+                data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return true }   // cannot tell: keep it lossless
+        var index = 3
+        while index < pixels.count {
+            if pixels[index] != 255 { return true }
+            index += 4
+        }
+        return false
+    }
+
+    /// `data` as it travels on the clipboard. A picture longer than
+    /// `maximumSide` on its longer side is scaled to it and recompressed —
+    /// JPEG at 0.85, or PNG when it has transparency; any other is returned
+    /// as it is, as is one that cannot be read. The attachment itself is
+    /// never touched.
+    static func forClipboard(_ info: AttachmentInfo, _ data: Data, name: String) -> (data: Data, mime: String, name: String) {
+        let original = (data, info.utType.preferredMIMEType ?? "application/octet-stream", name)
+        guard info.isImage, max(info.pixelWidth, info.pixelHeight) > maximumSide,
+              let source = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(source) == 1,
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                  kCGImageSourceCreateThumbnailFromImageAlways: true,
+                  kCGImageSourceCreateThumbnailWithTransform: true,
+                  kCGImageSourceThumbnailMaxPixelSize: maximumSide,
+              ] as CFDictionary) else { return original }
+        let hasAlpha = isTransparent(image)
+        let type = hasAlpha ? UTType.png : UTType.jpeg
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, type.identifier as CFString, 1, nil) else { return original }
+        CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: jpegQuality] as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return original }
+        let stem = (name as NSString).deletingPathExtension
+        return (output as Data, type.preferredMIMEType ?? "application/octet-stream", stem + "." + (type.preferredFilenameExtension ?? "png"))
     }
 
     // MARK: - Building
@@ -36,7 +95,7 @@ enum NoteClipboard {
         }
         return Contents(
             html: "<meta charset=\"utf-8\">\n" + body,
-            rtfd: AttributedBuilder(found: found.mapValues { ($0.info, $0.data, $0.name) }).rtfd(for: blocks),
+            rtfd: AttributedBuilder(found: found.mapValues { ($0.info, $0.sent.data, $0.sent.name) }).rtfd(for: blocks),
             plain: plainText(markdown, found)
         )
     }
@@ -47,7 +106,7 @@ enum NoteClipboard {
         for reference in AttachmentText.references(in: markdown) where found[reference.id] == nil {
             guard let (info, data) = source(reference.id) else { continue }
             let name = ExportNames.unique(ExportNames.fileName(info.fileName, fallback: L("Attachment")), taken: &taken)
-            found[reference.id] = Found(info: info, data: data, name: name)
+            found[reference.id] = Found(info: info, data: data, name: name, sent: forClipboard(info, data, name: name))
         }
         return found
     }
@@ -55,9 +114,8 @@ enum NoteClipboard {
     private static func htmlForAttachment(_ reference: AttachmentText.Reference, _ found: Found?) -> String {
         guard let found else { return "<p>\(MarkdownHTML.escape(words(for: reference)))</p>" }
         guard found.info.isImage else { return "<p>\(MarkdownHTML.escape(words(for: reference, name: found.info.name)))</p>" }
-        let mime = found.info.utType.preferredMIMEType ?? "application/octet-stream"
         let alt = reference.label.isEmpty ? found.name : reference.label
-        return "<p><img src=\"data:\(mime);base64,\(found.data.base64EncodedString())\" alt=\"\(MarkdownHTML.escape(alt))\"></p>"
+        return "<p><img src=\"data:\(found.sent.mime);base64,\(found.sent.data.base64EncodedString())\" alt=\"\(MarkdownHTML.escape(alt))\"></p>"
     }
 
     /// What stands in for an attachment that is not drawn: "[Image: a barn]".
