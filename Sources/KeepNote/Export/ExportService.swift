@@ -105,7 +105,7 @@ enum ExportService {
             links = try writeAttachments(of: notes, from: attachments, into: directory.appendingPathComponent(attachmentsFolder, isDirectory: true))
         }
         for note in notes {
-            let base = safeFileName(for: note, taken: &usedNames)
+            let base = ExportNames.unique(ExportNames.component(note.displayTitle, fallback: L("Untitled")), taken: &usedNames)
             let url = directory.appendingPathComponent("\(base).\(isMarkdown ? "md" : "txt")")
             let group = note.groupID.flatMap { names[$0] }
             let contents = isMarkdown ? markdown(for: note, links: links, group: group) : plainText(for: note, group: group)
@@ -113,9 +113,8 @@ enum ExportService {
         }
     }
 
-    /// The folder attachments are written into, beside exported notes and
-    /// inside an archive.
-    nonisolated static let attachmentsFolder = "Attachments"
+    /// The folder a Markdown export writes attachments into, beside the notes.
+    nonisolated static let attachmentsFolder = "attachments"
 
     /// Writes each attachment the notes refer to, once, under its own name
     /// (numbered when two share one). Returns id → relative path.
@@ -126,25 +125,12 @@ enum ExportService {
             for reference in AttachmentText.references(in: note.body) where links[reference.id] == nil {
                 guard let (info, data) = source(reference.id) else { continue }
                 if links.isEmpty { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) }
-                let name = uniqueName(info.fileName, taken: &taken)
+                let name = ExportNames.unique(ExportNames.fileName(info.fileName, fallback: L("Attachment")), taken: &taken)
                 try data.write(to: folder.appendingPathComponent(name), options: .atomic)
                 links[reference.id] = attachmentsFolder + "/" + name
             }
         }
         return links
-    }
-
-    private static func uniqueName(_ name: String, taken: inout Set<String>) -> String {
-        let base = (name as NSString).deletingPathExtension
-        let ext = (name as NSString).pathExtension
-        var candidate = name
-        var counter = 2
-        while taken.contains(candidate.lowercased()) {
-            candidate = ext.isEmpty ? "\(base) \(counter)" : "\(base) \(counter).\(ext)"
-            counter += 1
-        }
-        taken.insert(candidate.lowercased())
-        return candidate
     }
 
     /// Group names by id, for the exports that say a note's group in words.
@@ -171,9 +157,6 @@ enum ExportService {
     }
 
     // MARK: - Markdown for Obsidian
-
-    /// The folder inside each note's, holding its pictures and files.
-    nonisolated static let noteAttachmentsFolder = "attachments"
 
     /// Export as Markdown…: a folder for each note, holding the note as a
     /// `.md` and its pictures and files in `attachments/`, linked by relative
@@ -209,11 +192,11 @@ enum ExportService {
             var takenFiles = Set<String>()
             for reference in AttachmentText.references(in: note.body) where links[reference.id] == nil {
                 guard let attachments, let (info, data) = attachments(reference.id) else { continue }
-                let attachmentFolder = folder.appendingPathComponent(noteAttachmentsFolder, isDirectory: true)
+                let attachmentFolder = folder.appendingPathComponent(attachmentsFolder, isDirectory: true)
                 if links.isEmpty { try manager.createDirectory(at: attachmentFolder, withIntermediateDirectories: true) }
                 let name = ExportNames.unique(ExportNames.fileName(info.fileName, fallback: L("Attachment")), taken: &takenFiles)
                 try data.write(to: attachmentFolder.appendingPathComponent(name), options: .atomic)
-                links[reference.id] = noteAttachmentsFolder + "/" + name
+                links[reference.id] = attachmentsFolder + "/" + name
             }
             let group = note.groupID.flatMap { names[$0] }
             let contents = obsidianMarkdown(for: note, links: links, group: group)
@@ -304,27 +287,6 @@ enum ExportService {
             text.replaceCharacters(in: reference.range, with: replacement)
         }
         return text as String
-    }
-
-    /// Titles become file names, so anything a file system dislikes goes, and
-    /// duplicates get a numeric suffix rather than silently overwriting.
-    private static func safeFileName(for note: Note, taken: inout Set<String>) -> String {
-        let illegal = CharacterSet(charactersIn: "/\\:*?\"<>|\u{0}")
-        var base = note.displayTitle
-            .components(separatedBy: illegal)
-            .joined(separator: "-")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if base.isEmpty { base = L("Untitled") }
-        if base.count > 60 { base = String(base.prefix(60)) }
-
-        var candidate = base
-        var counter = 2
-        while taken.contains(candidate.lowercased()) {
-            candidate = "\(base) \(counter)"
-            counter += 1
-        }
-        taken.insert(candidate.lowercased())
-        return candidate
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -460,7 +422,7 @@ enum NoteArchive {
             try json.write(to: url, options: .atomic)
             return
         }
-        let folder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        let folder = url.appendingPathComponent(AppPaths.attachmentsFolder, isDirectory: true)
         try manager.createDirectory(at: folder, withIntermediateDirectories: true)
         try json.write(to: url.appendingPathComponent(manifestName), options: .atomic)
         for (name, data) in files {
@@ -579,11 +541,11 @@ enum NoteImporter {
             imported = try NoteArchive.decode(data)
             template = try NoteArchive.decodeTemplate(data)
             importedGroups = try NoteArchive.decodeGroups(data)
-            attachmentFolder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+            attachmentFolder = url.appendingPathComponent(AppPaths.attachmentsFolder, isDirectory: true)
         } else if isDirectory.boolValue {
             // A folder of .hmnote files, a copy of a sync folder: its
             // attachments are in its `Attachments` folder.
-            attachmentFolder = url.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+            attachmentFolder = url.appendingPathComponent(AppPaths.attachmentsFolder, isDirectory: true)
             let contents = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil)
             for file in contents where file.pathExtension == AppPaths.noteFileExtension {
                 guard

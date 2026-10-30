@@ -19,6 +19,10 @@ enum AppPaths {
     }
 
     /// Extension of one exported/synced note.
+    /// The folder of attachments in a sync folder and in an archive package.
+    /// Part of those formats, so it never changes: folders that exist already
+    /// keep working. (Markdown exports use `ExportService.attachmentsFolder`.)
+    static let attachmentsFolder = "Attachments"
     static let noteFileExtension = "hmnote"
     /// Extension of the daily template in the sync folder.
     static let templateFileExtension = "hmtemplate"

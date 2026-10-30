@@ -471,7 +471,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             return
         }
         // A file arriving in `Attachments` may be one a note is waiting for.
-        if urls.contains(where: { $0.deletingLastPathComponent().lastPathComponent == ExportService.attachmentsFolder }) {
+        if urls.contains(where: { $0.deletingLastPathComponent().lastPathComponent == AppPaths.attachmentsFolder }) {
             importMissingAttachments()
         }
         let wanted = urls.filter { $0.pathExtension == AppPaths.noteFileExtension }
@@ -528,7 +528,7 @@ final class FolderSyncService: NSObject, ObservableObject {
             }
         }
         guard !wanted.isEmpty else { return }
-        let folder = folderURL.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        let folder = folderURL.appendingPathComponent(AppPaths.attachmentsFolder, isDirectory: true)
         let presenter = presenter
         let ids = Set(wanted.keys)
         io.async { [weak self] in
@@ -703,7 +703,7 @@ final class FolderSyncService: NSObject, ObservableObject {
     /// A plain copy of each attachment the note refers to, once, in the
     /// folder's `Attachments`: readable without KeepNote, like the notes.
     private func pushAttachments(of note: Note, into folderURL: URL) {
-        let folder = folderURL.appendingPathComponent(ExportService.attachmentsFolder, isDirectory: true)
+        let folder = folderURL.appendingPathComponent(AppPaths.attachmentsFolder, isDirectory: true)
         for id in AttachmentText.ids(in: note.body).sorted() where !attachmentsInFolder.contains(id) {
             guard let info = store.attachments[id], let data = store.attachmentData(id) else { continue }
             attachmentsInFolder.insert(id)

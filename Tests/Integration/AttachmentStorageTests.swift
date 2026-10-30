@@ -109,6 +109,10 @@ func runAttachmentStorageTests() {
         syncA.waitUntilWritten()
         let copy = folder.appendingPathComponent("Attachments/\(info.id).png")
         expectTrue("sync: a plain copy beside the notes", (try? Data(contentsOf: copy)) == png)
+        // The folder keeps its name, exactly, so folders that exist keep working.
+        let syncEntries = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+        expectTrue("sync: the folder is still called Attachments, not attachments",
+                   syncEntries.contains("Attachments") && !syncEntries.contains("attachments"))
         expectTrue("sync: the note's file is there", noteFile(in: folder, id: note.id) != nil)
         for _ in 0..<40 where macB.attachments[info.id] == nil { spin(0.1) }
         expect("sync: the other Mac has the note", macB.note(id: note.id)?.title, "Trip")
@@ -139,6 +143,8 @@ func runAttachmentStorageTests() {
         let out = scratchDirectory()
         let archive = out.appendingPathComponent("Export.hmnotearchive")
         try! NoteArchive.write(notes: [store.note(id: note.id)!, plain], dailyTemplate: nil, attachments: source, to: archive)
+        expectTrue("archive: its folder is still called Attachments",
+                   ((try? FileManager.default.contentsOfDirectory(atPath: archive.path)) ?? []).contains("Attachments"))
         let files = NoteArchive.readAttachments(in: archive.appendingPathComponent("Attachments"))
         expect("archive: a package with both files", String(files.count), "2")
         expectTrue("archive: named as the text names them", files[image.id]?.lastPathComponent == "\(image.id).png")
@@ -160,11 +166,22 @@ func runAttachmentStorageTests() {
         let exportFolder = scratchDirectory()
         try! ExportService.writePerNote(notes: [store.note(id: note.id)!], format: .markdownPerNote, into: exportFolder, attachments: source)
         let markdown = try! String(contentsOf: exportFolder.appendingPathComponent("Quarter.md"), encoding: .utf8)
-        expectTrue("export: the image is linked from the text", markdown.contains("![Sales](Attachments/Chart.png)"))
-        expectTrue("export: the file too", markdown.contains("[Report.pdf](Attachments/Report.pdf)"))
-        expectTrue("export: the image is written there", (try? Data(contentsOf: exportFolder.appendingPathComponent("Attachments/Chart.png"))) == png)
-        expectTrue("export: and the file", (try? Data(contentsOf: exportFolder.appendingPathComponent("Attachments/Report.pdf"))) == pdf)
+        expectTrue("export: the image is linked from the text", markdown.contains("![Sales](attachments/Chart.png)"))
+        expectTrue("export: the file too", markdown.contains("[Report.pdf](attachments/Report.pdf)"))
+        expectTrue("export: the image is written there", (try? Data(contentsOf: exportFolder.appendingPathComponent("attachments/Chart.png"))) == png)
+        expectTrue("export: and the file", (try? Data(contentsOf: exportFolder.appendingPathComponent("attachments/Report.pdf"))) == pdf)
         expectTrue("export: no attachment ids left in the text", !markdown.contains("attachment:"))
+        // No name starts with a dot, in files or in attachments.
+        let hidden = try! store.addAttachment(samplePNG(width: 9, height: 9, color: .systemPurple), name: ".secret.png")
+        let dotted = try! store.create(title: "..", body: "x\n" + AttachmentText.token(id: hidden.id, isImage: true, label: "s"))
+        let dotFolder = scratchDirectory()
+        try! ExportService.writePerNote(notes: [store.note(id: dotted.id)!, store.note(id: plain.id)!, store.note(id: plain.id)!],
+                                        format: .markdownPerNote, into: dotFolder, attachments: source)
+        let dotNames = (try? FileManager.default.contentsOfDirectory(atPath: dotFolder.path)) ?? []
+        expectTrue("export: no file name starts with a dot", !dotNames.isEmpty && dotNames.allSatisfy { !$0.hasPrefix(".") })
+        expectTrue("export: a repeated title is numbered", dotNames.contains("Plain.md") && dotNames.contains("Plain 2.md"))
+        expectTrue("export: an attachment named with a dot is written without it",
+                   (try? Data(contentsOf: dotFolder.appendingPathComponent("attachments/secret.png"))) != nil)
         // Plain text says what was there.
         let text = ExportService.plainText(for: store.note(id: note.id)!)
         expectTrue("export: plain text names the image", text.contains("[" + L("Image: %@", "Sales") + "]"))
