@@ -154,7 +154,7 @@
 "Export All…" = "Export All…";
 "Export Here" = "Export Here";
 "Export Notes" = "Export Notes";
-"Export writes plain text, a single document or an archive KeepNote can read back; Export as Markdown… writes a folder for each note, ready for Obsidian. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Export writes plain text, a single document or an archive KeepNote can read back; Export as Markdown… writes a folder for each note, ready for Obsidian. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub.";
+"Export writes Markdown with a folder for each note, ready for Obsidian, plain text, a single document or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub." = "Export writes Markdown with a folder for each note, ready for Obsidian, plain text, a single document or an archive KeepNote can read back. Show Welcome reopens the first-launch window. KeepNote never checks for updates by itself; Check for Updates opens its site in your browser, and Report a problem its issues on GitHub.";
 "Export…" = "Export…";
 "Extra Large" = "Extra Large";
 "File" = "File";
@@ -558,3 +558,4 @@
 "Export %d Notes as Markdown…" = "Export %d Notes as Markdown…";
 "Note copied" = "Note copied";
 "A folder for each note is made here, with its pictures in attachments." = "A folder for each note is made here, with its pictures in attachments.";
+"Markdown (folder per note)" = "Markdown (folder per note)";

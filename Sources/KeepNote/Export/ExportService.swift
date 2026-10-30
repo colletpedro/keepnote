@@ -5,6 +5,9 @@ import UniformTypeIdentifiers
 typealias AttachmentSource = (String) -> (AttachmentInfo, Data)?
 
 enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
+    /// A folder per note with its `.md` and `attachments/`: the same export as
+    /// Export as Markdown…, first in the list.
+    case markdownFolders
     /// One `.txt` per note.
     case plainTextPerNote
     /// Every selected note in one document.
@@ -16,17 +19,19 @@ enum ExportFormat: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
+        case .markdownFolders: return L("Markdown (folder per note)")
         case .plainTextPerNote: return L("Plain text \u{2014} one file per note")
         case .singleDocument: return L("Single document \u{2014} all selected notes")
         case .archivePackage: return L("KeepNote archive \u{2014} colors, states and dates")
         }
     }
 
-    /// Per-note formats write into a folder; the other two write one file.
+    /// Plain text per note writes into a folder; the Markdown folders choose
+    /// their own (`ExportService.runMarkdownFolders`); the rest write one file.
     var writesToDirectory: Bool {
         switch self {
         case .plainTextPerNote: return true
-        case .singleDocument, .archivePackage: return false
+        case .markdownFolders, .singleDocument, .archivePackage: return false
         }
     }
 }
@@ -46,11 +51,15 @@ enum ExportService {
         notes allNotes: [Note], format: ExportFormat, suggestedName: String = "KeepNote",
         dailyTemplate: DailyTemplate? = nil, groups: [NoteGroup] = [], attachments: AttachmentSource? = nil
     ) throws -> Int? {
+        // The one Markdown exporter, whichever command asked for it.
+        if format == .markdownFolders {
+            return try runMarkdownFolders(notes: allNotes, groups: groups, attachments: attachments)
+        }
         let notes = allNotes.filter { !$0.isLocked }
         let skipped = allNotes.count - notes.count
         guard !notes.isEmpty else { return skipped }
         if format.writesToDirectory {
-            guard let directory = promptForDirectory() else { return nil }
+            guard let directory = directoryPicker(L("Choose a folder for the exported notes.")) else { return nil }
             try writePerNote(notes: notes, into: directory, groups: groups)
         } else {
             guard let url = promptForFile(format: format, suggestedName: suggestedName) else { return nil }
@@ -61,6 +70,10 @@ enum ExportService {
     }
 
     // MARK: - Panels
+
+    /// Asks for the folder to export into, with `message`; `nil` if cancelled.
+    /// The panel, unless the tests answer for it.
+    static var directoryPicker: (String) -> URL? = { promptForDirectory(message: $0) }
 
     private static func promptForDirectory(message: String = L("Choose a folder for the exported notes.")) -> URL? {
         let panel = NSOpenPanel()
@@ -121,8 +134,8 @@ enum ExportService {
                 .map { markdown(for: $0, group: $0.groupID.flatMap { names[$0] }) }
                 .joined(separator: "\n\n---\n\n")
             try document.write(to: url, atomically: true, encoding: .utf8)
-        case .plainTextPerNote:
-            // Handled by `writePerNote`.
+        case .markdownFolders, .plainTextPerNote:
+            // Handled by `writeMarkdownFolders` and `writePerNote`.
             return
         }
     }
@@ -140,7 +153,7 @@ enum ExportService {
         let notes = allNotes.filter { !$0.isLocked }
         let skipped = allNotes.count - notes.count
         guard !notes.isEmpty else { return skipped }
-        guard let directory = promptForDirectory(message: L("A folder for each note is made here, with its pictures in attachments.")) else { return nil }
+        guard let directory = directoryPicker(L("A folder for each note is made here, with its pictures in attachments.")) else { return nil }
         try writeMarkdownFolders(notes: notes, into: directory, groups: groups, attachments: attachments)
         return skipped
     }

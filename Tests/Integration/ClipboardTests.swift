@@ -346,3 +346,70 @@ private func alphaPNG(width: Int, height: Int) -> Data {
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!
 }
+
+// MARK: - The dialog's Markdown is the same export
+
+/// Every file under `root`: relative path → bytes, with directories as nil.
+private func tree(_ root: URL) -> [String: Data?] {
+    var found: [String: Data?] = [:]
+    let manager = FileManager.default
+    let base = root.resolvingSymlinksInPath()
+    guard let walker = manager.enumerator(at: base, includingPropertiesForKeys: [.isDirectoryKey]) else { return found }
+    for case let url as URL in walker {
+        let relative = String(url.resolvingSymlinksInPath().path.dropFirst(base.path.count))
+        let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+        found[relative] = isDirectory ? .some(nil) : .some(try? Data(contentsOf: url))
+    }
+    return found
+}
+
+@MainActor
+func runMarkdownDialogTests() {
+    expect("dialog: Markdown (folder per note) is the first choice", ExportFormat.allCases.first?.rawValue, "markdownFolders")
+    expect("dialog: its title", ExportFormat.markdownFolders.title, "Markdown (folder per note)")
+    expect("dialog: the other formats stay", ExportFormat.allCases.dropFirst().map(\.rawValue).joined(separator: ","),
+           "plainTextPerNote,singleDocument,archivePackage")
+
+    let store = reopened(scratchDirectory().appendingPathComponent("dialog.sqlite"), key: SymmetricKey(size: .bits256))
+    let picture = try! store.addAttachment(samplePNG(width: 80, height: 60, color: .systemIndigo), name: "Shot.png")
+    let other = try! store.addAttachment(samplePNG(width: 50, height: 50, color: .systemMint), name: "Shot.png")
+    let source: AttachmentSource = { id in
+        guard let info = store.attachments[id], let data = store.attachmentData(id) else { return nil }
+        return (info, data)
+    }
+    let group = store.createGroup(name: "Studio")!
+    let first = try! store.create(title: "Plan", body: "One\n" + AttachmentText.token(id: picture.id, isImage: true, label: "a"))
+    try! store.update(id: first.id) { $0.groupID = group.id; $0.tags = ["x"] }
+    _ = try! store.create(title: "Plan", body: "Two\n" + AttachmentText.token(id: other.id, isImage: true, label: "b"))
+    _ = try! store.create(title: "Loose", body: "no pictures")
+    let all = store.notes
+    let groups = store.groups   // all notes are going: every group goes
+
+    let viaDialog = scratchDirectory()
+    let viaCommand = scratchDirectory()
+    let original = ExportService.directoryPicker
+    defer { ExportService.directoryPicker = original }
+
+    var asked: [String] = []
+    ExportService.directoryPicker = { asked.append($0); return viaDialog }
+    let skippedByDialog = try! ExportService.run(notes: all, format: .markdownFolders, suggestedName: "KeepNote Export",
+                                                 dailyTemplate: store.dailyTemplate, groups: groups, attachments: source)
+    ExportService.directoryPicker = { asked.append($0); return viaCommand }
+    let skippedByCommand = try! ExportService.runMarkdownFolders(notes: all, groups: groups, attachments: source)
+
+    expect("dialog: nothing skipped, as by the command", String(skippedByDialog ?? -1), String(skippedByCommand ?? -2))
+    expectTrue("dialog: both asked the same question", asked.count == 2 && asked[0] == asked[1])
+    let a = tree(viaDialog)
+    let b = tree(viaCommand)
+    expectTrue("dialog: something was written (\(a.count) entries)", a.count > 8)
+    expect("dialog: the same files", a.keys.sorted().joined(separator: "\n"), b.keys.sorted().joined(separator: "\n"))
+    expectTrue("dialog: with the same bytes in every one", a.allSatisfy { key, value in b[key] != nil && b[key]! == value })
+    expectTrue("dialog: the front matter names the group",
+               (try? String(contentsOf: viaDialog.appendingPathComponent("Plan/Plan.md"), encoding: .utf8))?.hasPrefix("---\ngroup: \"Studio\"\n---") == true
+                || (try? String(contentsOf: viaDialog.appendingPathComponent("Plan 2/Plan 2.md"), encoding: .utf8))?.hasPrefix("---\ngroup: \"Studio\"\n---") == true)
+    expectTrue("dialog: pictures in attachments/", a.keys.contains { $0.hasSuffix("/attachments/Shot.png") })
+
+    // A cancelled panel writes nothing and says so.
+    ExportService.directoryPicker = { _ in nil }
+    expectTrue("dialog: cancelled, nil", try! ExportService.run(notes: all, format: .markdownFolders, groups: groups, attachments: source) == nil)
+}

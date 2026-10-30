@@ -122,6 +122,7 @@ MainActor.assumeIsolated {
     runNoNetworkSourceTests()
     runAttachmentStorageTests()
     runClipboardTests()
+    runMarkdownDialogTests()
     runMarkGeometryTests()
     runButtonTextTests()
     runOpenRaceTests()
