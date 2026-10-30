@@ -112,8 +112,6 @@ enum EdgeMetrics {
 
     // MARK: Timing
 
-    /// Delay between consecutive cards as the deck fans out.
-    static let defaultStagger: Double = 0.045
     /// Grace period after the cursor leaves before the deck collapses, so
     /// crossing a gap between tabs does not slam it shut.
     static let collapseGrace: Double = 0.32

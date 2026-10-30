@@ -98,14 +98,6 @@ enum KeychainKeyStore {
         }
     }
 
-    /// Only used by tests and by "reset all data".
-    static func deleteKey() throws {
-        let status = SecItemDelete(baseQuery() as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError.unexpectedStatus(status)
-        }
-    }
-
     private static func baseQuery() -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,

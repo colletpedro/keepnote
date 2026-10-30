@@ -272,7 +272,6 @@ extension Notification.Name {
     static let keepNotePresenceChanged = Notification.Name("keepNote.presenceChanged")
     static let keepNoteArchiveSettingsChanged = Notification.Name("keepNote.archiveSettingsChanged")
     static let keepNoteSyncSettingsChanged = Notification.Name("keepNote.syncSettingsChanged")
-    static let keepNoteStoreChanged = Notification.Name("keepNote.storeChanged")
     /// Asks an open All Notes window to select something in its sidebar;
     /// `userInfo["selection"]` is a `NoteSelection.storageValue`.
     static let keepNoteShowNotesSelection = Notification.Name("keepNote.showNotesSelection")

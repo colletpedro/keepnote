@@ -99,7 +99,6 @@ enum NoteColor: Int, CaseIterable, Codable, Sendable {
         return all[(index - 1 + all.count) % all.count]
     }
 
-    var accentSwiftUI: Color { Color(nsColor: accent) }
     var surfaceSwiftUI: Color { Color(nsColor: surface) }
     var spineSwiftUI: Color { Color(nsColor: spine) }
     var inkSwiftUI: Color { Color(nsColor: ink) }

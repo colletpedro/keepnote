@@ -262,25 +262,5 @@ private final class DerivedText: @unchecked Sendable {
     }
 }
 
-/// What a note looks like on disk once the body is sealed. Only the
-/// persistence and sync layers deal in this type.
-struct EncryptedNoteRecord: Sendable {
-    var id: UUID
-    var title: String
-    var bodyCiphertext: Data
-    var nonce: Data
-    var color: NoteColor
-    var state: NoteState
-    var sortIndex: Int
-    var tagsCSV: String
-    var createdAt: Date
-    var updatedAt: Date
-    var editedAt: Date
-    var deletedAt: Date?
-    var dailyDay: String?
-    var dailyKept: Bool
-    var keepOnDeck: Bool
-}
-
 /// All Notes sorts notes by their dates and title.
 extension Note: SortableNote {}

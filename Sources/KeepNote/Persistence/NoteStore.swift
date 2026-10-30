@@ -669,16 +669,6 @@ final class NoteStore: ObservableObject {
         }
     }
 
-    /// Held in memory: sync asks for every file it receives.
-    func tombstoneIDs() -> [UUID: Date] {
-        tombstones
-    }
-
-    func recordTombstone(id: UUID, deletedAt: Date) throws {
-        tombstones[id] = deletedAt
-        writer.save([.tombstone(id, deletedAt: deletedAt)])
-    }
-
     // MARK: - Ordering
 
     /// Drag-reorder in the stack and in All Notes. Indices are rewritten as a
