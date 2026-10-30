@@ -9,6 +9,10 @@ struct NoteListActions {
     var unarchive: ([UUID]) -> Void
     var delete: ([UUID]) -> Void
     var export: ([UUID]) -> Void
+    /// Copy Note: the text and its pictures on the clipboard.
+    var copyNote: (UUID) -> Void = { _ in }
+    /// Export as Markdown…: a folder for each note, pictures in it.
+    var exportMarkdown: ([UUID]) -> Void = { _ in }
     var openSettings: () -> Void = {}
     /// Edit Daily Template…, from the Daily list.
     var editDailyTemplate: () -> Void = {}
@@ -332,6 +336,8 @@ struct AllNotesView: View {
             } else {
                 Button(L("Archive")) { actions.archive([note.id]) }
             }
+            Button(L("Copy Note")) { actions.copyNote(note.id) }
+            Button(L("Export as Markdown\u{2026}")) { actions.exportMarkdown([note.id]) }
             Button(L("Export\u{2026}")) { actions.export([note.id]) }
             moveToGroupMenu(for: [note])
             Divider()
@@ -345,6 +351,7 @@ struct AllNotesView: View {
             } else {
                 Button(L("Archive %d Notes", notes.count)) { actions.archive(idList) }
             }
+            Button(L("Export %d Notes as Markdown\u{2026}", notes.count)) { actions.exportMarkdown(idList) }
             Button(L("Export %d Notes\u{2026}", notes.count)) { actions.export(idList) }
             Divider()
             Button(L("Add Tag\u{2026}")) { actions.addTagToNotes(idList) }
@@ -969,6 +976,8 @@ struct NoteReadingPane: View {
         editor.onMoveToGroup = { actions.moveToGroup([id], $0) }
         editor.onNewGroup = { actions.newGroupWithNotes([id]) }
         editor.onSetKeepOnDeck = { actions.setKeepOnDeck([id], $0) }
+        editor.onCopyNote = { actions.copyNote(id) }
+        editor.onExportMarkdown = { actions.exportMarkdown([id]) }
         editor.onDelete = { actions.delete([id]) }
         editor.onOpen = { actions.open(id) }
         if let keyboard {
@@ -1123,6 +1132,7 @@ private struct MultipleSelectionPane: View {
                 .scaledFont(15, weight: .medium)
             HStack(spacing: 10) {
                 Button(L("Export\u{2026}")) { actions.export(notes.map(\.id)) }
+                Button(L("Export as Markdown\u{2026}")) { actions.exportMarkdown(notes.map(\.id)) }
                 if notes.allSatisfy({ $0.state == .archived }) {
                     Button(L("Move to Stack")) { actions.unarchive(notes.map(\.id)) }
                 } else {

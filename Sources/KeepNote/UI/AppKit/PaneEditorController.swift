@@ -13,6 +13,8 @@ import SwiftUI
 final class PaneEditorController: ObservableObject {
     weak var model: NoteEditorModel?
     var onSetPinned: (Bool) -> Void = { _ in }
+    var onCopyNote: () -> Void = {}
+    var onExportMarkdown: () -> Void = {}
     /// Tools > Move to Group: what to offer, and what choosing does.
     var groupMenu: () -> (choices: [GroupMenu.Choice], current: UUID?, enabled: Bool) = { ([], nil, false) }
     var onMoveToGroup: (UUID?) -> Void = { _ in }
@@ -123,6 +125,11 @@ final class PaneEditorController: ObservableObject {
         guard let anchor, let window, let body = bodyView else { return }
         let menu = FormatCommand.makeToolsMenu(target: body)
         menu.addItem(.separator())
+        let copy = NSMenuItem(title: L("Copy Note"), action: #selector(MenuTarget.copyNote), keyEquivalent: "")
+        let export = NSMenuItem(title: L("Export as Markdown\u{2026}"), action: #selector(MenuTarget.export), keyEquivalent: "")
+        menu.addItem(copy)
+        menu.addItem(export)
+        menu.addItem(.separator())
         let pin = NSMenuItem(title: L("Pin to Center"), action: #selector(MenuTarget.pin), keyEquivalent: "")
         pin.state = model?.isPinned == true ? .on : .off
         pin.isEnabled = model?.state != .archived
@@ -130,8 +137,12 @@ final class PaneEditorController: ObservableObject {
         keep.state = model?.keepOnDeck == true ? .on : .off
         let target = MenuTarget(
             pin: { [weak self] in self?.onSetPinned(!(self?.model?.isPinned ?? false)) },
-            keep: { [weak self] in self?.onSetKeepOnDeck(!(self?.model?.keepOnDeck ?? false)) }
+            keep: { [weak self] in self?.onSetKeepOnDeck(!(self?.model?.keepOnDeck ?? false)) },
+            copy: { [weak self] in self?.onCopyNote() },
+            export: { [weak self] in self?.onExportMarkdown() }
         )
+        copy.target = target
+        export.target = target
         pin.target = target
         keep.target = target
         menu.autoenablesItems = false
@@ -152,12 +163,18 @@ final class PaneEditorController: ObservableObject {
     private final class MenuTarget: NSObject {
         let onPin: () -> Void
         let onKeep: () -> Void
-        init(pin: @escaping () -> Void, keep: @escaping () -> Void) {
+        let onCopy: () -> Void
+        let onExport: () -> Void
+        init(pin: @escaping () -> Void, keep: @escaping () -> Void, copy: @escaping () -> Void, export: @escaping () -> Void) {
             onPin = pin
             onKeep = keep
+            onCopy = copy
+            onExport = export
         }
         @objc func pin() { onPin() }
         @objc func keep() { onKeep() }
+        @objc func copyNote() { onCopy() }
+        @objc func export() { onExport() }
     }
 
     // MARK: - Keys

@@ -554,3 +554,8 @@
 "Show as Mention" = "Mostrar como menção";
 "Show as Link" = "Mostrar como link";
 "Click to open · ⌥-click to edit" = "Clique para abrir · ⌥-clique para editar";
+"Copy Note" = "Copiar nota";
+"Export as Markdown…" = "Exportar como Markdown…";
+"Export %d Notes as Markdown…" = "Exportar %d notas como Markdown…";
+"Note copied" = "Nota copiada";
+"A folder for each note is made here, with its pictures in attachments." = "Uma pasta para cada nota será criada aqui, com as imagens em attachments.";

@@ -65,14 +65,14 @@ enum ExportService {
 
     // MARK: - Panels
 
-    private static func promptForDirectory() -> URL? {
+    private static func promptForDirectory(message: String = L("Choose a folder for the exported notes.")) -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.prompt = L("Export Here")
-        panel.message = L("Choose a folder for the exported notes.")
+        panel.message = message
         return panel.runModal() == .OK ? panel.url : nil
     }
 
@@ -170,6 +170,84 @@ enum ExportService {
         }
     }
 
+    // MARK: - Markdown for Obsidian
+
+    /// The folder inside each note's, holding its pictures and files.
+    nonisolated static let noteAttachmentsFolder = "attachments"
+
+    /// Export as Markdown…: a folder for each note, holding the note as a
+    /// `.md` and its pictures and files in `attachments/`, linked by relative
+    /// paths, so a folder dropped into an Obsidian vault shows its images.
+    /// Returns how many locked notes were left out, or `nil` if the user
+    /// cancelled the panel.
+    @discardableResult
+    static func runMarkdownFolders(notes allNotes: [Note], groups: [NoteGroup] = [],
+                                   attachments: AttachmentSource? = nil) throws -> Int? {
+        let notes = allNotes.filter { !$0.isLocked }
+        let skipped = allNotes.count - notes.count
+        guard !notes.isEmpty else { return skipped }
+        guard let directory = promptForDirectory(message: L("A folder for each note is made here, with its pictures in attachments.")) else { return nil }
+        try writeMarkdownFolders(notes: notes, into: directory, groups: groups, attachments: attachments)
+        return skipped
+    }
+
+    /// Writes one folder per note into `directory` and returns them. A name
+    /// another note, or something already in `directory`, has gets a number.
+    @discardableResult
+    static func writeMarkdownFolders(notes: [Note], into directory: URL, groups: [NoteGroup] = [],
+                                     attachments: AttachmentSource? = nil) throws -> [URL] {
+        let manager = FileManager.default
+        let names = groupNames(groups)
+        var taken = Set((try? manager.contentsOfDirectory(atPath: directory.path))?.map { $0.lowercased() } ?? [])
+        var folders: [URL] = []
+        for note in notes {
+            let base = ExportNames.unique(ExportNames.component(note.displayTitle, fallback: L("Untitled")), taken: &taken)
+            let folder = directory.appendingPathComponent(base, isDirectory: true)
+            try manager.createDirectory(at: folder, withIntermediateDirectories: true)
+
+            var links: [String: String] = [:]
+            var takenFiles = Set<String>()
+            for reference in AttachmentText.references(in: note.body) where links[reference.id] == nil {
+                guard let attachments, let (info, data) = attachments(reference.id) else { continue }
+                let attachmentFolder = folder.appendingPathComponent(noteAttachmentsFolder, isDirectory: true)
+                if links.isEmpty { try manager.createDirectory(at: attachmentFolder, withIntermediateDirectories: true) }
+                let name = ExportNames.unique(ExportNames.fileName(info.fileName, fallback: L("Attachment")), taken: &takenFiles)
+                try data.write(to: attachmentFolder.appendingPathComponent(name), options: .atomic)
+                links[reference.id] = noteAttachmentsFolder + "/" + name
+            }
+            let group = note.groupID.flatMap { names[$0] }
+            let contents = obsidianMarkdown(for: note, links: links, group: group)
+            try contents.write(to: folder.appendingPathComponent(base + ".md"), atomically: true, encoding: .utf8)
+            folders.append(folder)
+        }
+        return folders
+    }
+
+    /// The note for Obsidian: its group in YAML front matter, then its title,
+    /// tags as `#tag` and text, with each attachment linked at its file.
+    static func obsidianMarkdown(for note: Note, links: [String: String], group: String?) -> String {
+        var text = ""
+        if let group {
+            let quoted = group.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "\"", with: "\\\"")
+                .components(separatedBy: .newlines).joined(separator: " ")
+            text += "---\ngroup: \"\(quoted)\"\n---\n\n"
+        }
+        text += exportedBody(document(for: note), links: links, markdown: true, target: ExportNames.linkTarget)
+        return text + "\n"
+    }
+
+    /// The note as one piece of Markdown: its title as a heading when it has
+    /// one of its own, its tags as `#tag`, then its text.
+    nonisolated static func document(for note: Note) -> String {
+        var parts: [String] = []
+        let title = note.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty { parts.append("# " + title) }
+        if !note.tags.isEmpty { parts.append(note.tags.map { "#\($0)" }.joined(separator: " ")) }
+        if !note.body.isEmpty { parts.append(note.body) }
+        return parts.joined(separator: "\n\n")
+    }
+
     // MARK: - Renderers
 
     /// `links` maps attachments to the files written beside the note; one
@@ -209,15 +287,15 @@ enum ExportService {
 
     /// The body with each attachment line pointed at its exported file, or,
     /// where there is none, said in words: "[Image: a red barn]".
-    static func exportedBody(_ body: String, links: [String: String], markdown: Bool) -> String {
+    static func exportedBody(_ body: String, links: [String: String], markdown: Bool,
+                             target encode: (String) -> String = { $0.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? $0 }) -> String {
         let references = AttachmentText.references(in: body)
         guard !references.isEmpty else { return body }
         let text = NSMutableString(string: body)
         for reference in references.reversed() {
             let replacement: String
             if markdown, let link = links[reference.id] {
-                let target = link.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? link
-                replacement = "\(reference.isImage ? "!" : "")[\(reference.label)](\(target))"
+                replacement = "\(reference.isImage ? "!" : "")[\(reference.label)](\(encode(link)))"
             } else if reference.isImage {
                 replacement = "[" + (reference.label.isEmpty ? L("Image") : L("Image: %@", reference.label)) + "]"
             } else {

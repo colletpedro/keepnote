@@ -47,6 +47,8 @@ final class MarkdownTextView: NSTextView {
     var offersMentionOnPaste = true
     /// Where ⌘V reads from: the clipboard (the tests hand in their own).
     var pasteSource: NSPasteboard = .general
+    /// Where ⌘C and ⌘X write to (the tests hand in their own).
+    var copyTarget: NSPasteboard = .general
     /// The file Quick Look is showing, while it is.
     var quickLookURL: URL?
     var quickLookHolding = false
@@ -562,6 +564,36 @@ final class MarkdownTextView: NSTextView {
     @objc func addLink(_ sender: Any?) {
         let clipboard = NSPasteboard.general.string(forType: .string)
         if let result = Formatting.link(currentEdit, clipboard: clipboard) { apply(result) } else { NSSound.beep() }
+    }
+
+    /// ⌘C. A selection that holds pictures goes out as HTML, RTFD and
+    /// Markdown with the pictures inside, so it pastes into Obsidian, Mail or
+    /// Pages with them; anything else is copied as it always was.
+    override func copy(_ sender: Any?) {
+        guard copyWithAttachments() != nil else { return super.copy(sender) }
+    }
+
+    override func cut(_ sender: Any?) {
+        guard isEditable, let range = copyWithAttachments() else { return super.cut(sender) }
+        setSelectedRange(range)
+        insertText("", replacementRange: range)
+    }
+
+    /// Puts the selection on `copyTarget` with its pictures when it touches
+    /// any; returns what it took, or `nil` when it has none (nothing was
+    /// written).
+    private func copyWithAttachments() -> NSRange? {
+        guard let library, selectedRange().length > 0 else { return nil }
+        let text = string as NSString
+        let range = NoteClipboard.expanded(selectedRange(), in: string)
+        let piece = text.substring(with: range)
+        guard !AttachmentText.references(in: piece).isEmpty else { return nil }
+        let source: AttachmentSource = { [weak library] id in
+            guard let library, let info = library.attachments[id], let data = library.attachmentData(id) else { return nil }
+            return (info, data)
+        }
+        NoteClipboard.copy(markdown: piece, attachments: source, to: copyTarget)
+        return range
     }
 
     /// A URL pasted over selected text becomes a link on that text. Files

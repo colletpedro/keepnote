@@ -554,3 +554,8 @@
 "Show as Mention" = "Show as Mention";
 "Show as Link" = "Show as Link";
 "Click to open · ⌥-click to edit" = "Click to open · ⌥-click to edit";
+"Copy Note" = "Copy Note";
+"Export as Markdown…" = "Export as Markdown…";
+"Export %d Notes as Markdown…" = "Export %d Notes as Markdown…";
+"Note copied" = "Note copied";
+"A folder for each note is made here, with its pictures in attachments." = "A folder for each note is made here, with its pictures in attachments.";

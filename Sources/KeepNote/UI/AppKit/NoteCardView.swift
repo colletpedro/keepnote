@@ -96,6 +96,10 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
         case togglePin
         case toggleKeep
         case delete
+        /// Copy Note: the text and its pictures on the clipboard.
+        case copyNote
+        /// Export as Markdown…
+        case exportMarkdown
         /// Move to Group ›: a group, or none.
         case moveToGroup(UUID?)
         /// Move to Group › New Group…
@@ -280,6 +284,9 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
             newGroup: { [weak self] in self.map { $0.onContextAction?($0.noteID, .newGroup) } })
         menu.addItem(GroupMenu.makeItem(choices: groupChoices, current: currentGroup, enabled: canChangeGroup, target: moveTarget))
         menu.addItem(.separator())
+        menu.addItem(withTitle: L("Copy Note"), action: #selector(menuCopyNote), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Export as Markdown\u{2026}"), action: #selector(menuExportMarkdown), keyEquivalent: "").target = self
+        menu.addItem(.separator())
         menu.addItem(withTitle: L("Delete"), action: #selector(menuDelete), keyEquivalent: "").target = self
         withExtendedLifetime(moveTarget) { NSMenu.popUpContextMenu(menu, with: event, for: self) }
     }
@@ -290,6 +297,8 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
     @objc private func menuPin() { onContextAction?(noteID, .togglePin) }
     @objc private func menuKeep() { onContextAction?(noteID, .toggleKeep) }
     @objc private func menuDelete() { onContextAction?(noteID, .delete) }
+    @objc private func menuCopyNote() { onContextAction?(noteID, .copyNote) }
+    @objc private func menuExportMarkdown() { onContextAction?(noteID, .exportMarkdown) }
 
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }

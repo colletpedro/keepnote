@@ -89,6 +89,7 @@ private enum LeftInEnglish {
         "Attachments": "a folder's name on disk, the same on every Mac whatever its language",
         "VACUUM INTO": "SQL",
         "backup ": "unified log, for development",
+        "<": "HTML markup written to the clipboard for other apps, never shown",
     ]
 
     static func covers(_ raw: String) -> Bool {

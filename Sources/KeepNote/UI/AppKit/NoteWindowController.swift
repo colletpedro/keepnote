@@ -73,6 +73,9 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     var onDelete: ((UUID) -> Void)?
     /// Pin to Center on or off, from the header's pin or the Tools menu.
     var onSetPinned: ((UUID, Bool) -> Void)?
+    /// Tools > Copy Note and Export as Markdown….
+    var onCopyNote: ((UUID) -> Void)?
+    var onExportMarkdown: ((UUID) -> Void)?
     /// Tools > Move to Group: a group or none, and New Group….
     var onMoveToGroup: ((UUID, UUID?) -> Void)?
     var onNewGroup: ((UUID) -> Void)?
@@ -185,6 +188,13 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         guard let textView = Self.findTextView(in: container) else { return }
         let menu = FormatCommand.makeToolsMenu(target: textView)
         menu.addItem(.separator())
+        let copy = NSMenuItem(title: L("Copy Note"), action: #selector(copyNote), keyEquivalent: "")
+        copy.target = self
+        menu.addItem(copy)
+        let export = NSMenuItem(title: L("Export as Markdown\u{2026}"), action: #selector(exportMarkdown), keyEquivalent: "")
+        export.target = self
+        menu.addItem(export)
+        menu.addItem(.separator())
         let pin = NSMenuItem(title: L("Pin to Center"), action: #selector(toggleCenterPin), keyEquivalent: "")
         pin.target = self
         pin.state = store.note(id: noteID)?.isPinned == true ? .on : .off
@@ -216,6 +226,9 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         // An item that changed the text (Insert Image…) placed the caret itself.
         if textView.string == textBefore { textView.setSelectedRange(kept) }
     }
+
+    @objc private func copyNote() { onCopyNote?(noteID) }
+    @objc private func exportMarkdown() { onExportMarkdown?(noteID) }
 
     @objc private func toggleCenterPin() {
         onSetPinned?(noteID, !(store.note(id: noteID)?.isPinned ?? false))

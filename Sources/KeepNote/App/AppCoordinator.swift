@@ -540,6 +540,12 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         controller.onSetPinned = { [weak self] id, on in
             self?.setPinned(on, ids: [id])
         }
+        controller.onCopyNote = { [weak self] id in
+            self?.copyNote(id: id)
+        }
+        controller.onExportMarkdown = { [weak self] id in
+            self?.exportMarkdown(ids: [id])
+        }
         controller.onMoveToGroup = { [weak self] id, group in
             self?.moveToGroup([id], group: group)
         }
@@ -666,15 +672,45 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
                 groups: groupsForExport(of: notes),
                 attachments: attachmentSource
             )
-            if let skipped, skipped > 0 {
-                let alert = NSAlert()
-                alert.messageText = Lplural(skipped, L("1 locked note was not exported"), L("%d locked notes were not exported"))
-                alert.informativeText = L("Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format.")
-                alert.runModal()
-            }
+            reportLockedNotes(skipped)
         } catch {
             present(error)
         }
+    }
+
+    /// Export as Markdown…: a folder for each note, with its pictures in it.
+    func exportMarkdown(ids: [UUID]) {
+        NoteBuffer.flushAll()
+        let notes = ids.compactMap { store.note(id: $0) }
+        guard !notes.isEmpty else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        do {
+            let skipped = try ExportService.runMarkdownFolders(
+                notes: notes, groups: groupsForExport(of: notes), attachments: attachmentSource)
+            reportLockedNotes(skipped)
+        } catch {
+            present(error)
+        }
+    }
+
+    private func reportLockedNotes(_ skipped: Int?) {
+        guard let skipped, skipped > 0 else { return }
+        let alert = NSAlert()
+        alert.messageText = Lplural(skipped, L("1 locked note was not exported"), L("%d locked notes were not exported"))
+        alert.informativeText = L("Locked notes could not be decrypted with the key on this Mac, so they are left out of every export format.")
+        alert.runModal()
+    }
+
+    /// Copy Note: the text with its pictures, on the clipboard as HTML, RTFD
+    /// and Markdown at once. A locked note has no text to copy.
+    func copyNote(id: UUID) {
+        NoteBuffer.flushAll()
+        guard let note = store.note(id: id), !note.isLocked else {
+            NSSound.beep()
+            return
+        }
+        NoteClipboard.copy(note: note, attachments: attachmentSource)
+        Announcer.say(L("Note copied"))
     }
 
     /// The groups an export carries: those the notes are in — or all of them,
@@ -987,6 +1023,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
             unarchive: { [weak self] ids in self?.unarchive(ids: ids) },
             delete: { [weak self] ids in self?.delete(ids: ids) },
             export: { [weak self] ids in self?.export(ids: ids) },
+            copyNote: { [weak self] id in self?.copyNote(id: id) },
+            exportMarkdown: { [weak self] ids in self?.exportMarkdown(ids: ids) },
             openSettings: { [weak self] in self?.showSettings() },
             editDailyTemplate: { [weak self] in self?.showDailyTemplate() },
             setKeepOnDeck: { [weak self] ids, on in self?.setKeepOnDeck(on, ids: ids) },
@@ -1354,6 +1392,8 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         case .toggleKeep:
             if let note = store.note(id: id) { setKeepOnDeck(!note.keepOnDeck, ids: [id]) }
         case .delete: delete(ids: [id])
+        case .copyNote: copyNote(id: id)
+        case .exportMarkdown: exportMarkdown(ids: [id])
         case .moveToGroup(let group): moveToGroup([id], group: group)
         case .newGroup: promptNewGroup(for: [id])
         }
