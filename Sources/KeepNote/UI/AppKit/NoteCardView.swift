@@ -159,7 +159,6 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
     override func accessibilityHelp() -> String? { L("Opens the note. The actions menu has its other commands.") }
 
     override func accessibilityPerformPress() -> Bool {
-        OpenLog.click("deck-accessibility", noteID)
         onActivate?(noteID)
         return true
     }
@@ -218,7 +217,6 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
     /// A click opens the note — on release, so that a drag can start from the
     /// same press — and a drag takes it, to drop on a group's tab.
     override func mouseDown(with event: NSEvent) {
-        OpenLog.event("deck-mouseDown", noteID, "pressWas=\(pressEvent != nil) dragging=\(isDragging) inWindow=\(window != nil)")
         pressEvent = event
         isDragging = false
     }
@@ -228,7 +226,6 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
         let from = press.locationInWindow, to = event.locationInWindow
         guard hypot(to.x - from.x, to.y - from.y) >= 4 else { return }
         isDragging = true
-        OpenLog.event("deck-drag-begin", noteID, "moved=\(Int(hypot(to.x - from.x, to.y - from.y)))pt")
         onDragBegan?()
         let item = NSPasteboardItem()
         item.setString(NoteDragPayload.encode([noteID]), forType: .string)
@@ -239,11 +236,7 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
 
     override func mouseUp(with event: NSEvent) {
         defer { pressEvent = nil }
-        guard pressEvent != nil, !isDragging else {
-            OpenLog.event("deck-mouseUp-ignored", noteID, "press=\(pressEvent != nil) dragging=\(isDragging)")
-            return
-        }
-        OpenLog.click("deck", noteID)
+        guard pressEvent != nil, !isDragging else { return }
         onActivate?(noteID)
     }
 
@@ -252,7 +245,6 @@ final class NoteCardView: DeckTabView, NSDraggingSource {
     }
 
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-        OpenLog.event("deck-drag-ended", noteID, "operation=\(operation.rawValue)")
         isDragging = false
         pressEvent = nil
     }

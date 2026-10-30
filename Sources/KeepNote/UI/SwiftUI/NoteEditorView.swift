@@ -82,8 +82,6 @@ final class NoteBuffer: ObservableObject {
         }
     }
 
-    deinit { OpenLog.event("buffer-deinit", noteID, "") }
-
     /// The buffers some editor still holds, by note. A buffer lives as long as
     /// one of its editors does.
     private static let open = NSMapTable<NSUUID, NoteBuffer>.strongToWeakObjects()
@@ -91,11 +89,9 @@ final class NoteBuffer: ObservableObject {
     /// The note's buffer: the one its other editors already share, or a new one.
     static func shared(for note: Note, store: NoteStore) -> NoteBuffer {
         if let existing = open.object(forKey: note.id as NSUUID), existing.store === store {
-            OpenLog.event("buffer-shared", note.id, "pendingSave=\(existing.debouncer.hasPendingWork)")
             existing.refresh(from: note)
             return existing
         }
-        OpenLog.event("buffer-new", note.id, "")
         let buffer = NoteBuffer(note: note, store: store)
         open.setObject(buffer, forKey: note.id as NSUUID)
         return buffer

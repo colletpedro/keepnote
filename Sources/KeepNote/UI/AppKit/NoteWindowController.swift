@@ -549,8 +549,6 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     }
 
     func show() {
-        OpenLog.event("window-show", noteID, "presentation=\(presentation) closing=\(isClosing) visible=\(window.isVisible)")
-        defer { OpenLog.event("window-show-done", noteID, "visible=\(window.isVisible) key=\(window.isKeyWindow) alpha=\(window.alphaValue) ignoresMouse=\(window.ignoresMouseEvents)") }
         // On screen first, so it is already in the Space the user is looking
         // at — a full-screen app's, say — when the app is activated. Activating
         // first would take the user to the Space of the app's other window
@@ -569,11 +567,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     }
 
     func close() {
-        guard !isClosing else {
-            OpenLog.event("window-close-ignored", noteID, "reason=already-closing")
-            return
-        }
-        OpenLog.event("window-close", noteID, "presentation=\(presentation) folds=\(originFrame != nil && presentation == .anchored)")
+        guard !isClosing else { return }
         // A pending save would find a closing window; write it now.
         if saveFrameTask != nil { saveDetachedFrameNow() }
         isClosing = true
@@ -590,7 +584,6 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
             keepAlive = self
             motion.move(to: originFrame, alpha: 0, config: .note) { [weak self] in
                 guard let self else { return }
-                OpenLog.event("window-fold-done", self.noteID, "")
                 self.window.orderOut(nil)
                 self.window.alphaValue = 1
                 self.keepAlive = nil
@@ -804,7 +797,6 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
     // MARK: - NSWindowDelegate
 
     func windowWillClose(_ notification: Notification) {
-        OpenLog.event("window-will-close", noteID, "closing=\(isClosing)")
         model.flush()
         onClose?(noteID)
     }
@@ -830,11 +822,7 @@ final class NoteWindowController: NSObject, NSWindowDelegate {
         guard !NoteFocusHold.isHolding else { return }
         guard presentation == .anchored, !isClosing, menuDepth == 0,
               Date().timeIntervalSince(menuClosedAt) > 0.3 else { return }
-        guard Date().timeIntervalSince(shownAt) > 0.4 else {
-            OpenLog.event("window-resign-key-kept", noteID, "shownMsAgo=\(Int(Date().timeIntervalSince(shownAt) * 1000))")
-            return
-        }
-        OpenLog.event("window-resign-key-close", noteID, "reason=clicked-away")
+        guard Date().timeIntervalSince(shownAt) > 0.4 else { return }
         close()
     }
 }

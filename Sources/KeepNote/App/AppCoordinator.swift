@@ -457,15 +457,12 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// text in it (a daily from the template); otherwise it starts at the end.
     func open(noteID: UUID, from tabFrame: NSRect?, deck: EdgePanelController? = nil, caret: Int? = nil) {
         if let existing = noteWindows[noteID] {
-            OpenLog.event("open-existing", noteID, "presentation=\(existing.presentation) closing=\(existing.isClosingForChecks) windows=\(noteWindows.count)")
             existing.show()
             return
         }
         guard let note = store.note(id: noteID) else {
-            OpenLog.event("open-missing-note", noteID)
             return
         }
-        OpenLog.event("open-new", noteID, "deck=\(deck != nil) windows=\(noteWindows.count)")
         let controller = makeNoteWindow(note: note, originFrame: tabFrame, floating: false)
         if let deck {
             noteOrigins[noteID] = deck.displayID
@@ -474,7 +471,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         lastNoteOpenedAt = Date()
         controller.initialCaret = caret
         controller.show()
-        OpenLog.event("open-shown", noteID, "visible=\(controller.window.isVisible) key=\(controller.window.isKeyWindow)")
     }
 
     /// Open from All Notes: the note as a floating note, off the deck, where
@@ -483,17 +479,14 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// already open anchored is lifted off.
     func openFloating(noteID: UUID) {
         if let existing = noteWindows[noteID] {
-            OpenLog.event("open-floating-existing", noteID, "presentation=\(existing.presentation) closing=\(existing.isClosingForChecks)")
             if existing.presentation != .detached { existing.togglePresentation() }
             existing.show()
             return
         }
         guard let note = store.note(id: noteID) else { return }
-        OpenLog.event("open-floating-new", noteID, "windows=\(noteWindows.count)")
         let controller = makeNoteWindow(note: note, originFrame: nil, floating: true)
         lastNoteOpenedAt = Date()
         controller.show()
-        OpenLog.event("open-floating-shown", noteID, "visible=\(controller.window.isVisible) key=\(controller.window.isKeyWindow)")
     }
 
     /// The notes that were floating when the app last ran come back floating,
@@ -521,7 +514,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
         )
         controller.onClose = { [weak self] id in
             guard let self else { return }
-            OpenLog.event("window-released", id, "stillRegistered=\(self.noteWindows[id] === controller)")
             self.noteWindows.removeValue(forKey: id)
             // It was in use until now, so its time counts from today.
             try? self.store.markOpened(id: id)
@@ -1003,7 +995,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     /// it: its time starts again, and it is not archived while it is there.
     /// The note it showed before was in use until now, as a closing window is.
     func allNotesDidSelect(_ id: UUID?) {
-        OpenLog.event("pane-select", id, "was=\(paneNoteID.map { String($0.uuidString.prefix(8)) } ?? "-")")
         guard id != paneNoteID else { return }
         if let previous = paneNoteID { try? store.markOpened(id: previous) }
         if heldBuffer?.noteID != id { heldBuffer = nil }
@@ -1015,7 +1006,6 @@ final class AppCoordinator: NSObject, EdgePanelControllerDelegate {
     private func listActions() -> NoteListActions {
         NoteListActions(
             open: { [weak self] id in
-                OpenLog.click("all-notes-open", id)
                 self?.open(noteID: id, from: nil)
             },
             newNote: { [weak self] in self?.newNote() },

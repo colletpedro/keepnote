@@ -59,8 +59,6 @@ final class AppSettings: ObservableObject {
         defaults.removeObject(forKey: "showInDock")
         // "Cards before +N" is gone: each screen's height decides it.
         defaults.removeObject(forKey: "stackLimit")
-        // No licence and no trial any more: their old keys go, once.
-        LegacyDefaults.removeLicenseKeys(from: defaults)
         let storedColor = defaults.integer(forKey: Key.defaultNoteColor)
         defaultNoteColor = storedColor == 0 ? nil : NoteColor.resolve(rawValue: storedColor)
     }

@@ -554,7 +554,6 @@ final class EdgePanelController: NSObject {
 
     func noteDidOpen() {
         openNoteCount += 1
-        OpenLog.event("deck-noteDidOpen", nil, "openNotes=\(openNoteCount)")
         preview.hide(animated: false)
         collapseTask?.cancel()
         collapseTask = nil
@@ -562,7 +561,6 @@ final class EdgePanelController: NSObject {
 
     func noteDidClose() {
         openNoteCount = max(0, openNoteCount - 1)
-        OpenLog.event("deck-noteDidClose", nil, "openNotes=\(openNoteCount)")
         guard openNoteCount == 0, isFanned else { return }
         // The cursor is usually on the note that just closed, which is outside
         // the deck, so fold back up unless it comes straight back.
@@ -633,7 +631,6 @@ final class EdgePanelController: NSObject {
     func activate(noteID: UUID) {
         preview.hide(animated: false)
         let tabFrame = stackView.screenFrame(forNoteID: noteID)
-        OpenLog.event("deck-activate", noteID, "tabFrame=\(tabFrame != nil) openNotes=\(openNoteCount)")
         delegate?.edgePanel(self, didActivateNote: noteID, from: tabFrame)
     }
 

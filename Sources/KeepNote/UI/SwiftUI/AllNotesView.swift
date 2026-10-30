@@ -162,7 +162,6 @@ struct AllNotesView: View {
         .searchable(text: $query, placement: .toolbar, prompt: L("Search %@", selectionTitle))
         .toolbar { toolbarContent }
         .frame(minWidth: 900, minHeight: 480)
-        .onChange(of: selection) { OpenLog.event("list-selection", $0.first, "count=\($0.count)") }
         .onChange(of: sidebarSelection) { newValue in
             AppSettings.shared.allNotesSelection = newValue.storageValue
             selection.removeAll()
@@ -406,7 +405,6 @@ struct AllNotesView: View {
 
     /// The same button hides the sidebar and the list and brings them back.
     private func toggleFullPane() {
-        OpenLog.event("fill-toggle", paneNoteID, "wasFilling=\(paneFillsWindow)")
         columns = paneFillsWindow ? .all : .detailOnly
     }
 
@@ -915,13 +913,11 @@ struct NoteReadingPane: View {
         }
         .padding(16)
         .onAppear {
-            OpenLog.event("pane-appear", note.id, "")
             wireEditor()
             if focusTitle { placeCaretInTitle(tries: 5) }
         }
         .onReceive(store.changes) { _ in model.refreshFromStore() }
         .onDisappear {
-            OpenLog.event("pane-disappear", note.id, "")
             model.flush()
         }
     }
