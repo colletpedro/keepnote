@@ -366,7 +366,7 @@ struct DeckSettingsPane: View {
             }
 
             Section {
-                Option(help: L("How far the tab under the cursor reaches out of the edge, over its neighbours; no other tab moves. The default is the 12 pt the deck has always lifted a tab by. With Reduce Motion on, a tab changes size at once.")) {
+                Option(help: L("How far the tab under the cursor reaches out of the edge, over its neighbors; no other tab moves. The default is the 12 pt the deck has always lifted a tab by. With Reduce Motion on, a tab changes size at once.")) {
                     LabeledContent(L("Hover magnification")) {
                         HStack(spacing: 8) {
                             Text(L("Off")).font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)

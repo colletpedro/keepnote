@@ -32,7 +32,7 @@ body {
 a { color: var(--sky); text-underline-offset: 3px; }
 a:hover { color: var(--text); }
 :focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; border-radius: 4px; }
-/* On the light button the ring is drawn in the page's text colour, so it shows
+/* On the light button the ring is drawn in the page's text color, so it shows
    against the mint as well as the dark page around it. */
 .btn:focus-visible { outline-color: var(--text); box-shadow: 0 0 0 6px var(--bg); }
 /* The focus sits on the video's own controls, inside it: ring the video. */
