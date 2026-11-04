@@ -132,13 +132,27 @@
       <li>
         <h3>Abra o app</h3>
         <p>O macOS avisa que não foi possível verificar o KeepNote. Clique em OK (ou Concluído). É esperado.</p>
+        <img src="../media/gatekeeper-done.png" width="613" height="661" alt="O aviso do macOS “KeepNote” Not Opened (não aberto), com o botão Done (Concluído) destacado" loading="lazy">
       </li>
       <li>
         <h3>Permita uma vez</h3>
         <p>Ajustes do Sistema → Privacidade e Segurança → Segurança → Abrir Mesmo Assim. Não pergunta de novo. (No macOS 13 e 14, clicar no app com Control e escolher Abrir também funciona.)</p>
+        <img src="../media/gatekeeper-open-anyway.png" width="910" height="282" alt="Privacy &amp; Security (Privacidade e Segurança), seção Security (Segurança), com o botão Open Anyway (Abrir Mesmo Assim) destacado" loading="lazy">
       </li>
     </ol>
-    <p class="sub">O KeepNote não verifica atualizações sozinho, porque não tem acesso à rede. As versões novas saem aqui no site e na <a href="https://github.com/colletpedro/keepnote/releases">página de releases</a>. No app, Ajustes → Sobre → Buscar atualizações… abre esta página. Depois de atualizar, o macOS pode pedir acesso à chave do Keychain que cifra as notas; escolha Sempre permitir, nenhuma nota se perde.</p>
+    <figure class="allow">
+      <img src="../media/gatekeeper-steps.png" width="1432" height="1674" alt="Ajustes do Sistema em inglês, Privacy &amp; Security, com os três cliques numerados: Done, Privacy &amp; Security, Open Anyway" loading="lazy">
+      <figcaption>Tudo junto: <strong>1</strong> clique em Done (Concluído), <strong>2</strong> abra Privacy &amp; Security (Privacidade e Segurança), <strong>3</strong> clique em Open Anyway (Abrir Mesmo Assim).</figcaption>
+    </figure>
+    <h2 id="updating">Atualizando</h2>
+    <ol class="update">
+      <li>Feche o KeepNote.</li>
+      <li>Baixe o novo KeepNote.dmg neste site ou na <a href="https://github.com/colletpedro/keepnote/releases">página de releases</a>.</li>
+      <li>Arraste o KeepNote para Aplicativos e escolha Substituir.</li>
+      <li>Abra o app. Se o macOS pedir de novo, clique em Abrir Mesmo Assim como nos passos acima.</li>
+      <li>Se o Keychain pedir acesso à chave que cifra as notas, escolha Sempre permitir.</li>
+    </ol>
+    <p class="sub">Suas notas ficam onde estão, e o KeepNote faz um backup do banco sozinho antes de qualquer mudança nele. Ele nunca busca atualizações por conta própria, porque não tem acesso à rede; no app, Ajustes → Sobre → Buscar atualizações… abre esta página.</p>
   </div>
 </section>
 

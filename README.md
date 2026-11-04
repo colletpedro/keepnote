@@ -20,9 +20,17 @@ Requires a Mac with an Apple chip (M1 or later) and macOS 13 or newer. The downl
 
 **3. Allow it once.** Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open Anyway** next to KeepNote, and confirm. macOS will not ask again for this copy of the app. (On macOS 13 and 14 you can also Control-click the app and choose **Open**.)
 
-## Updates
+<p align="center"><img src="docs/media/gatekeeper-steps.png" alt="System Settings, Privacy & Security, with the three clicks numbered: Done, Privacy & Security, Open Anyway" width="480"><br><b>1</b> click Done, <b>2</b> open Privacy & Security, <b>3</b> click Open Anyway.</p>
 
-KeepNote does not check for updates by itself, because it has no network access. New versions are published on [the site](https://colletpedro.github.io/keepnote/) and on the [releases page](https://github.com/colletpedro/keepnote/releases). **Settings → About → Check for Updates…** opens the site in your browser. After updating, macOS may ask for access to the Keychain key that encrypts your notes; choose **Always Allow**, no notes are lost.
+## Updating
+
+1. Quit KeepNote.
+2. Download the new `KeepNote.dmg` from [the site](https://colletpedro.github.io/keepnote/) or the [releases page](https://github.com/colletpedro/keepnote/releases).
+3. Drag KeepNote onto Applications and choose Replace.
+4. Open it. If macOS asks again, click **Open Anyway** as in the install steps.
+5. If the Keychain asks for the key that encrypts your notes, choose **Always Allow**.
+
+Your notes stay where they are, and KeepNote makes a backup of its database by itself before any change to it. It never checks for updates on its own, because it has no network access; **Settings → About → Check for Updates…** opens the site in your browser.
 
 ## Why does macOS show a warning?
 

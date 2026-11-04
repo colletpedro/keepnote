@@ -132,13 +132,27 @@
       <li>
         <h3>Open it</h3>
         <p>macOS says it could not verify KeepNote. Click Done (or OK). This is expected.</p>
+        <img src="media/gatekeeper-done.png" width="613" height="661" alt="The macOS warning “KeepNote” Not Opened, with the Done button highlighted" loading="lazy">
       </li>
       <li>
         <h3>Allow it once</h3>
         <p>System Settings → Privacy & Security → Security → Open Anyway. It will not ask again. (On macOS 13 and 14, Control-click the app and choose Open also works.)</p>
+        <img src="media/gatekeeper-open-anyway.png" width="910" height="282" alt="Privacy &amp; Security, Security section, with the Open Anyway button highlighted" loading="lazy">
       </li>
     </ol>
-    <p class="sub">KeepNote does not check for updates by itself, because it has no network access. New versions are published here on the site and on the <a href="https://github.com/colletpedro/keepnote/releases">releases page</a>. In the app, Settings → About → Check for Updates… opens this page. After updating, macOS may ask for access to the Keychain key that encrypts your notes; choose Always Allow, no notes are lost.</p>
+    <figure class="allow">
+      <img src="media/gatekeeper-steps.png" width="1432" height="1674" alt="System Settings, Privacy &amp; Security, with the three clicks numbered: Done, Privacy &amp; Security, Open Anyway" loading="lazy">
+      <figcaption>All together: <strong>1</strong> click Done, <strong>2</strong> open Privacy &amp; Security, <strong>3</strong> click Open Anyway.</figcaption>
+    </figure>
+    <h2 id="updating">Updating</h2>
+    <ol class="update">
+      <li>Quit KeepNote.</li>
+      <li>Download the new KeepNote.dmg from this site or the <a href="https://github.com/colletpedro/keepnote/releases">releases page</a>.</li>
+      <li>Drag KeepNote onto Applications and choose Replace.</li>
+      <li>Open it. If macOS asks again, click Open Anyway as in the steps above.</li>
+      <li>If the Keychain asks for the key that encrypts your notes, choose Always Allow.</li>
+    </ol>
+    <p class="sub">Your notes stay where they are, and KeepNote makes a backup of its database by itself before any change to it. It never checks for updates on its own, because it has no network access; in the app, Settings → About → Check for Updates… opens this page.</p>
   </div>
 </section>
 
