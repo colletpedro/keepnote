@@ -227,6 +227,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func presentFatal(_ error: Error) {
+        if error is NoteSchema.NewerThanApp {
+            // The notes are left exactly as they are; the way forward is the
+            // newer app, from the site.
+            NSApp.activate(ignoringOtherApps: true)
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = error.localizedDescription
+            alert.informativeText = L("Your notes have not been changed. The latest version is on the KeepNote site.")
+            alert.addButton(withTitle: L("Open the Site"))
+            alert.addButton(withTitle: L("Quit"))
+            if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(AppInfo.siteURL) }
+            NSApp.terminate(nil)
+            return
+        }
         let alert = NSAlert(error: error)
         alert.messageText = L("KeepNote could not start")
         alert.informativeText = error.localizedDescription

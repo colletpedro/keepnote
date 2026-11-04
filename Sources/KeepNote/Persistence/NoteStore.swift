@@ -948,6 +948,7 @@ final class StoreWriter: @unchecked Sendable {
     private let hasFTS: Bool
 
     init(databaseURL: URL, cipher: BodyCipher, backupDirectory: URL, now: Date) throws {
+        try NoteSchema.refuseIfNewer(at: databaseURL)
         db = try SQLiteDatabase(path: databaseURL.path)
         self.cipher = cipher
         // A database from an earlier KeepNote is copied as it is before its

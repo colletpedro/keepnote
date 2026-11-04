@@ -19,6 +19,30 @@ The certificate's subject is only `CN=KeepNote Dev, C=BR`: no e-mail, no persona
 data. It expires on 2027-10-07; renewing it means a new certificate, hence a new
 identity, so update `signing-identity.sh` then.
 
+## Releases are never changed
+
+v1.0.0, and every release after it, stays as it was published: the tag is not
+moved and the files are not swapped, not even to fix a typo or a bad build.
+Anyone who verified a download (checksum, signature) must find the same bytes
+later. A fix is a new release with a new version. For each release:
+
+1. Raise `CFBundleShortVersionString` (X.Y.Z) and `CFBundleVersion` (a whole
+   number above every earlier build) in `Resources/Info.plist`.
+2. Put the same X.Y.Z in `docs/version.json`.
+3. Add a `## [X.Y.Z]` section to `CHANGELOG.md`; it becomes the release notes.
+4. Commit and push, then `./Scripts/release.sh --publish`, which tags `vX.Y.Z`.
+
+`release.sh` checks all of this before it builds anything, and refuses when the
+tag `vX.Y.Z` already exists locally or on GitHub, when the version is not
+X.Y.Z, when the build number does not go up, or when the changelog has no
+section for the version. It never moves a tag (`git tag -f`) and never
+overwrites an asset (`--clobber`); do not do either by hand.
+
+What does not change between releases is the identity the notes are found by:
+the bundle identifier `com.keepnote.KeepNote`, the Keychain item
+`com.keepnote.KeepNote.bodykey` / `default`, and the signing certificate above.
+Changing any of them separates the users from their own notes.
+
 ## Not notarised
 
 The app has no Developer ID and is not notarised, so macOS shows "could not

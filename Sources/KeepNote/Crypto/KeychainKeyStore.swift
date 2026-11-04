@@ -27,8 +27,14 @@ enum KeychainError: LocalizedError {
 /// never leaves this Mac — which is also why synced `.hmnote` files carry
 /// plaintext bodies: they are readable without the app by design.
 enum KeychainKeyStore {
-    private static let service = "com.keepnote.KeepNote.bodykey"
-    private static let account = "default"
+    // Never change these two, nor the bundle identifier com.keepnote.KeepNote
+    // (Resources/Info.plist, AppPaths). The Keychain item is found by exactly
+    // this service and account, and the sandbox container, with the database,
+    // by the identifier. Change either and an updated app no longer finds the
+    // key or the notes: the users are cut off from their own notes. The tests
+    // in Tests/Integration/UpdateSafetyTests.swift pin all three.
+    static let service = "com.keepnote.KeepNote.bodykey"
+    static let account = "default"
 
     /// The key as read this run. The Keychain is asked once per process —
     /// at launch — and every later caller gets this copy: reopening the app,

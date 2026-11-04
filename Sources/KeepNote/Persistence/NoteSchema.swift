@@ -8,6 +8,26 @@ import Foundation
 enum NoteSchema {
     static let currentVersion: Int32 = 13
 
+    /// The notes on disk were written by a newer KeepNote than this one. Thrown
+    /// before the database is opened for writing, so nothing in it changes.
+    struct NewerThanApp: LocalizedError {
+        let found: Int32
+        var errorDescription: String? {
+            L("These notes are from a newer version of KeepNote. Install the latest version.")
+        }
+    }
+
+    /// Throws `NewerThanApp` when the database at `url` has a schema version
+    /// above `currentVersion`. Looks with a read-only connection: an older app
+    /// must not migrate, "repair" or even add a journal to what a newer one
+    /// wrote. A file that is not there yet (a first launch) passes.
+    static func refuseIfNewer(at url: URL) throws {
+        guard FileManager.default.fileExists(atPath: url.path),
+              let db = try? SQLiteDatabase(readOnlyPath: url.path) else { return }
+        let found = db.userVersion
+        if found > currentVersion { throw NewerThanApp(found: found) }
+    }
+
     static func migrate(_ db: SQLiteDatabase) throws {
         if db.userVersion < 1 {
             try migrateToV1(db)
